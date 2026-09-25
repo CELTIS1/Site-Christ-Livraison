@@ -38,6 +38,16 @@ verifier('le parcours de recrutement en cinq étapes : LIVREUR, 20 min, journée
 verifier('trois vidéos du livreur, sans son, affiche posée', (livreurs.match(/<video controls preload="none" playsinline muted/g) || []).length === 3 && /livreur-je-pars-recupere\.mp4/.test(livreurs));
 verifier('les cibles : boutons ≥ 48 px, curseur 44 px, questions 48 px', /\.btn\{[^}]*min-height:48px/.test(livreurs) && /input\[type=range\]\{[^}]*height:44px/.test(livreurs) && /\.faq-item summary\{[^}]*min-height:48px/.test(livreurs));
 
+console.log('\n2 bis. La page Vendeuses (S-2) et la page Express (S-4)');
+const vendeuses = lire('vendeuses.html'), express = lire('express.html'), qvq = lire('app/qui-vend-quoi.js');
+verifier('vendeuses.html : ce que vous gagnez, trois écrans, trois vidéos, le prix, « Nos vendeuses » lu par site_vendeuses (anon), filtres par secteur, « Commander chez elle » sur WhatsApp', /id="gagnez"/.test(vendeuses) && (vendeuses.match(/<video controls preload="none"/g) || []).length === 3 && /rpc\/site_vendeuses/.test(vendeuses) && /data-filtre/.test(vendeuses) && /Commander chez elle/.test(vendeuses) && /je vous ai trouvée sur le site de CLT/.test(vendeuses));
+verifier('les secteurs de la page sont ceux de l\'application (activite-de-la-cliente.js)', (() => { const app = lire('app/activite-de-la-cliente.js'); return ['mode', 'beaute', 'alimentation', 'electromenager', 'telephonie', 'maison', 'enfants', 'sante', 'documents', 'autre'].every(k => new RegExp("cle: '" + k + "'").test(app) && new RegExp(k + ": '").test(vendeuses)); })());
+verifier('le bureau publie / retire une fiche depuis « Qui vend quoi » (son accord ET la validation), avec repli si le SQL manque', /data-qvq-vitrine="1"/.test(qvq) && /rpc\('vitrine_valider'/.test(qvq) && /sans son accord/.test(qvq) && /jouez le SQL du 25\/09/.test(qvq));
+verifier('express.html : quatre vidéos (client et coursier), les objections, le code de livraison expliqué, media-src', (express.match(/<video controls preload="none"/g) || []).length === 4 && /objections-express/.test(express) && /code à 4 chiffres/.test(express) && /media-src 'self'/.test(express));
+verifier('le menu de l\'accueil mène à Vendeuses et à Livreurs', /href="vendeuses\.html" onclick="closeMenu\(\)">Vendeuses/.test(index) && /href="livreurs\.html" onclick="closeMenu\(\)">Devenir livreur/.test(index));
+const sqlV = path.join(RACINE, '_sql-prive/2026-09-25-le-site-nos-vendeuses.sql');
+if (fs.existsSync(sqlV)) { const sv = fs.readFileSync(sqlV, 'utf8'); verifier('le SQL des vendeuses : consentement ET validation, jamais l\'un sans l\'autre ; colis arrondis à la dizaine ; rien de nominatif sur les clientes de la vendeuse', /a\.presentable = true and a\.vitrine_validee_at is not null/.test(sv) && /\(count\(\*\) \/ 10\) \* 10/.test(sv) && /grant execute on function public\.site_vendeuses\(\) to anon/.test(sv)); }
+
 console.log('\n3. Le simulateur dit la même chose que la grille (au franc près)');
 const js = livreurs.split('<script>')[1].split('</script>')[0];
 const ctx = vm.createContext({ document: { getElementById: () => ({ addEventListener() {}, value: '15', textContent: '' }), addEventListener() {} }, fetch: () => Promise.resolve() });

@@ -1460,10 +1460,11 @@ v236 — 23 septembre 2026 — La barre du bas, fixée en bas
    v267, le 25/09/2026 — Les vidéos partout (demande de Celtis) : 15 scénarios de plus dans tests/parcours/_tutoriels.mjs (livreur, cliente, équipe, client et coursier Express), le début coupé à l'écran prêt (plus de manifest-login.json à l'image), 24 liens de plus dans aide.json, « Comment faire ? » sur les écrans Express, relevé, Colis et Express du bureau. Étiquette 20260925videos.
    v268, le 25/09/2026 — Le site (chantier Q, lots S-1 et S-3) : accueil — promesse, bouton WhatsApp unique, chiffres en direct (site_chiffres, SQL 2026-09-25-le-site-les-chiffres-en-direct.sql), vidéos, objections ; livreurs.html — trois formules, simulateur (règles de primes.js), primes, kit, vidéos, parcours de recrutement, FAQ ; banc le-site-qui-vend. Étiquette 20260925site.
    v269, le 25/09/2026 — L'assistant (chantier Q) : app/assistant.js dans les six espaces — étage 1 l'aide qui parle (recherche dans aide.json), étage 2 les données de la personne (course, code, solde, relevé, journée, à traiter), humain sur WhatsApp avec le contexte ; hors couche (Échap à la main) ; banc l-assistant, parcours l-assistant. Étiquette 20260925assistant.
-   v270, le 25/09/2026 — CLT Express, l'argent tenu (chantier P, lot P-5) : dette_max −2 000 F (express_accepter_course, écran du coursier), frais d'annulation 500 F crédités au coursier (dossier, déclencheur), remboursement typé sur un litige (12-les-retours.js), dix chiffres Express (express-chiffres.js, gestion-express-chiffres.js) ; SQL 2026-09-25-express-l-argent-tenu.sql ; parcours l-argent-tenu-express. Étiquette 20260925argent-express. */
+   v270, le 25/09/2026 — CLT Express, l'argent tenu (chantier P, lot P-5) : dette_max −2 000 F (express_accepter_course, écran du coursier), frais d'annulation 500 F crédités au coursier (dossier, déclencheur), remboursement typé sur un litige (12-les-retours.js), dix chiffres Express (express-chiffres.js, gestion-express-chiffres.js) ; SQL 2026-09-25-express-l-argent-tenu.sql ; parcours l-argent-tenu-express. Étiquette 20260925argent-express.
+   v271, le 25/09/2026 — Le site (chantier Q, lots S-2 et S-4) : vendeuses.html (ce que vous gagnez, trois écrans, vidéos, prix, « Nos vendeuses » lu par site_vendeuses), publication depuis Qui vend quoi (vitrine_valider, SQL 2026-09-25-le-site-nos-vendeuses.sql), express.html montre le produit (quatre vidéos, objections). Étiquette 20260925vendeuses. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v270'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v271'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

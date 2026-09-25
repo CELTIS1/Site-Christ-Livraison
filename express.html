@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://xkfltqjbmolmdwdafzcx.supabase.co wss://xkfltqjbmolmdwdafzcx.supabase.co; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; img-src 'self' data: blob: https:; media-src 'self'; connect-src 'self' https://xkfltqjbmolmdwdafzcx.supabase.co wss://xkfltqjbmolmdwdafzcx.supabase.co; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CLT Express — La livraison à la demande, partout à Abidjan</title>
@@ -44,6 +44,19 @@
   h1,h2,h3{font-weight:700;}
   .section-title{font-size:28px; color:var(--navy); text-align:center; margin-bottom:12px;}
   .section-sub{text-align:center; color:var(--muted); max-width:600px; margin:0 auto 44px auto; font-size:15px;}
+
+  /* S-4 (25/09/2026) : les vidéos et les objections. */
+  .videos-express{ display:grid; grid-template-columns:repeat(4,1fr); gap:18px; margin-bottom:34px; }
+  .videos-express figure{ margin:0; text-align:center; }
+  .videos-express video{ width:100%; max-width:240px; aspect-ratio:390/844; border-radius:20px; border:5px solid #2a1f4d; background:#0f1e33; }
+  .videos-express figcaption{ font-size:13.5px; color:var(--muted); margin-top:10px; line-height:1.5; }
+  .videos-express figcaption strong{ color:var(--navy); }
+  .objections-express{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  .objections-express div{ background:#fff; border-radius:16px; padding:18px 20px; border-left:5px solid var(--violet); }
+  .objections-express h3{ font-size:15.5px; color:var(--navy); margin-bottom:6px; }
+  .objections-express p{ font-size:14px; color:#33475B; line-height:1.55; }
+  @media(max-width:900px){ .videos-express{ grid-template-columns:repeat(2,1fr); } .objections-express{ grid-template-columns:1fr; } }
+  @media(max-width:520px){ .videos-express{ grid-template-columns:1fr; } }
 
   /* ---------- NAV ---------- */
   header{position:sticky; top:0; z-index:50; background:rgba(255,255,255,0.94); backdrop-filter:blur(6px); border-bottom:1px solid var(--border);}
@@ -221,6 +234,7 @@
       <div>CLT Express<span class="sub">by Christ Livraison &amp; Transport</span></div>
     </a>
     <ul class="nav-links" id="navLinks">
+      <li><a href="#en-vrai">En vrai</a></li>
       <li><a href="#comment-ca-marche">Comment ça marche</a></li>
       <li><a href="#tarifs">Tarifs</a></li>
       <li><a href="#zones">Zones couvertes</a></li>
@@ -274,6 +288,26 @@
     <div class="trust-item"><i class="fa-solid fa-city"></i> Toutes les communes d'Abidjan</div>
   </div>
 </div>
+
+<!-- S-4 (25/09/2026) : LE PRODUIT MONTRÉ. Quatre vidéos de l'aide de l'application : commander, suivre et le code,
+     accepter (coursier), livrer avec le code. Rien n'est téléchargé avant le clic ; le code de livraison expliqué. -->
+<section id="en-vrai" style="background:var(--bg);">
+  <div class="container">
+    <h2 class="section-title">En vrai, sur votre téléphone</h2>
+    <p class="section-sub">Vingt secondes chacune, sans son : ce que voit le client, ce que voit le coursier.</p>
+    <div class="videos-express">
+      <figure><video controls preload="none" playsinline muted poster="app/aide/videos/express-commander.jpg"><source src="app/aide/videos/express-commander.mp4" type="video/mp4"></video><figcaption><strong>Commander</strong> — deux adresses, qui reçoit, le prix affiché avant de confirmer.</figcaption></figure>
+      <figure><video controls preload="none" playsinline muted poster="app/aide/videos/express-suivre-code.jpg"><source src="app/aide/videos/express-suivre-code.mp4" type="video/mp4"></video><figcaption><strong>Suivre, et le code</strong> — le coursier sur la carte ; un code à 4 chiffres à donner à qui reçoit : sans code, pas de livraison.</figcaption></figure>
+      <figure><video controls preload="none" playsinline muted poster="app/aide/videos/coursier-accepter.jpg"><source src="app/aide/videos/coursier-accepter.mp4" type="video/mp4"></video><figcaption><strong>Coursier : accepter</strong> — les courses proches, le trajet, votre part, un appui.</figcaption></figure>
+      <figure><video controls preload="none" playsinline muted poster="app/aide/videos/coursier-livrer-code.jpg"><source src="app/aide/videos/coursier-livrer-code.mp4" type="video/mp4"></video><figcaption><strong>Coursier : livrer</strong> — « récupéré », puis le code à la remise ; la commission est débitée, le reste est à vous.</figcaption></figure>
+    </div>
+    <div class="objections-express">
+      <div><h3>« Et si le coursier ne vient pas ? »</h3><p>Une course est proposée aux coursiers proches ; sans preneur en trois minutes, plus loin ; puis CLT s'en occupe et vous prévient. Vous suivez tout dans « Mes courses ».</p></div>
+      <div><h3>« Et si le colis n'arrive pas ? »</h3><p>Le code de livraison est votre preuve : livrée sans code, c'est vous qui confirmez la réception. Un problème ? « Signaler » sous la course, CLT répond en 24 h.</p></div>
+      <div><h3>« Ça coûte combien ? »</h3><p>500 F + 150 F par kilomètre, calculés avant de commander, payés en espèces au coursier. Jusqu'à 50 000 F de valeur déclarée ; au-dessus, appelez-nous.</p></div>
+    </div>
+  </div>
+</section>
 
 <section id="comment-ca-marche">
   <div class="container">

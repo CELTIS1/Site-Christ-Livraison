@@ -173,6 +173,19 @@
       "aSavoir": "Le remboursement en ligne (portefeuille client) attend le paiement Wave (2027) : aujourd'hui c'est espèces, Wave à la main, ou un geste sur la prochaine course."
     },
     {
+      "id": "site-qui-vend",
+      "espace": "bureau",
+      "titre": "Le site qui vend, et « Nos vendeuses »",
+      "enBref": "Le site montre le produit (vidéos, chiffres en direct) ; « Nos vendeuses » publie les fiches consenties que vous validez.",
+      "ou": "christlivraison.ci ; Gestion › Tableau de bord › Qui vend quoi › Liste › « Publier sur le site »",
+      "etapes": [
+        "Une fiche n'est sur le site que si la cliente a coché « présenter mon activité » ET si vous l'avez publiée (Qui vend quoi › Liste). Retirer est immédiat.",
+        "Avant de publier : au moins dix colis livrés, aucune réclamation en cours — c'est vous qui jugez. Ce qui est montré : boutique, secteur, ce qu'elle vend, commune, WhatsApp.",
+        "Les chiffres de l'accueil viennent de site_chiffres (totaux du mois) ; les clics « WhatsApp » sont comptés dans site_visits. SQL du 25/09 : chiffres en direct, nos vendeuses."
+      ],
+      "aSavoir": "Reste (S-5) : l'assistant sur le site, et la vendeuse de la semaine mise en avant sur l'accueil."
+    },
+    {
       "id": "l-argent",
       "espace": "bureau",
       "titre": "L'argent en deux écrans (et ce qui manque)",

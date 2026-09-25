@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; img-src 'self' data: https:; media-src 'self'; connect-src 'self' https://xkfltqjbmolmdwdafzcx.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vendeuses — vous vendez, CLT livre : ce que vous gagnez, et nos vendeuses à Abidjan</title>
+<link rel="canonical" href="https://christlivraison.ci/vendeuses.html">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<meta name="theme-color" content="#1B4374">
+<meta name="description" content="Vous vendez à Abidjan (pagnes, cosmétiques, chaussures, alimentation…) ? Christ Livraison & Transport récupère chez vous, livre à vos clientes, encaisse pour vous et vous reverse avec un reçu. Première livraison offerte. Et l'annuaire de nos vendeuses, par secteur et commune.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Vendeuses — vous vendez, CLT livre">
+<meta property="og:description" content="Votre colis livré, votre argent rendu, et vous savez où en est chaque colis. Première livraison offerte.">
+<meta property="og:url" content="https://christlivraison.ci/vendeuses.html">
+<meta property="og:image" content="https://christlivraison.ci/images/og-image.png">
+<meta property="og:locale" content="fr_FR">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      integrity="sha384-t1nt8BQoYMLFN5p42tRAtuAAFQaCQODekUVeKKZrEnEyp4H2R0RHFz0KWpmj7i8g"
+      crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>
+  /* LA PAGE VENDEUSES (chantier Q, lot S-2, 25/09/2026). Une question : « qu'est-ce que je gagne ? » — puis
+     « Nos vendeuses » : l'annuaire des clientes qui ont dit oui, validé par le bureau (site_vendeuses). */
+  :root{ --navy:#1B4374; --navy-dark:#123252; --orange:#E26313; --orange-light:#FBE2CE; --muted:#4E6B8A; --white:#fff; --bg:#F7F8FA; --tint:#EEF3F9; --vert:#167A42; }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html{ scroll-behavior:smooth; }
+  body{ font-family:Inter, system-ui, sans-serif; color:#1f2a37; line-height:1.6; background:var(--white); }
+  a{ color:inherit; text-decoration:none; }
+  .container{ max-width:1100px; margin:0 auto; padding:0 20px; }
+  section{ padding:60px 0; }
+  h1,h2,h3{ font-family:Poppins, Inter, sans-serif; color:var(--navy); }
+  .section-title{ font-size:28px; text-align:center; margin-bottom:10px; }
+  .section-sub{ text-align:center; color:var(--muted); max-width:680px; margin:0 auto 34px; font-size:16px; }
+  header{ position:sticky; top:0; z-index:50; background:rgba(255,255,255,.95); backdrop-filter:blur(6px); border-bottom:1px solid #e6ebf2; }
+  nav{ display:flex; align-items:center; justify-content:space-between; max-width:1100px; margin:0 auto; padding:12px 20px; gap:12px; }
+  .brand{ display:flex; align-items:center; gap:10px; font-weight:800; color:var(--navy); font-size:16px; }
+  .brand .mark{ width:38px; height:38px; border-radius:11px; background:var(--navy); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px; letter-spacing:1px; }
+  .nav-links{ display:flex; gap:22px; list-style:none; }
+  .nav-links a{ font-weight:600; font-size:14px; color:var(--navy); min-height:44px; display:inline-flex; align-items:center; }
+  .btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:48px; padding:12px 20px; border-radius:26px; font-weight:700; font-size:15px; border:2px solid transparent; cursor:pointer; transition:.15s; }
+  .btn-wa{ background:#25D366; color:#fff; box-shadow:0 8px 20px rgba(37,211,102,.28); }
+  .btn-outline{ border-color:var(--navy); color:var(--navy); background:#fff; }
+  .burger{ display:none; background:none; border:none; font-size:22px; color:var(--navy); min-width:44px; min-height:44px; }
+  .hero{ background:linear-gradient(120deg, #1B4374 0%, #2A5B94 100%); color:#fff; padding:64px 0 56px; }
+  .hero .pill{ display:inline-block; background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.3); padding:6px 14px; border-radius:999px; font-size:12.5px; font-weight:700; letter-spacing:.5px; margin-bottom:16px; }
+  .hero h1{ color:#fff; font-size:38px; line-height:1.15; max-width:760px; margin-bottom:14px; }
+  .hero p{ font-size:17px; max-width:640px; opacity:.94; margin-bottom:24px; }
+  .hero-actions{ display:flex; gap:12px; flex-wrap:wrap; }
+  .gagnez{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
+  .gagnez div{ background:var(--tint); border-radius:16px; padding:22px; }
+  .gagnez i{ font-size:24px; color:var(--orange); margin-bottom:10px; display:block; }
+  .gagnez h3{ font-size:17px; margin-bottom:6px; }
+  .gagnez p{ font-size:14.5px; color:#33475B; }
+  .etapes{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; counter-reset:e; }
+  .etape{ background:#fff; border-radius:16px; padding:18px; border:1.5px solid #e3e9f1; }
+  .etape::before{ counter-increment:e; content:counter(e); display:inline-flex; width:32px; height:32px; border-radius:50%; background:var(--navy); color:#fff; align-items:center; justify-content:center; font-weight:800; margin-bottom:10px; }
+  .etape h3{ font-size:15.5px; margin-bottom:4px; }
+  .etape p{ font-size:14px; color:#33475B; }
+  .video-wrap{ display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+  .video-wrap figure{ margin:0; text-align:center; }
+  .video-wrap video{ width:100%; max-width:280px; aspect-ratio:390/844; border-radius:22px; border:6px solid var(--navy-dark); background:#0f1e33; }
+  .video-wrap figcaption{ font-size:14px; color:var(--muted); margin-top:10px; }
+  .tarifs{ background:var(--tint); }
+  .tarifs-boite{ background:#fff; border-radius:18px; padding:22px 24px; max-width:760px; margin:0 auto; }
+  .tarifs-boite table{ width:100%; border-collapse:collapse; font-size:14.5px; }
+  .tarifs-boite td, .tarifs-boite th{ padding:10px 8px; border-bottom:1px solid #e6ebf2; text-align:left; }
+  .tarifs-boite th{ color:var(--navy); }
+  .filtres{ display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-bottom:22px; }
+  .filtre{ min-height:44px; padding:8px 14px; border-radius:999px; border:1.5px solid var(--navy); background:#fff; color:var(--navy); font:inherit; font-size:14px; font-weight:600; cursor:pointer; }
+  .filtre.actif{ background:var(--navy); color:#fff; }
+  .vendeuses{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  .vendeuse{ background:#fff; border-radius:16px; padding:18px; border:1.5px solid #e3e9f1; box-shadow:0 6px 18px rgba(27,67,116,.05); display:flex; flex-direction:column; gap:6px; }
+  .vendeuse h3{ font-size:17px; }
+  .vendeuse .secteur{ display:inline-block; background:var(--orange-light); color:#7A3A0C; font-size:12px; font-weight:700; padding:3px 10px; border-radius:999px; }
+  .vendeuse .produits{ font-size:14.5px; color:#33475B; }
+  .vendeuse .meta{ font-size:13px; color:var(--muted); }
+  .vendeuse .actions{ margin-top:auto; padding-top:10px; display:flex; gap:8px; flex-wrap:wrap; }
+  .vendeuse .actions .btn{ min-height:44px; padding:8px 14px; font-size:14px; }
+  .vide{ text-align:center; color:var(--muted); padding:30px 0; }
+  .devenir{ background:var(--navy); color:#fff; text-align:center; }
+  .devenir h2{ color:#fff; font-size:26px; margin-bottom:10px; }
+  .devenir p{ max-width:640px; margin:0 auto 22px; opacity:.94; }
+  footer{ background:#0F2745; color:#cfd9e6; padding:34px 0 22px; font-size:13.5px; }
+  footer a{ color:#fff; }
+  footer .lignes{ display:flex; gap:22px; flex-wrap:wrap; justify-content:center; margin-bottom:14px; }
+  footer .bas{ text-align:center; opacity:.8; font-size:12.5px; }
+  @media(max-width:900px){
+    .gagnez, .etapes, .video-wrap, .vendeuses{ grid-template-columns:1fr; }
+    .hero h1{ font-size:29px; }
+    .nav-links{ display:none; position:absolute; top:64px; left:0; right:0; background:#fff; flex-direction:column; gap:0; padding:8px 20px 14px; border-bottom:1px solid #e6ebf2; }
+    .nav-links.open{ display:flex; }
+    .burger{ display:inline-flex; align-items:center; justify-content:center; }
+    .nav-actions{ display:none; }
+    section{ padding:44px 0; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <nav>
+    <a href="index.html" class="brand"><span class="mark">CLT</span><span>Christ Livraison &amp; Transport</span></a>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="#gagnez">Ce que vous gagnez</a></li>
+      <li><a href="#comment">Comment ça marche</a></li>
+      <li><a href="#tarifs">Tarifs</a></li>
+      <li><a href="#nos-vendeuses">Nos vendeuses</a></li>
+      <li><a href="index.html">Le site</a></li>
+    </ul>
+    <div class="nav-actions"><a class="btn btn-wa" href="https://wa.me/2250546818640?text=Bonjour%20CLT%2C%20je%20vends%20%C3%A0%20Abidjan%20et%20je%20veux%20essayer%20la%20premi%C3%A8re%20livraison%20offerte." target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i> Commencer</a></div>
+    <button type="button" class="burger" id="burgerBtn" aria-label="Menu"><i class="fa-solid fa-bars"></i></button>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="container">
+    <span class="pill">POUR LES VENDEUSES ET LES BOUTIQUES</span>
+    <h1>Vous vendez. On livre, on encaisse, on vous reverse — avec un reçu.</h1>
+    <p>On passe chez vous, on livre à vos clientes partout à Abidjan, on encaisse l'article pour vous, et votre argent est sur votre relevé le soir même. Vous suivez chaque colis sur votre téléphone. Première livraison offerte.</p>
+    <div class="hero-actions">
+      <a class="btn btn-wa" href="https://wa.me/2250546818640?text=Bonjour%20CLT%2C%20je%20vends%20%C3%A0%20Abidjan%20et%20je%20veux%20essayer%20la%20premi%C3%A8re%20livraison%20offerte." target="_blank" rel="noopener" data-site-compteur="whatsapp-vendeuses"><i class="fa-brands fa-whatsapp"></i> Commencer sur WhatsApp</a>
+      <a class="btn btn-outline" href="#nos-vendeuses" style="background:transparent;color:#fff;border-color:rgba(255,255,255,.7);">Voir nos vendeuses</a>
+    </div>
+  </div>
+</section>
+
+<section id="gagnez">
+  <div class="container">
+    <h2 class="section-title">Ce que vous gagnez</h2>
+    <div class="gagnez">
+      <div><i class="fa-solid fa-clock"></i><h3>Vos après-midi</h3><p>Plus de trajets, plus d'attente devant une porte. Vous vendez, vous préparez, on passe.</p></div>
+      <div><i class="fa-solid fa-receipt"></i><h3>Votre argent, rendu et prouvé</h3><p>L'article est encaissé pour vous ; le net est sur votre relevé le soir même ; chaque reversement a un reçu numéroté.</p></div>
+      <div><i class="fa-solid fa-location-dot"></i><h3>Vous savez où est chaque colis</h3><p>Récupéré, en livraison, livré (avec la preuve), non livré (avec le motif, dans l'heure). Un problème ? Vous le signalez sous le colis, CLT répond.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="comment" style="background:var(--bg);">
+  <div class="container">
+    <h2 class="section-title">Comment ça marche, en trois écrans</h2>
+    <div class="etapes">
+      <div class="etape"><h3>Vous annoncez</h3><p>« Demander un passage » : le jour, combien de colis, une précision. Ou vous enregistrez vos colis vous-même, à partir des photos des étiquettes.</p></div>
+      <div class="etape"><h3>On récupère et on livre</h3><p>Le livreur vous prévient, passe, et livre à vos clientes. Chaque étape est sur votre téléphone, avec la photo ou le code à la remise.</p></div>
+      <div class="etape"><h3>Vous êtes payée</h3><p>Le relevé dit ce que CLT vous doit ; le reversement arrive avec son reçu. Un colis revient ? Vous le savez, et vous confirmez quand il vous est rendu.</p></div>
+    </div>
+    <div class="video-wrap" style="margin-top:30px;">
+      <figure><video controls preload="none" playsinline muted poster="app/aide/videos/cliente-demander-passage.jpg"><source src="app/aide/videos/cliente-demander-passage.mp4" type="video/mp4"></video><figcaption>Demander un passage</figcaption></figure>
+      <figure><video controls preload="none" playsinline muted poster="app/aide/videos/cliente-suivre-signaler.jpg"><source src="app/aide/videos/cliente-suivre-signaler.mp4" type="video/mp4"></video><figcaption>Suivre un colis, signaler un problème</figcaption></figure>
+      <figure><video controls preload="none" playsinline muted poster="app/aide/videos/cliente-releve.jpg"><source src="app/aide/videos/cliente-releve.mp4" type="video/mp4"></video><figcaption>Mon relevé, mes reçus</figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<section id="tarifs" class="tarifs">
+  <div class="container">
+    <h2 class="section-title">Le prix, annoncé avant</h2>
+    <p class="section-sub">Une livraison dans Abidjan se paie selon la commune de destination. Pas d'abonnement, pas de frais cachés ; la grille complète est sur la page Tarifs.</p>
+    <div class="tarifs-boite">
+      <table>
+        <tr><th>Livraison dans Abidjan</th><td>à partir de 1 000 F, jusqu'à 3 000 F selon la commune (Songon comprise)</td></tr>
+        <tr><th>Expédition vers l'intérieur</th><td>on récupère, on remet à la compagnie de transport ; retrait à la gare d'arrivée</td></tr>
+        <tr><th>Encaissement pour vous</th><td>compris : l'argent de l'article est à vous, reversé avec un reçu</td></tr>
+        <tr><th>Première livraison</th><td>offerte, pour voir</td></tr>
+      </table>
+      <p style="margin-top:12px;font-size:13.5px;color:var(--muted);"><a href="tarifs.html" style="color:var(--navy);font-weight:700;">Voir la grille par commune →</a></p>
+    </div>
+  </div>
+</section>
+
+<section id="nos-vendeuses">
+  <div class="container">
+    <h2 class="section-title">Nos vendeuses</h2>
+    <p class="section-sub">Elles vendent, CLT livre. Chacune a dit oui pour être ici ; commandez-leur directement sur WhatsApp, et dites que vous venez de CLT.</p>
+    <div class="filtres" id="filtres"></div>
+    <div class="vendeuses" id="vendeuses"><div class="vide">Chargement…</div></div>
+  </div>
+</section>
+
+<section class="devenir">
+  <div class="container">
+    <h2>Vous vendez ? Votre première livraison est offerte.</h2>
+    <p>Dites-nous votre commune et ce que vous vendez : on vous ouvre votre espace en deux minutes. Et si vous le souhaitez, votre boutique rejoint « Nos vendeuses ».</p>
+    <a class="btn btn-wa" href="https://wa.me/2250546818640?text=Bonjour%20CLT%2C%20je%20vends%20%C3%A0%20Abidjan%20et%20je%20veux%20essayer%20la%20premi%C3%A8re%20livraison%20offerte." target="_blank" rel="noopener" data-site-compteur="whatsapp-vendeuses"><i class="fa-brands fa-whatsapp"></i> Commencer sur WhatsApp</a>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="lignes">
+      <a href="https://wa.me/2250546818640" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i> 05 46 81 86 40</a>
+      <a href="tel:+2250779604761"><i class="fa-solid fa-phone"></i> 07 79 60 47 61</a>
+      <a href="index.html">Le site</a>
+      <a href="livreurs.html">Devenir livreur</a>
+      <a href="express.html">CLT Express</a>
+      <a href="app/login.html">Espace cliente</a>
+    </div>
+    <div class="bas">CHRIST LIVRAISON &amp; TRANSPORT SARL — Abidjan, Cocody Lycée technique — RCCM CI-ABJ-03-2026-B12-00184 · <a href="conditions-generales.html">Conditions générales</a> · <a href="politique-confidentialite.html">Confidentialité</a></div>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('burgerBtn').addEventListener('click', function () { document.getElementById('navLinks').classList.toggle('open'); });
+  /* Les secteurs : les mêmes clés que app/activite-de-la-cliente.js (recopiées : le site ne charge pas l'application). */
+  var SECTEURS = { mode: 'Mode et vêtements', beaute: 'Beauté et cosmétiques', alimentation: 'Alimentation et boissons', electromenager: 'Électroménager', telephonie: 'Téléphonie et informatique', maison: 'Maison et décoration', enfants: 'Bébés et enfants', sante: 'Santé et bien-être', documents: 'Documents et courrier', autre: 'Autre' };
+  var toutes = [], filtre = '';
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
+  function wa(num, nom) { var n = String(num || '').replace(/[^\d]/g, ''); return n ? 'https://wa.me/' + n + '?text=' + encodeURIComponent('Bonjour ' + nom + ', je vous ai trouvée sur le site de CLT (christlivraison.ci). ') : ''; }
+  function depuis(ym) { if (!ym) return ''; var m = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre']; var p = ym.split('-'); return 'livrée par CLT depuis ' + m[Number(p[1]) - 1] + ' ' + p[0]; }
+  function dessiner() {
+    var box = document.getElementById('vendeuses'), f = document.getElementById('filtres');
+    var secteurs = {}; toutes.forEach(function (v) { if (v.secteur) secteurs[v.secteur] = (secteurs[v.secteur] || 0) + 1; });
+    f.innerHTML = '<button type="button" class="filtre' + (filtre ? '' : ' actif') + '" data-filtre="">Toutes (' + toutes.length + ')</button>' + Object.keys(secteurs).map(function (k) { return '<button type="button" class="filtre' + (filtre === k ? ' actif' : '') + '" data-filtre="' + esc(k) + '">' + esc(SECTEURS[k] || k) + ' (' + secteurs[k] + ')</button>'; }).join('');
+    f.querySelectorAll('[data-filtre]').forEach(function (b) { b.addEventListener('click', function () { filtre = b.dataset.filtre; dessiner(); }); });
+    var liste = toutes.filter(function (v) { return !filtre || v.secteur === filtre; });
+    if (!liste.length) { box.innerHTML = '<div class="vide">' + (toutes.length ? 'Aucune vendeuse dans ce secteur pour l\'instant.' : 'Les premières fiches arrivent bientôt. Vous vendez ? Écrivez-nous : votre boutique peut être ici.') + '</div>'; return; }
+    box.innerHTML = liste.map(function (v) {
+      return '<article class="vendeuse"><h3>' + esc(v.nom) + '</h3>' + (v.secteur ? '<span class="secteur">' + esc(SECTEURS[v.secteur] || v.secteur) + '</span>' : '') +
+        (v.produits ? '<div class="produits">' + esc(v.produits) + '</div>' : '') +
+        '<div class="meta">' + esc([v.commune, depuis(v.depuis), v.colis_livres >= 10 ? 'plus de ' + v.colis_livres + ' colis livrés' : ''].filter(Boolean).join(' · ')) + '</div>' +
+        '<div class="actions">' + (wa(v.whatsapp, v.nom) ? '<a class="btn btn-wa" target="_blank" rel="noopener" href="' + wa(v.whatsapp, v.nom) + '"><i class="fa-brands fa-whatsapp"></i> Commander chez elle</a>' : '') + (v.lien ? '<a class="btn btn-outline" target="_blank" rel="noopener" href="' + esc(v.lien) + '">Sa page ↗</a>' : '') + '</div></article>';
+    }).join('');
+  }
+  fetch('https://xkfltqjbmolmdwdafzcx.supabase.co/rest/v1/rpc/site_vendeuses', { method: 'POST', headers: { 'apikey': 'sb_publishable_wn9f6Way_wMzCVypmJo5zA_yWYPqJzP', 'Authorization': 'Bearer sb_publishable_wn9f6Way_wMzCVypmJo5zA_yWYPqJzP', 'Content-Type': 'application/json' }, body: '{}' })
+    .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+    .then(function (l) { toutes = Array.isArray(l) ? l : []; dessiner(); })
+    .catch(function () { toutes = []; dessiner(); });
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-site-compteur]'); if (!b) return;
+    try { fetch('https://xkfltqjbmolmdwdafzcx.supabase.co/rest/v1/site_visits', { method: 'POST', keepalive: true, headers: { 'apikey': 'sb_publishable_wn9f6Way_wMzCVypmJo5zA_yWYPqJzP', 'Authorization': 'Bearer sb_publishable_wn9f6Way_wMzCVypmJo5zA_yWYPqJzP', 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }, body: JSON.stringify({ visitor_id: 'clic', page: b.dataset.siteCompteur }) }).catch(function () {}); } catch (x) {}
+  });
+</script>
+</body>
+</html>
