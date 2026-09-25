@@ -64,8 +64,8 @@
     "envoyer-push": {
       "etat": "deployee",
       "empreinte": "99454c66d0f6b36906ffe98f88658b9037f614be999e7cca917779c924fbbe60",
-      "le": "2026-09-25",
-      "note": "v266 (lot P-4, dispatch) : à redéployer par Celtis (feuille de route § 2, dispatch-v266) — cette empreinte est celle du dépôt à la livraison."
+      "le": "2026-09-26",
+      "note": "Redéployée par Celtis le 26/09 (v266, dispatch) — vérifié dans Supabase : « updated 35 minutes ago »."
     },
     "finaliser-reset-password": {
       "etat": "deployee",
