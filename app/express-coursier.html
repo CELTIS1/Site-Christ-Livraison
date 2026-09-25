@@ -17,13 +17,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260925litiges">
+<link rel="stylesheet" href="style.css?v=20260925preuve">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260925litiges"></script>
+<script src="theme.js?v=20260925preuve"></script>
 <!-- La cloche 🔔 des notifications reçues (23/09/2026) : règle + écran, se posent seuls dans la barre du haut. -->
-<script src="notifications-recues.js?v=20260925litiges" defer></script>
-<script src="cloche.js?v=20260925litiges" defer></script>
-<script src="splash.js?v=20260925litiges"></script>
+<script src="notifications-recues.js?v=20260925preuve" defer></script>
+<script src="cloche.js?v=20260925preuve" defer></script>
+<script src="splash.js?v=20260925preuve"></script>
 <style>
   .topbar{ background:#0D9488; }
   .topbar .brand .logo-mark{ background:#0b6e64; }
@@ -308,7 +308,7 @@
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <!-- La peau v2 (25/09/2026, lot 18) : chargée EN DERNIER, elle recouvre style.css et le style de la page. -->
 <style>:root{ --clt-accent-encre:#0F766E; }</style>
-<link rel="stylesheet" href="peau.css?v=20260925litiges">
+<link rel="stylesheet" href="peau.css?v=20260925preuve">
 </head>
 <body>
 
@@ -642,12 +642,13 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260925litiges"></script>
-<script src="lib/reclamations.js?v=20260925litiges"></script>
-<script src="express-litige.js?v=20260925litiges"></script>
-<script src="express-config.js?v=20260925litiges"></script>
-<script src="recharges-express.js?v=20260925litiges"></script>
-<script src="biometric-lock.js?v=20260925litiges"></script>
+<script src="clt-common.js?v=20260925preuve"></script>
+<script src="lib/reclamations.js?v=20260925preuve"></script>
+<script src="express-litige.js?v=20260925preuve"></script>
+  <script src="express-preuve.js?v=20260925preuve"></script>
+<script src="express-config.js?v=20260925preuve"></script>
+<script src="recharges-express.js?v=20260925preuve"></script>
+<script src="biometric-lock.js?v=20260925preuve"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -905,6 +906,7 @@
           ${active ? paiementCoursierHTML(c) : ''}
           ${photoThumbHTML(c)}
           ${chatBlock}
+          ${typeof CLTPreuve !== 'undefined' ? CLTPreuve.blocCoursierHTML(c) : ''}
           ${ratingClientBlockHTML(c)}
           ${typeof CLTLitige !== 'undefined' ? CLTLitige.blocHTML(c) : ''}
         </div>
@@ -1042,6 +1044,17 @@
         const sub = (course && course.paiement_mode === 'wave')
           ? 'Cette course est payée en ligne (Wave). Confirmez que le colis a bien été livré. Votre part sera créditée sur votre portefeuille.'
           : 'Confirmez que la course a bien été livrée et payée en espèces par le client.';
+        /* LA PREUVE DE LIVRAISON (lot P-3, 25/09/2026) : le coursier tape les 4 chiffres que le client a
+           donnés au destinataire ; sans le code, il livre « sans preuve » et le client confirmera.
+           Sans express-preuve.js (ou sans la fonction en base), on livre comme avant. */
+        if (typeof CLTPreuve !== 'undefined') {
+          const choix = await CLTPreuve.demanderCode(course, (essai) => CLTPreuve.livrer(id, currentUser.id, essai));
+          if (!choix) return;
+          btn.disabled = true; btn.textContent = 'Enregistrement...';
+          cltToast(choix.code ? 'Livraison validée, code vérifié.' : 'Livrée sans preuve : le client doit confirmer la réception.', { type: choix.code ? 'success' : 'warning' });
+          await loadMesCourses();
+          return;
+        }
         if (!(await cltConfirm({ title: 'Confirmer la livraison ?', sub, okLabel: 'Marquer livrée' }))) return;
         btn.disabled = true; btn.textContent = 'Enregistrement...';
         const { error } = await supabaseClient.from('express_courses')

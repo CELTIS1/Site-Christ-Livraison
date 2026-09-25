@@ -19,6 +19,22 @@
     annulee:    { label: 'Annulée', court: 'Annulée', ordre: 4, couleur: '#c0392b', fond: '#fce4e2' },
   };
 
+  /* La preuve de livraison (lot P-3) en un mot dans la chronologie. */
+  function preuveMot(c) {
+    if (c.preuve_type === 'code') return ' · code vérifié';
+    if (c.preuve_type === 'sans') return ' · SANS CODE, à confirmer par le client';
+    if (c.preuve_type === 'client') return ' · sans code';
+    return '';
+  }
+  /* preuve(course) → { cle, texte, aSurveiller } pour le bandeau du dossier et la file du bureau. */
+  function preuve(c) {
+    if (!c || c.status !== 'livree') return { cle: 'aucune', texte: '', aSurveiller: false };
+    if (c.preuve_type === 'code') return { cle: 'code', texte: 'Preuve : code vérifié par le coursier', aSurveiller: false };
+    if (c.preuve_type === 'client') return { cle: 'client', texte: 'Preuve : réception confirmée par le client', aSurveiller: false };
+    if (c.preuve_type === 'sans') return { cle: 'sans', texte: 'Livrée sans code : le client n\'a pas encore confirmé', aSurveiller: true };
+    return { cle: 'ancienne', texte: 'Sans preuve (course d\'avant le code)', aSurveiller: false };
+  }
+
   /* chronologie(course, { noms: { [id]: 'Nom' } }) → [{ quand, quoi, qui }] du plus ancien au plus récent. */
   function chronologie(c, o) {
     const noms = (o && o.noms) || {};
@@ -27,7 +43,8 @@
     if (c.created_at) e.push({ quand: c.created_at, quoi: 'Course commandée', qui: nom(c.client_id, 'le client') });
     if (c.accepted_at) e.push({ quand: c.accepted_at, quoi: 'Acceptée', qui: nom(c.coursier_id, 'un coursier') });
     if (c.recuperee_at) e.push({ quand: c.recuperee_at, quoi: 'Colis récupéré', qui: nom(c.coursier_id, 'le coursier') });
-    if (c.delivered_at) e.push({ quand: c.delivered_at, quoi: 'Livrée' + ((c.paiement_mode || 'especes') === 'especes' ? ' · payée en espèces' : ' · payée en ligne'), qui: nom(c.coursier_id, 'le coursier') });
+    if (c.delivered_at) e.push({ quand: c.delivered_at, quoi: 'Livrée' + ((c.paiement_mode || 'especes') === 'especes' ? ' · payée en espèces' : ' · payée en ligne') + preuveMot(c), qui: nom(c.coursier_id, 'le coursier') });
+    if (c.preuve_type === 'client' && c.preuve_at) e.push({ quand: c.preuve_at, quoi: 'Réception confirmée par le client', qui: nom(c.client_id, 'le client') });
     if (c.cancelled_at) e.push({ quand: c.cancelled_at, quoi: 'Annulée' + (c.annulation_motif ? ' — ' + c.annulation_motif : ''), qui: c.annulation_par ? nom(c.annulation_par, 'le bureau') : nom(c.client_id, 'le client') });
     if (c.note_client) e.push({ quand: c.delivered_at || c.created_at, quoi: 'Le client note le coursier ' + c.note_client + '/5' + (c.avis_client ? ' — « ' + c.avis_client + ' »' : ''), qui: nom(c.client_id, 'le client') });
     if (c.note_coursier) e.push({ quand: c.delivered_at || c.created_at, quoi: 'Le coursier note le client ' + c.note_coursier + '/5' + (c.avis_coursier ? ' — « ' + c.avis_coursier + ' »' : ''), qui: nom(c.coursier_id, 'le coursier') });
@@ -75,5 +92,5 @@
     return n;
   }
 
-  window.CLTExpressDossier = { STATUTS, chronologie, argent, attente, gestesDuBureau, compterParStatut };
+  window.CLTExpressDossier = { STATUTS, chronologie, argent, attente, gestesDuBureau, compterParStatut, preuve };
 })();

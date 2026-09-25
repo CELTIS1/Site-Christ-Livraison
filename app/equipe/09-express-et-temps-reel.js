@@ -144,6 +144,7 @@ async function ouvrirDossierExpress(id) {
     <ol class="express-chrono">${chrono.map(e => `<li><span class="express-chrono__quand">${escapeHTML(fmt(e.quand))}</span> <span>${escapeHTML(e.quoi)}</span> <span class="meta">— ${escapeHTML(e.qui)}</span></li>`).join('') || '<li class="meta">rien encore</li>'}</ol>
     <h3 class="panel-subtitle" style="font-size:15px;margin:14px 0 6px;">Argent</h3>
     <div class="express-dossier__argent">${escapeHTML(argent.phrase)} · ${course.distance_km || '?'} km</div>
+    ${(() => { const p = D && D.preuve ? D.preuve(course) : null; return p && p.texte ? `<div class="express-dossier__preuve express-dossier__preuve--${p.cle}">${p.aSurveiller ? '⚠️ ' : '🔐 '}${escapeHTML(p.texte)}</div>` : ''; })()}
     <h3 class="panel-subtitle" style="font-size:15px;margin:14px 0 6px;">Échanges et trajet</h3>
     <div class="meta">${(messages || []).length} message${(messages || []).length > 1 ? 's' : ''} dans le chat · ${(positions || []).length} position${(positions || []).length > 1 ? 's' : ''} enregistrée${(positions || []).length > 1 ? 's' : ''}</div>
     ${(messages || []).length ? `<div class="express-dossier__chat">${messages.slice(-20).map(m => `<div class="express-msg"><span class="meta">${escapeHTML(fmt(m.created_at))} · ${escapeHTML(noms[m.sender_id] || (m.sender_id === course.client_id ? 'client' : 'coursier'))}</span><div>${escapeHTML(m.body || '')}</div></div>`).join('')}</div>` : ''}

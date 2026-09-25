@@ -121,6 +121,19 @@
       "aSavoir": "Pas encore : le remboursement (lot P-5) et la suspension automatique d'un coursier mal noté (lot P-3)."
     },
     {
+      "id": "express-preuve",
+      "espace": "express",
+      "titre": "Express : la preuve de livraison",
+      "enBref": "Un code à 4 chiffres par course : le client le donne au destinataire, le coursier le tape à la remise. Sans code, le client confirme.",
+      "ou": "Dossier de la course › ligne « Preuve » ; côté client, sous la course ; côté coursier, à « Marquer livrée »",
+      "etapes": [
+        "« Code vérifié » : la livraison ne se discute plus. « Réception confirmée par le client » : bien aussi.",
+        "« Sans code, à confirmer » : le coursier a livré sans le code et le client n'a pas confirmé — en cas de litige, la parole du client compte.",
+        "SQL du 25/09 à jouer : la table des codes (lisible par le client et le bureau, jamais par le coursier), les deux fonctions, la preuve figée."
+      ],
+      "aSavoir": "Décision `express-decisions` (1) appliquée : le code, recommandé ; la photo à la remise viendra en repli si le terrain le demande."
+    },
+    {
       "id": "l-argent",
       "espace": "bureau",
       "titre": "L'argent en deux écrans (et ce qui manque)",

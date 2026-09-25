@@ -504,6 +504,16 @@
             "« Répondre et clore » envoie votre phrase : la personne la lit sous sa course, dans son application."
           ],
           "astuce": "Répondre dans les 24 h : c'est le délai promis à l'écran, et l'un des dix chiffres du gérant compte les signalements qui dépassent."
+        },
+        {
+          "id": "equipe-preuve-express",
+          "titre": "La preuve de livraison d'une course Express",
+          "resume": "Dans le dossier d'une course livrée : « code vérifié », « réception confirmée par le client », ou « sans code, à confirmer ».",
+          "etapes": [
+            "Chaque course Express naît avec un code à 4 chiffres que seul le client (et vous) lisez ; le coursier le tape à la remise.",
+            "Dossier de la course › sous l'argent : la ligne « Preuve ». « Sans code, à confirmer » veut dire que le client n'a pas encore confirmé : en cas de litige, sa parole compte.",
+            "Le code d'une course en route se lit dans Supabase (table express_codes_livraison) si un client l'a perdu : donnez-le au client, jamais au coursier."
+          ]
         }
       ]
     },
@@ -573,6 +583,17 @@
             "Vous lisez ensuite, au même endroit : « reçu », « pris en charge », puis la réponse de CLT."
           ],
           "astuce": "Pour une urgence (coursier injoignable pendant la course), appelez CLT : le signalement, c'est pour ce qui se règle après."
+        },
+        {
+          "id": "express-code",
+          "titre": "Le code de livraison",
+          "resume": "Quatre chiffres sous votre course, à donner à la personne qui reçoit : le coursier les demande à la remise.",
+          "etapes": [
+            "Dès qu'un coursier a pris votre course, un code à 4 chiffres s'affiche sous elle, dans « Mes courses ».",
+            "Donnez-le à la personne qui reçoit le colis (par téléphone ou WhatsApp). Le coursier ne le connaît pas : il le lui demande à la remise.",
+            "Si le coursier a livré sans le code, un bouton « ✅ Confirmer la réception » apparaît sous la course : appuyez si le colis est bien arrivé ; sinon, « ⚠️ Signaler un problème »."
+          ],
+          "astuce": "Le code, c'est votre preuve : une course livrée « code vérifié » ne se discute plus."
         }
       ]
     },
@@ -653,6 +674,17 @@
             "Le bureau lit votre signalement dans « À traiter » et vous répond au même endroit dans les 24 h.",
             "Un incident (sécurité) : appelez CLT en plus, tout de suite."
           ]
+        },
+        {
+          "id": "coursier-code",
+          "titre": "Demander le code à la remise",
+          "resume": "« Marquer livrée » demande les 4 chiffres que le client a donnés au destinataire.",
+          "etapes": [
+            "À la remise, demandez à la personne les 4 chiffres reçus du client, tapez-les, « Valider la livraison ».",
+            "Faux code ? La feuille reste ouverte : refaites-vous confirmer les chiffres, ou appelez le client.",
+            "La personne n'a vraiment pas le code ? « Livrer sans preuve » : la course est livrée, mais « à confirmer par le client » — en cas de litige, sa parole compte."
+          ],
+          "astuce": "Le code vérifié vous protège aussi : personne ne pourra dire que le colis n'est pas arrivé."
         }
       ]
     },

@@ -86,7 +86,10 @@ await dodo(1200);
 verifier('récupérée, avec l\'heure', course.status === 'recuperee' && !!course.recuperee_at, course.status);
 await page.locator('#section-mescourses .btn-deliver-course').first().click();
 await dodo(500);
-await page.locator('#clt-modal-ok').click();
+// Lot P-3 : la livraison demande le code à 4 chiffres que le client a donné au destinataire.
+const codeDeLaCourse = monde.TABLES.express_codes_livraison.find(k => k.course_id === course.id).code;
+await page.locator('#preuve-feuille .preuve-saisie').fill(codeDeLaCourse);
+await page.locator('#preuve-feuille .preuve-valider').click();
 await dodo(1200);
 const wallet = monde.TABLES.express_wallets[0];
 verifier('livrée : la commission est débitée du solde du coursier (1 000 → 1 000 − commission), réglée', course.status === 'livree' && course.commission_reglee === true && wallet.solde === 1000 - course.commission_montant, JSON.stringify([course.status, wallet.solde, course.commission_montant]));

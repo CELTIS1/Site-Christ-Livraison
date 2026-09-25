@@ -1453,10 +1453,11 @@ v236 — 23 septembre 2026 — La barre du bas, fixée en bas
    v260, le 25/09/2026 — Mise en ligne plus rapide : parcours en trois tranches parallèles sur GitHub (TRANCHE=i/n dans lancer.mjs), publication qui attend 60 min au lieu de 20, limites de durée sur les jobs ; corrige les mises en ligne échouées de v258. Étiquette 20260925enligne.
    v261, le 25/09/2026 — Les contrôles GitHub repassent au vert : le banc a-confier lisait _sql-prive (absent sur GitHub) → garde existsSync ; nouveau banc les-bancs-tiennent-sans-le-dossier-prive ; bancs, lint et 47 parcours rejoués dans un dépôt vierge. Étiquette 20260925vert.
    v262, le 25/09/2026 — CLT Express, les gestes du bureau (chantier P, lot P-1, seconde moitié) : attribuer, confier à un autre, marquer récupérée / livrée à sa place, annuler avec motif, tracés (SQL 2026-09-25-express-les-gestes-du-bureau.sql, repli sans les colonnes) ; fenêtre du dossier réutilisée ; parcours de bout en bout 27. Étiquette 20260925gestes.
-   v263, le 25/09/2026 — CLT Express, litiges et support (chantier P, lot P-2) : express-litige.js (client et coursier), motifs dans lib/reclamations.js, vue « Litiges Express » dans À traiter (a-traiter.js, 12-les-retours.js), temps réel, dix chiffres ; SQL 2026-09-25-express-les-litiges.sql ; parcours les-litiges-express. Étiquette 20260925litiges. */
+   v263, le 25/09/2026 — CLT Express, litiges et support (chantier P, lot P-2) : express-litige.js (client et coursier), motifs dans lib/reclamations.js, vue « Litiges Express » dans À traiter (a-traiter.js, 12-les-retours.js), temps réel, dix chiffres ; SQL 2026-09-25-express-les-litiges.sql ; parcours les-litiges-express. Étiquette 20260925litiges.
+   v264, le 25/09/2026 — CLT Express, la preuve de livraison (chantier P, lot P-3, 1/2) : express-preuve.js (code à 4 chiffres lu par le client, tapé par le coursier, express_livrer_course ; sans code, le client confirme), preuve dans le dossier ; SQL 2026-09-25-express-la-preuve-de-livraison.sql ; parcours la-preuve-de-livraison. Étiquette 20260925preuve. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v263'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v264'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

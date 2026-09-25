@@ -90,7 +90,7 @@ export function nouveauMonde() {
     /* CLT Express (18/09/2026, point 5.5). Le tarif est celui relevé en production le 18/09 :
        500 F de base, 150 F du kilomètre. Un tarif inventé ici ferait un banc qui ne mesure rien. */
     express_config: [{ id: 1, tarif_base: 500, tarif_par_km: 150, commission_pct: 0.2, vitesse_moy_kmh: 18, delai_prise_en_charge_min: 10 }],
-    express_courses: [], express_messages: [], express_course_positions: [], express_reclamations: [],
+    express_courses: [], express_messages: [], express_course_positions: [], express_reclamations: [], express_codes_livraison: [],
     /* UN REÇU DE REVERSEMENT DÉJÀ ÉCRIT (18/09/2026, point 10.3), avec son numéro : la cliente
        Mariam a été payée pour son colis n°2, livré. C'est la pièce que les deux écrans impriment. */
     reversements_clientes: [{
@@ -286,6 +286,9 @@ export function nouveauMonde() {
         if (r.status === undefined) r.status = 'en_attente';
         if (r.commission_reglee === undefined) r.commission_reglee = false;
         if (r.paiement_mode === undefined) r.paiement_mode = 'especes';
+        // express_creer_code_livraison (AFTER INSERT, lot P-3) : le code à 4 chiffres naît avec la course.
+        (TABLES.express_codes_livraison ||= []).push({ course_id: r.id, code: r.__code || String(Math.floor(Math.random() * 10000)).padStart(4, '0'), created_at: maintenant });
+        delete r.__code;
       });
       (TABLES[table] ||= []).push(...rows);
       if (table === 'colis') rows.forEach(r => consommeLAvance(null, r, q.user, maintenant));
@@ -372,6 +375,32 @@ export function nouveauMonde() {
       }
       if (!c || c.status !== 'acceptee' || c.coursier_id !== user) return { data: null, error: { message: 'pas_rendable' } };
       Object.assign(c, { status: 'en_attente', coursier_id: null, accepted_at: null });
+      return { data: c, error: null };
+    }
+    /* express_livrer_course / express_confirmer_reception (lot P-3, 25/09/2026), comme le SQL. */
+    if (nom === 'express_livrer_course') {
+      const c = (TABLES.express_courses || []).find(x => x.id === (args && args.p_course));
+      if (!user) return { data: null, error: { message: 'non_connecte' } };
+      if (!c || c.coursier_id !== user) return { data: null, error: { message: 'pas_votre_course' } };
+      if (c.status !== 'recuperee') return { data: null, error: { message: 'transition_interdite: ' + c.status + ' -> livree' } };
+      if (c.paiement_mode === 'wave' && c.paiement_status !== 'paye') return { data: null, error: { message: 'paiement_en_attente' } };
+      const code = args.p_code != null && String(args.p_code).trim() !== '' ? String(args.p_code).trim() : null;
+      if (code) {
+        const k = (TABLES.express_codes_livraison || []).find(x => x.course_id === c.id);
+        if (!k) return { data: null, error: { message: 'pas_de_code' } };
+        if (k.code !== code) return { data: null, error: { message: 'code_incorrect' } };
+      }
+      const now = new Date().toISOString();
+      // Même chemin que l'UPDATE direct : commission débitée, delivered_at, journal.
+      const r = executer({ table: 'express_courses', op: 'update', valeurs: { status: 'livree', delivered_at: now, preuve_type: code ? 'code' : 'sans', preuve_at: code ? now : null }, filtres: [{ t: 'eq', c: 'id', v: c.id }], user });
+      return r.error ? { data: null, error: r.error } : { data: c, error: null };
+    }
+    if (nom === 'express_confirmer_reception') {
+      const c = (TABLES.express_courses || []).find(x => x.id === (args && args.p_course));
+      if (!user) return { data: null, error: { message: 'non_connecte' } };
+      if (!c || c.client_id !== user) return { data: null, error: { message: 'pas_votre_course' } };
+      if (c.status !== 'livree' || (c.preuve_type || 'sans') !== 'sans') return { data: null, error: { message: 'rien_a_confirmer' } };
+      Object.assign(c, { preuve_type: 'client', preuve_at: new Date().toISOString() });
       return { data: c, error: null };
     }
     if (nom === 'express_courses_proximite') {

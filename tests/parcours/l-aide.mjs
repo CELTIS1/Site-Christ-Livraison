@@ -96,7 +96,7 @@ const ex = await page.evaluate(() => { const b = document.querySelector('#clt-ai
 verifier('la boîte est claire : elle suit l\'application, pas le téléphone', ex.clair, JSON.stringify(ex).slice(0, 200));
 verifier('deux chapitres : « je commande une course » et « Pour tout le monde »', ex.sections.length === 2 && /je commande/i.test(ex.sections[0]), ex.sections.join(' | '));
 // 25/09/2026 (lot P-2) : sixième fiche, « Signaler un problème sur une course ».
-verifier('six fiches du client (commander, adresses, suivre, annuler, payer, signaler) — aucune du coursier', ex.ids.filter((i) => /^aide-express-/.test(i)).length === 6 && !ex.ids.some((i) => /^aide-coursier-/.test(i)), ex.ids.join(','));
+verifier('sept fiches du client (commander, adresses, suivre, annuler, payer, signaler, code) — aucune du coursier', ex.ids.filter((i) => /^aide-express-/.test(i)).length === 7 && !ex.ids.some((i) => /^aide-coursier-/.test(i)), ex.ids.join(','));
 await page.emulateMedia({ colorScheme: 'light' });
 
 verifier('aucune erreur sur tout le parcours', erreurs.length === 0, erreurs.join('\n       '));

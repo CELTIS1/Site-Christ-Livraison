@@ -4764,3 +4764,30 @@ html[data-theme="dark"] .litige-etat--resolue{ background:#1f3a2a; }
 html[data-theme="dark"] .litige-motif{ background:#1a2230; border-color:#3A4B60; }
 html[data-theme="dark"] .litige-motif.actuel{ background:#243247; border-color:#8FB8EC; }
 html[data-theme="dark"] .litige-texte{ background:#1a2230; border-color:#3A4B60; color:#E6ECF3; }
+
+/* LA PREUVE DE LIVRAISON EXPRESS (25/09/2026, chantier P, lot P-3). Le code que le client lit,
+   en gros chiffres espacés (il le lit au téléphone, à voix haute) ; l'état sous la course ; la
+   feuille où le coursier tape les 4 chiffres. */
+.preuve-code{ margin-top:8px; padding:10px 12px; border-radius:12px; background:#E8F1FB; border:1.5px dashed #1B4F8A; display:flex; align-items:center; gap:12px; }
+.preuve-code__chiffres{ font-size:26px; font-weight:800; letter-spacing:.35em; color:#0B2F55; font-variant-numeric:tabular-nums; padding-left:.15em; }
+.preuve-code__mot{ font-size:13px; line-height:1.4; color:#33475B; }
+.preuve-etat{ margin-top:8px; padding:8px 10px; border-radius:10px; background:#E3F6EA; font-size:13.5px; line-height:1.45; }
+.preuve-etat--sans{ background:#FDF3D6; }
+.preuve-etat .btn{ margin-top:8px; min-height:44px; }
+.preuve-corps{ padding:4px 18px 18px; }
+/* input.…[type] : plus précis que la règle des champs de peau.css, chargée après. */
+input.preuve-saisie[type="text"]{ display:block; width:100%; box-sizing:border-box; min-height:56px; padding:8px 12px; border:1.5px solid var(--border-strong); border-radius:12px; font:inherit; font-size:30px; font-weight:800; letter-spacing:.4em; text-align:center; font-variant-numeric:tabular-nums; }
+.preuve-saisie:focus{ outline:3px solid #8FB8EC; outline-offset:2px; border-color:var(--navy); }
+.preuve-erreur{ margin-top:8px; color:#B3261E; font-size:13.5px; font-weight:600; }
+.preuve-sans{ margin-top:10px; width:100%; min-height:44px; justify-content:center; white-space:normal; }
+.express-dossier__preuve{ margin-top:6px; padding:6px 10px; border-radius:10px; background:#E3F6EA; font-size:13.5px; }
+.express-dossier__preuve--sans{ background:#FDF3D6; }
+.express-dossier__preuve--ancienne{ background:#EEF0F3; }
+html[data-theme="dark"] .preuve-code{ background:#1E2A3B; border-color:#8FB8EC; }
+html[data-theme="dark"] .preuve-code__chiffres{ color:#E6ECF3; }
+html[data-theme="dark"] .preuve-code__mot{ color:#C5CFDB; }
+html[data-theme="dark"] .preuve-etat, html[data-theme="dark"] .express-dossier__preuve{ background:#1f3a2a; }
+html[data-theme="dark"] .preuve-etat--sans, html[data-theme="dark"] .express-dossier__preuve--sans{ background:#3a3320; }
+html[data-theme="dark"] .express-dossier__preuve--ancienne{ background:#243247; }
+html[data-theme="dark"] input.preuve-saisie[type="text"]{ background:#1a2230; border-color:#3A4B60; color:#E6ECF3; }
+html[data-theme="dark"] .preuve-erreur{ color:#F5A3A3; }

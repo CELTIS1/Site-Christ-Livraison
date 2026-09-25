@@ -42,7 +42,7 @@ await dodo(1500);
 // Sous charge (trois parcours en parallèle), le cadre peut arriver un peu après le dessin : on attend jusqu'à 8 s.
 for (let i = 0; i < 16; i++) { if (await carte(CLIENTE1).evaluate((el) => el.classList.contains('recap-client-card--a-voir')).catch(() => false)) break; await dodo(500); }
 verifier('après rechargement, la carte ouverte n\'est plus encadrée', await carte(CLIENTE2).evaluate((el) => !el.classList.contains('recap-client-card--a-voir')));
-verifier('mais celle qu\'on n\'a pas ouverte l\'est encore', await carte(CLIENTE1).evaluate((el) => el.classList.contains('recap-client-card--a-voir')), 'mémoire avant rechargement : ' + memoire);
+verifier('mais celle qu\'on n\'a pas ouverte l\'est encore', await carte(CLIENTE1).evaluate((el) => el.classList.contains('recap-client-card--a-voir')), 'mémoire avant rechargement : ' + memoire + ' ; après : ' + await page.evaluate(() => JSON.stringify({ memoire: localStorage.getItem('clt:equipe:points-a-voir'), jour: typeof recapGetDate === 'function' ? recapGetDate() : null, cartes: [...document.querySelectorAll('#recap-body .recap-client-card[data-fid]')].map(e => e.dataset.fid.slice(-1) + (e.classList.contains('recap-client-card--a-voir') ? '*' : '')).join(',') })));
 
 titre('4. Une demande de passage : la notification conduit à SA ligne, et programmer la traite');
 /* 22/09/2026, Celtis : « on reçoit la notification mais on ne sait pas laquelle, et on a du mal
