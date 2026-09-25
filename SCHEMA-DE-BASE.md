@@ -79,8 +79,9 @@ chacun sur son périmètre.
 ## Fonctions ouvertes aux visiteurs (sans compte)
 
 `suivi_colis(numero, quatre_chiffres)` (suivi public, limité par `suivi_tentatives`),
-`site_chiffres()` (ordres de grandeur arrondis : « 60+ » commerçants, « 1 000+ » colis), et
-l'insertion dans `site_visits`. Tout le reste exige un compte.
+`site_chiffres()` (ordres de grandeur arrondis : « 60+ » commerçants, « 1 000+ » colis),
+`site_chiffres_mois()` (les quatre totaux du mois de l'accueil, 25/09), `site_vendeuses()` (les fiches
+consenties et validées, 25/09), et l'insertion dans `site_visits`. Tout le reste exige un compte.
 
 ## Fichiers (Storage)
 

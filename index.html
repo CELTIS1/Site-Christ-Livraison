@@ -1738,11 +1738,12 @@
       .catch(function(){ return secours(); });
   }
 
-  /* S-1 (25/09/2026) : les chiffres en direct. site_chiffres() ne rend que des totaux (rien de nominatif). */
-  function chargerChiffres(){
+  /* S-1 (25/09/2026) : les chiffres du mois, en direct. site_chiffres_mois() ne rend que des totaux (rien de
+     nominatif). Distinct de chargerChiffres() (16/09, les ordres de grandeur des textes) — corrigé le 26/09. */
+  function chargerChiffresDuMois(){
     var URL_BASE = "https://xkfltqjbmolmdwdafzcx.supabase.co", CLE = "sb_publishable_wn9f6Way_wMzCVypmJo5zA_yWYPqJzP";
     var f = function(n){ return Number(n || 0).toLocaleString('fr-FR'); };
-    fetch(URL_BASE + '/rest/v1/rpc/site_chiffres', { method: 'POST', headers: { 'apikey': CLE, 'Authorization': 'Bearer ' + CLE, 'Content-Type': 'application/json' }, body: '{}' })
+    fetch(URL_BASE + '/rest/v1/rpc/site_chiffres_mois', { method: 'POST', headers: { 'apikey': CLE, 'Authorization': 'Bearer ' + CLE, 'Content-Type': 'application/json' }, body: '{}' })
       .then(function(r){ return r.ok ? r.json() : Promise.reject(r.status); })
       .then(function(c){
         if (!c) return;
@@ -1754,7 +1755,7 @@
         var n = document.getElementById('preuve-note'); if (n && c.a_jour_le) n.textContent = 'Chiffres réels de notre application, au ' + new Date(c.a_jour_le).toLocaleDateString('fr-FR') + '.';
       }).catch(function(){ /* sans réseau ou sans la fonction : les tirets restent */ });
   }
-  chargerChiffres();
+  chargerChiffresDuMois();
   /* Ce qu'on mesure (S-1) : les clics sur « Commencer sur WhatsApp », comptés sans rien d'autre (stats_visites, si présent). */
   document.addEventListener('click', function(e){
     var b = e.target.closest('[data-site-compteur]'); if (!b) return;
