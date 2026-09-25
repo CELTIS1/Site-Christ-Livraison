@@ -1404,6 +1404,13 @@ window.cltDefileur = cltDefileur; window.cltDefilerEnHaut = cltDefilerEnHaut;
 
       // Décalage au-dessus de la barre d'onglets basse, si la page en a une.
       if (document.querySelector(".clt-bottomnav")) btn.classList.add("clt-haut--barre");
+      // Et sa hauteur réelle, publiée pour ce qui doit s'arrêter au-dessus d'elle (le panneau des notifications, 26/09).
+      (function publierBarre() {
+        var barre = document.querySelector(".clt-bottomnav");
+        var mesurer = function () { var h = barre && getComputedStyle(barre).display !== "none" ? barre.getBoundingClientRect().height : 0; document.documentElement.style.setProperty("--clt-barre-h", Math.round(h) + "px"); };
+        if (!barre) return;
+        mesurer(); window.addEventListener("resize", mesurer);
+      })();
 
       /* « ALLER EN BAS », SON JUMEAU — au bureau seulement. (21/09/2026, Celtis : « quand il y a
          beaucoup de colis, c'est assez lassant : un bouton pour aller en bas directement ».)

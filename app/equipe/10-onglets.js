@@ -276,6 +276,7 @@
     document.getElementById('bottomnav-feuille')?.setAttribute('hidden', '');
     document.getElementById('bottomnav-voile')?.setAttribute('hidden', '');
     document.getElementById('bottomnav-plus')?.setAttribute('aria-expanded', 'false');
+    document.body.classList.remove('clt-feuille-plus-ouverte');
   }
   function majBoutonPlus(key){
     const lib = document.getElementById('bottomnav-plus-libelle');
@@ -315,6 +316,9 @@
       const ouvert = !feuille.hidden;
       feuille.hidden = ouvert; voile.hidden = ouvert;
       plus.setAttribute('aria-expanded', String(!ouvert));
+      // Tant que la feuille est dépliée, les ronds flottants (assistant, Remonter, Aller en bas) s'effacent :
+      // le rond de l'assistant cachait « Bureau » (Celtis, 26/09).
+      document.body.classList.toggle('clt-feuille-plus-ouverte', !ouvert);
     });
     /* Express n'apparaît que pour l'admin, et cela se décide APRÈS le dessin de la barre : la
        feuille suit le bouton d'origine au lieu de figer son état. */
