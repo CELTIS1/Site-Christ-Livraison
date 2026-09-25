@@ -64,9 +64,15 @@ verifier('style : lignes ≥ 44 px, retard en orange encre, mode nuit', /\.confi
 verifier('20 fichiers d\'équipe (19-a-confier.js compté par decoupage-de-config)', /19-a-confier/.test(lire('tests/decoupage-de-config.test.mjs')));
 
 console.log('\n3. La base');
-const sql = lire('_sql-prive/2026-09-25-la-tournee-garde-le-colis-en-attente.sql');
-verifier('colis_en_main_a_la_creation ne fait plus naître « récupéré » un colis dont la cliente a une tournée ce jour-là', /create or replace function public\.colis_en_main_a_la_creation\(\)/.test(sql) && /programmations_collecte/.test(sql) && /not exists/.test(sql));
-verifier('le script se vérifie lui-même (select … as ok)', /as ok/.test(sql));
+// Le dossier _sql-prive ne part jamais sur GitHub (ignoré par git) : là-bas, cette partie est sautée —
+// comme dans gestion-la-nuit-et-la-dette. Le 25/09, l'oubli de cette garde a fait rougir les
+// contrôles GitHub de v257 à v260 : « ENOENT _sql-prive/… ».
+const cheminSql = path.join(RACINE, '_sql-prive/2026-09-25-la-tournee-garde-le-colis-en-attente.sql');
+if (fs.existsSync(cheminSql)) {
+  const sql = fs.readFileSync(cheminSql, 'utf8');
+  verifier('colis_en_main_a_la_creation ne fait plus naître « récupéré » un colis dont la cliente a une tournée ce jour-là', /create or replace function public\.colis_en_main_a_la_creation\(\)/.test(sql) && /programmations_collecte/.test(sql) && /not exists/.test(sql));
+  verifier('le script se vérifie lui-même (select … as ok)', /as ok/.test(sql));
+} else console.log('  ⏭️  dossier privé absent : SQL non vérifié.');
 
 console.log(`\n${reussies} vérifications réussies, ${echouees} en échec.`);
 if (echouees) process.exit(1);

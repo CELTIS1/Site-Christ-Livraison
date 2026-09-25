@@ -1450,10 +1450,11 @@ v236 — 23 septembre 2026 — La barre du bas, fixée en bas
    v257, le 25/09/2026 — Créer un colis, puis le confier (chantier N, lot 17, C22) : bloc « À confier » en tête de l'onglet Colis (règle app/a-confier.js, écran equipe/19-a-confier.js), ligne sans photo dans la saisie, « À confier plus tard » respecté ; SQL : la tournée garde le colis en attente. Étiquette 20260925confier.
    v258, le 25/09/2026 — La peau v2 (chantier N, lot 18, C21) : app/peau.css chargée en dernier par les huit pages, deux jetons par espace (--clt-accent, --clt-accent-encre) ; fond uni, barre unie, cartes sans bordure, boutons en aplat, onglets d'une règle avec icônes en trait ; lampes de contraste et d'audit repassées. Étiquette 20260925peau.
    v259, le 25/09/2026 — CLT Express, le dossier d'une course (chantier P, lot P-1, première moitié) : règle app/express-dossier.js, fiche dans Équipe › Express, statut « récupérée » retrouvé, attente par course ; premier parcours de bout en bout commander → accepter → récupérer → livrer → noter ; croix des fenêtres à 44 px. Étiquette 20260925express.
-   v260, le 25/09/2026 — Mise en ligne plus rapide : parcours en trois tranches parallèles sur GitHub (TRANCHE=i/n dans lancer.mjs), publication qui attend 60 min au lieu de 20, limites de durée sur les jobs ; corrige les mises en ligne échouées de v258. Étiquette 20260925enligne. */
+   v260, le 25/09/2026 — Mise en ligne plus rapide : parcours en trois tranches parallèles sur GitHub (TRANCHE=i/n dans lancer.mjs), publication qui attend 60 min au lieu de 20, limites de durée sur les jobs ; corrige les mises en ligne échouées de v258. Étiquette 20260925enligne.
+   v261, le 25/09/2026 — Les contrôles GitHub repassent au vert : le banc a-confier lisait _sql-prive (absent sur GitHub) → garde existsSync ; nouveau banc les-bancs-tiennent-sans-le-dossier-prive ; bancs, lint et 47 parcours rejoués dans un dépôt vierge. Étiquette 20260925vert. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v260'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v261'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 
