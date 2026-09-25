@@ -4903,3 +4903,11 @@ html[data-theme="dark"] .mdl-nom small, html[data-theme="dark"] .mdl-pied { colo
 /* LA MARQUE DU PARTENAIRE (25/09/2026, lot U) — sur chaque carte d'un colis de Générale CI. */
 .colis-partenaire { display: inline-block; font-size: 13px; font-weight: 700; line-height: 1.5; padding: 0 8px; border-radius: 999px; background: #EDE7FB; color: #4C2A99; margin-right: 6px; vertical-align: middle; }
 html[data-theme="dark"] .colis-partenaire { background: #2C2346; color: #D7C8FF; }
+
+/* QUI A SOLDÉ QUOI (25/09/2026, lot V) — sous le colis, et le récapitulatif en bas du point. */
+.finance-colis-solde { font-size: 13px; line-height: 1.45; color: #1B4374; background: #EEF3FA; border-radius: 8px; padding: 6px 9px; margin: 6px 0 2px; }
+.finance-colis-solde--manque { color: #8A3A09; background: #FBEFE4; }
+.soldes-resume { margin: 10px 0 4px; padding: 10px 12px; border-radius: 12px; background: #EEF3FA; color: #1B4374; font-size: 13.5px; line-height: 1.5; }
+.soldes-resume ul { margin: 6px 0 0; padding-left: 18px; } .soldes-resume li { margin: 3px 0; font-size: 13px; }
+html[data-theme="dark"] .finance-colis-solde, html[data-theme="dark"] .soldes-resume { background: #182A42; color: #BCD4F5; }
+html[data-theme="dark"] .finance-colis-solde--manque { background: #3A2A18; color: #F5C38E; }

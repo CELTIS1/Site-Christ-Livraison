@@ -1277,3 +1277,82 @@ function echapperAttribut(s) {
     .replace(/>/g, '&gt;');
 }
 
+
+/* --------------------------------------------------------------------------------------------
+   QUI A SOLDÉ QUOI — 25 septembre 2026, lot V
+   --------------------------------------------------------------------------------------------
+   Celtis : « quand dans le point du livreur un montant n'est pas marqué, il faut qu'on voie tout
+   ce qui a été soldé et par la personne qui l'a fait (article comme livraison) ; lever tout doute
+   et toute confusion, dans les points des livreurs et des fournisseurs ».
+
+   Trois cases retirent un montant de la poche du livreur. Chacune dit maintenant POURQUOI le
+   montant manque, COMBIEN, et QUI l'a décidé QUAND (colis.trace_soldes, rempli par la base au
+   moment où la case se coche). Pour les colis cochés avant le 26/09, la base ne sait pas qui l'a
+   fait : on le dit, on ne devine pas. Une seule fonction, lue par le point du livreur (écran et
+   PDF) et par le relevé de la cliente (écran, WhatsApp, Excel, PDF) : ils disent la même chose.
+   -------------------------------------------------------------------------------------------- */
+const SOLDES_ROLES = { admin: 'bureau', equipe: 'bureau', fournisseur: 'cliente', livreur: 'livreur', systeme: 'système' };
+function soldesDuColis(c) {
+  if (!c || estExpedition(c)) return [];
+  const trace = (c.trace_soldes && typeof c.trace_soldes === 'object') ? c.trace_soldes : {};
+  const qui = (cle) => {
+    const t = trace[cle];
+    if (!t) return { par: '', le: null, avantSuivi: true };
+    if (t.avant_suivi) return { par: '', le: null, avantSuivi: true };
+    const role = SOLDES_ROLES[t.role] || t.role || '';
+    return { par: (t.nom || 'Inconnu') + (role ? ' (' + role + ')' : ''), le: t.le || null, avantSuivi: false, aLaSaisie: !!t.a_la_saisie };
+  };
+  const out = [];
+  if (c.article_non_encaisse && montantArticleColis(c)) out.push(Object.assign({ cle: 'article', quoi: 'Article', pourquoi: 'soldé chez la vendeuse : le livreur ne l’encaisse pas', montant: montantArticleColis(c) }, qui('article_non_encaisse')));
+  if (c.livraison_payee && montantLivraisonColis(c)) out.push(Object.assign({ cle: 'livraison', quoi: 'Livraison', pourquoi: 'payée d’avance chez la vendeuse : retenue sur son relevé, pas encaissée par le livreur', montant: montantLivraisonColis(c) }, qui('livraison_payee')));
+  if (c.statut === 'livre' && !c.livraison_payee && c.livraison_non_encaissee && montantLivraisonColis(c)) out.push(Object.assign({ cle: 'manque', quoi: 'Livraison', pourquoi: 'non encaissée à la remise (manque)', montant: montantLivraisonColis(c) }, qui('livraison_non_encaissee')));
+  return out;
+}
+function soldeQuandTexte(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d)) return '';
+  const p = (n) => String(n).padStart(2, '0');
+  // L'heure d'Abidjan (UTC) : c'est là que le geste a été fait, et c'est l'heure que lit l'équipe.
+  return p(d.getUTCDate()) + '/' + p(d.getUTCMonth() + 1) + ' à ' + p(d.getUTCHours()) + ' h ' + p(d.getUTCMinutes());
+}
+/* Chez la vendeuse (Celtis, 25/09 : « chez la vendeuse ce n'est pas nécessaire, il suffit qu'elle
+   voie ce qui est soldé ») : ce qui est soldé, sans qui ni quand, et sans le « manque » du livreur,
+   qui ne regarde que CLT. `pourCliente` le demande. */
+function soldeTexte(s, pourCliente) {
+  const m = (typeof formatMontant === 'function' ? formatMontant(s.montant) : String(s.montant)) || '';
+  if (pourCliente) {
+    if (s.cle === 'article') return 'Article ' + m + ' soldé chez vous : rien à reverser sur ce colis.';
+    if (s.cle === 'livraison') return 'Livraison ' + m + ' payée d’avance chez vous : retenue sur votre relevé.';
+    return '';
+  }
+  const qui = s.avantSuivi ? 'coché avant le 26/09 — auteur non enregistré'
+    : (s.aLaSaisie ? 'coché à la saisie par ' : 'coché par ') + s.par + (s.le ? ', le ' + soldeQuandTexte(s.le) : '');
+  return s.quoi + ' ' + m + ' ' + s.pourquoi + ' — ' + qui + '.';
+}
+/* Le récapitulatif en bas d'un point : combien de colis, combien d'article et de livraison ne sont
+   PAS dans la poche du livreur, et pourquoi. Vide quand il n'y a rien à expliquer. */
+function soldesResume(colis) {
+  const r = { nb: 0, article: 0, livraison: 0, manque: 0, lignes: [] };
+  (colis || []).forEach((c) => {
+    const s = soldesDuColis(c);
+    if (!s.length) return;
+    r.nb++;
+    s.forEach((x) => { if (x.cle === 'article') r.article += x.montant; else if (x.cle === 'livraison') r.livraison += x.montant; else r.manque += x.montant; r.lignes.push({ colis: c, solde: x }); });
+  });
+  return r;
+}
+function soldesColisHTML(c, pourCliente) {
+  return soldesDuColis(c).filter((s) => !pourCliente || s.cle !== 'manque').map((s) => `<div class="finance-colis-solde finance-colis-solde--${s.cle}">🔖 ${escapeHTML(soldeTexte(s, pourCliente))}</div>`).join('');
+}
+function soldesResumeHTML(colis) {
+  const r = soldesResume(colis);
+  if (!r.nb) return '';
+  const m = (n) => formatMontant(n) || '0 FCFA';
+  const parts = [];
+  if (r.article) parts.push('articles soldés chez la vendeuse ' + m(r.article));
+  if (r.livraison) parts.push('livraisons payées d’avance ' + m(r.livraison));
+  if (r.manque) parts.push('livraisons non encaissées ' + m(r.manque));
+  return `<div class="soldes-resume"><strong>Pas encaissé par le livreur : ${r.nb} colis</strong> — ${escapeHTML(parts.join(' · '))}.
+    <ul>${r.lignes.map((l) => `<li><b>${escapeHTML(l.colis.numero || '')}</b> ${escapeHTML(soldeTexte(l.solde))}</li>`).join('')}</ul></div>`;
+}

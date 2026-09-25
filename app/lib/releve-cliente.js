@@ -108,7 +108,8 @@ function releveCliente(colis) {
     // négatif serait illisible pour la vendeuse qui le lit sur son relevé.
     fraisAdditionnels: Number(fraisAdditionnelsADevoir(c)) || 0,
     fraisAdditionnelsMotif: (c && c.frais_additionnels_motif) || '',
-    observation: (c && c.observation) || '',
+    // « Ce qui est soldé » (25/09/2026, lot V) : écrit dans l'observation, pour que les quatre sorties le portent. Sans qui ni quand : c'est le document de la vendeuse.
+    observation: [(c && c.observation) || ''].concat((typeof soldesDuColis === 'function' ? soldesDuColis(c).map((x) => soldeTexte(x, true)) : [])).filter(Boolean).join(' · '),
   }));
   return {
     colonnes: RELEVE_COLONNES.slice(),

@@ -41,6 +41,20 @@
   ],
   "fiches": [
     {
+      "id": "qui-a-solde",
+      "espace": "gestion",
+      "titre": "Qui a soldé quoi (points et relevés)",
+      "enBref": "Quand un montant manque dans le point d'un livreur, la raison est écrite sous le colis : quoi, combien, qui l'a coché et quand.",
+      "ou": "Livreur › Finance ; Équipe › Suivi ; relevé de la cliente (écran, PDF, WhatsApp) ; carte du colis chez la cliente",
+      "etapes": [
+        "Sous chaque colis concerné : « 🔖 Article soldé chez la vendeuse — coché par Awa (cliente), le 24/09 à 10 h 12 ».",
+        "Sous le TOTAL du point : « Pas encaissé par le livreur : n colis », avec les montants et les numéros.",
+        "Chez la vendeuse (relevé et cartes) : seulement ce qui est soldé, sans qui ni quand."
+      ],
+      "aSavoir": "Trois cases retirent un montant du livreur : article soldé, livraison payée d'avance, livraison non encaissée (manque). La base note l'auteur et l'heure (Abidjan) depuis le 26/09 ; avant, elle dit « auteur non enregistré ». Décocher laisse une trace dans le journal.",
+      "version": "v283"
+    },
+    {
       "id": "partenaires",
       "espace": "gestion",
       "titre": "Les partenaires (Générale CI)",

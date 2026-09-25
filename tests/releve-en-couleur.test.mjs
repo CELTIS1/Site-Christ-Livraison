@@ -149,7 +149,7 @@ titre("L'observation du livreur a sa colonne, la dernière, sur le papier");
   verifier('sans observation, une chaîne vide', obs({}) === '' && obs(null) === '' && obs({ observation: '   ' }) === '');
   verifier('aDesObservations : vrai dès qu\'un colis en porte une, faux sinon', aDes([{}, { observation: 'x' }]) === true && aDes([{}, {}]) === false && aDes(null) === false);
   const point = blocDe(config, 'pointColisTableauCLT', 'config.js');
-  verifier('le point du livreur (PDF) a « Observation » en DERNIÈRE colonne, après « En main »', /concat\(\['En main', 'Observation'\]\)/.test(point) && /observationTexte\(c\) \|\| '—'/.test(point));
+  verifier('le point du livreur (PDF) a « Observation » en DERNIÈRE colonne, après « En main »', /concat\(\['En main', 'Observation'\]\)/.test(point) && /\[observationTexte\(c\)\]\.concat\(/.test(point) /* 25/09 : l'observation porte aussi « soldé par … » */);
   verifier("les colonnes d'argent s'arrêtent avant l'observation", /colonnesArgent: \[2, 3, 4, 5\]\.filter\(i => i < derniere\)/.test(point));
   verifier("la largeur restante se partage entre « Colis » et « Observation », plus large quand il y a des observations",
     /restantes\[0\] = avecObservations \? 0\.6 : 0\.82/.test(point) && /restantes\[derniere\] = avecObservations \? 0\.4 : 0\.18/.test(point));

@@ -922,6 +922,7 @@ ${eqBoutonsAppelHTML(c)}
 ${c.commune_recuperation ? `<div class="meta" style="color:var(--orange-encre-pastel, #A84608); font-weight:600;">📍 Récupération : ${escapeHTML(c.commune_recuperation)}${c.adresse_recuperation ? ' — ' + escapeHTML(c.adresse_recuperation) : ''}</div>` : ''}
 <div class="meta">${formatDate(c.created_at)}</div>
 ${c.observation ? `<div class="obs-display"><strong>Observation :</strong> ${escapeHTML(c.observation)}</div>` : ''}
+${typeof soldesColisHTML === 'function' ? soldesColisHTML(c) : ''}
 ${c.photo_livraison_url ? `<div class="meta">Preuve de livraison : <img src="${c.photo_livraison_url}" class="thumb" style="vertical-align:middle; margin-left:6px;" alt="Photo de preuve de livraison"></div>` : ''}
 </div>
 <div class="status-col">${statutBadgeHTML(c.statut, c)}</div>
@@ -1454,7 +1455,7 @@ if (cltPoserHTML(detail, `
 <tbody>
 ${rows.map(c => `
 <tr data-id="${c.id}">
-<td data-label="Colis"><div class="recap-colis-ou">${colisDestinationHTML(c)}</div>${colisDescriptionTexte(c) ? `<div class="recap-colis-quoi">📦 ${escapeHTML(colisDescriptionTexte(c))}</div>` : ''}</td>
+<td data-label="Colis"><div class="recap-colis-ou">${colisDestinationHTML(c)}</div>${colisDescriptionTexte(c) ? `<div class="recap-colis-quoi">📦 ${escapeHTML(colisDescriptionTexte(c))}</div>` : ''}${typeof soldesColisHTML === 'function' ? soldesColisHTML(c) : ''}</td>
 <td data-label="Client">${fournisseurLabel(c.fournisseur_id)}</td>
 <td data-label="Statut">${libelleStatut(c.statut, c)}</td>
 <td data-label="Article"><input type="number" class="compta-edit-article" min="0" step="any" value="${c.montant_article !== null && c.montant_article !== undefined ? c.montant_article : ''}"></td>

@@ -210,6 +210,7 @@ function financeColisHTML(colis, actionsHTML) {
             ${gare ? `<div><span>${escapeHTML(LIBELLE_FRAIS_EXPEDITION)}</span><strong style="color:${COULEUR_NEGATIF_CLT};">−${m(gare)}</strong></div>` : ''}
             <div><span>En main</span><strong style="color:${enMain ? '#1a7d3c' : '#6b7686'};">${enMain ? m(enMain) : '—'}</strong></div>
           </div>
+          ${typeof soldesColisHTML === 'function' ? soldesColisHTML(c) : ''}
           ${manque > 0 ? `<div class="finance-colis-alerte">⚠️ ${m(manque)} non encaissé sur ce colis pourtant remis.</div>` : ''}
           <!-- « Soldé » ne s'affiche que sur une expédition, et seulement quand il y a quelque
                chose à solder. Sur un colis d'Abidjan la ligne n'aurait aucun sens ; sur une
@@ -348,6 +349,7 @@ function financeTableauHTML(colis, options) {
             { texte: m(t.totalEnMain), couleur: '#1a7d3c', label: 'Total' },
           ]))}
         </table>
+        ${typeof soldesResumeHTML === 'function' ? soldesResumeHTML(colis) : ''}
       </div>`;
 }
 
@@ -401,7 +403,7 @@ function pointColisTableauCLT(colis, colonneGare, avecObservations, traces) {
       montantArticleColis(c) ? m(montantArticleColis(c)) : '—',
       montantLivraisonColis(c) ? m(montantLivraisonColis(c)) : '—',
     ].concat(colonneGare ? [gare ? '−' + m(gare) : '—'] : [])
-     .concat([enMain ? m(enMain) : '—', observationTexte(c) || '—']);
+     .concat([enMain ? m(enMain) : '—', [observationTexte(c)].concat((typeof soldesDuColis === 'function' ? soldesDuColis(c).map(soldeTexte) : [])).filter(Boolean).join(' · ') || '—']);
   });
   const restantes = {};
   restantes[0] = avecObservations ? 0.6 : 0.82;
@@ -462,7 +464,9 @@ function pointDuLivreurPlan(colis, options) {
   // une cliente que chez la suivante, et l'œil devait se recaler à chaque titre. Les colonnes
   // d'argent sont donc mesurées UNE FOIS sur les colis de toute la journée, et les mêmes largeurs
   // servent à tous les tableaux.
-  const avecObservations = aDesObservations(colis);
+  // Une mention « soldé par … » vit dans la colonne Observation (25/09/2026, lot V) : elle lui donne de la place.
+  const avecObservations = aDesObservations(colis) || (typeof soldesDuColis === 'function' && (colis || []).some(c => soldesDuColis(c).length));
+  const resumeSoldes = typeof soldesResume === 'function' ? soldesResume(colis) : { nb: 0 };
   const tableaux = lignes.map(l => pointColisTableauCLT(l.colis, colonneGare, avecObservations, l.traces));
   const rangeesJour = tableaux.reduce((acc, tb) => acc.concat(tb.body), []);
   tableaux.forEach(tb => { tb.colonnesArgentRangees = [].concat(tb.head, rangeesJour); });
@@ -483,6 +487,7 @@ function pointDuLivreurPlan(colis, options) {
     sections,
     apres: (phraseTraces ? [{ texte: 'Les colis reportés ou remis à leur journée d’origine figurent en gris sous leur cliente, avec la mention : ils ont été reçus ce jour-là mais n’ont rien à encaisser ce jour-là. Ils comptent dans la journée où ils sont traités.', taille: 8, couleur: [110, 118, 134] }] : []).concat([
       { texte: 'Somme qui doit rester en main : ' + m(t.totalEnMain), taille: 11.5, gras: true, couleur: [26, 125, 60] },
+    ]).concat(resumeSoldes.nb ? [{ texte: 'Pas encaissé par le livreur : ' + resumeSoldes.nb + ' colis — ' + [resumeSoldes.article ? 'articles soldés ' + m(resumeSoldes.article) : '', resumeSoldes.livraison ? 'livraisons payées d’avance ' + m(resumeSoldes.livraison) : '', resumeSoldes.manque ? 'livraisons non encaissées ' + m(resumeSoldes.manque) : ''].filter(Boolean).join(' · ') + '. Le détail (qui a coché, quand) est dans la colonne Observation.', taille: 9, couleur: [27, 67, 116], avant: 5 }] : []).concat([
       { texte: "Ce point reprend la journée telle qu'elle est enregistrée au moment de l'édition. "
              + "Il ne remplace pas la remise à la caisse : c'est la caisse qui arrête le compte.", taille: 8, avant: 7 },
     ]),
