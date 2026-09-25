@@ -47,7 +47,7 @@ if (ffprobe) {
 
 console.log('\n2. Rattachées aux fiches');
 const aide = JSON.parse(lire('app/aide.json'));
-const ESPACE = { livreur: 'livreur', cliente: 'fournisseur', equipe: 'equipe' };
+const ESPACE = { livreur: 'livreur', cliente: 'fournisseur', equipe: 'equipe', 'express-client': 'express-client', 'express-coursier': 'express-coursier' };
 const nonRattachees = [], mauvaisEspace = [];
 for (const v of index.videos) {
   let trouvee = null;

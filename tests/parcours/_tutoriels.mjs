@@ -11,7 +11,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { ouvrirNavigateur, dodo, RACINE } from './_navigateur.mjs';
-import { nouveauMonde, colis, iso, aujourdhui, ADMIN, LIVREUR, CLIENTE1, CLIENTE2 } from './_monde.mjs';
+import { nouveauMonde, colis, iso, aujourdhui, ADMIN, LIVREUR, CLIENTE1, CLIENTE2, CLIENT_EXPRESS } from './_monde.mjs';
 
 const SORTIE = path.join(RACINE, 'app', 'aide', 'videos');
 const BRUT = path.join(RACINE, 'tests', 'parcours', '_videos-brutes');
@@ -48,6 +48,13 @@ async function toucher(page, locator, attente) {
   await dodo(attente || 900);
 }
 async function taper(page, locator, texte) { await toucher(page, locator, 300); await locator.first().fill(texte); await dodo(700); }
+
+/* Un coursier Express pour les scénarios Express (25/09/2026). */
+const COURSIER_TUTO = 'cccccccc-cccc-4ccc-8ccc-ccccccccccc1';
+function coursierDuMonde(m, extra) {
+  m.PROFILS.push(Object.assign({ id: COURSIER_TUTO, full_name: 'Sery Coursier', role: 'coursier_express', phone: '2250700000031', status: 'valide', company_name: null, avatar_url: null, disponible_express: true, suppression_demandee_at: null, geoloc_consent_at: iso(-3), telephone_verifie_at: iso(-10) }, extra || {}));
+  (m.TABLES.express_wallets ||= []).push({ coursier_id: COURSIER_TUTO, solde: 2000 });
+}
 
 /* Les scénarios : un identifiant (= le nom du fichier), l'espace, le titre, et les gestes. */
 const SCENARIOS = [
@@ -148,7 +155,8 @@ const SCENARIOS = [
       await dire(p, '« Oui, bien récupéré » clôt le retour', '« Non, je ne l\'ai pas » ouvre un litige que CLT tranche');
       const oui = p.locator('[data-retour-reponse="confirme"], [data-retour-reponse="oui"]').first();
       if (await oui.count()) { await toucher(p, oui, 800); if (await p.locator('#clt-modal-ok').isVisible().catch(() => false)) await toucher(p, p.locator('#clt-modal-ok'), 1200); }
-      await dire(p, 'Le retour est clos ; l\'historique garde qui, quand', '');
+      await dire(p, 'Le retour est clos ; l\'historique garde qui, quand', 'Rien ne s\'efface : la date, l\'heure, la photo');
+      await dodo(2000);
     } },
   { id: 'equipe-que-faire', espace: 'equipe', titre: '« À traiter » : un non livré, « Que faire ? »', page: 'equipe.html', qui: ADMIN,
     monde(m) { m.TABLES.colis.push(colis(306, { numero: 'CLT-306', statut: 'non_livre', fournisseur_id: CLIENTE2, livreur_id: LIVREUR, created_at: iso(0, 8), recupere_at: iso(0, 9), non_livre_at: iso(0, 14), motif_non_livraison: 'client_absent', destination: 'Rue 12', commune_destination: 'Yopougon', destinataire_telephone: '0707000306' })); },
@@ -227,6 +235,210 @@ const SCENARIOS = [
       await toucher(p, p.locator('#clt-modal-ok'), 1500);
       await toucher(p, p.locator('[data-dossiers-segment="acceptes"]'), 1500);
     } },
+  /* ---- 25/09/2026 (demande de Celtis) : les gestes qui manquaient, dans tous les espaces ---- */
+  { id: 'livreur-rendre-retour', espace: 'livreur', titre: 'Un colis revenu : le rendre à la cliente', page: 'livreur.html', qui: LIVREUR,
+    monde(m) { m.TABLES.colis.push(colis(310, { statut: 'retour', fournisseur_id: CLIENTE1, livreur_id: LIVREUR, created_at: iso(-1, 7), recupere_at: iso(-1, 9), non_livre_at: iso(-1, 15), retour_at: iso(-1, 16), motif_non_livraison: 'client_absent', description: 'Sandales 38', montant_article: 6000, montant_livraison: 1000 })); },
+    async jouer(p) {
+      await dire(p, '« À rendre » : les colis revenus, cliente par cliente', 'Rendu le lendemain, deux jours au plus tard');
+      await toucher(p, p.locator('#clt-bottomnav [data-nav="retours"]'), 1500);
+      await dire(p, 'Chez la cliente : « Rendu à la cliente »', 'Une photo de la remise, si vous pouvez');
+      const b = p.locator('[data-etape="retour"][data-geste="rendu_cliente"]').first();
+      if (await b.count()) { await toucher(p, b, 1000); if (await p.locator('#clt-modal-ok').isVisible().catch(() => false)) await toucher(p, p.locator('#clt-modal-ok'), 1500); }
+      await dire(p, 'La cliente confirme de son côté ; le retour est clos', '« Déposé au bureau » si vous ne pouvez pas passer');
+    } },
+  { id: 'livreur-reporter', espace: 'livreur', titre: 'Reporter un colis à demain', page: 'livreur.html', qui: LIVREUR,
+    monde(m) { m.TABLES.colis.push(colis(311, { statut: 'recupere', fournisseur_id: CLIENTE2, livreur_id: LIVREUR, created_at: iso(0, 7), recupere_at: iso(0, 9), description: 'Ensemble enfant', montant_article: 9000, montant_livraison: 1500, destinataire_telephone: '2250701020399' })); },
+    async jouer(p) {
+      await toucher(p, p.locator('#clt-bottomnav [data-nav="mes"]'), 1200);
+      await dire(p, 'Le destinataire demande demain : « Plus d\'options », puis « Reporter »', 'Le colis sort du point de ce soir, sans être « non livré »');
+      await toucher(p, p.locator('.colis-item details.colis-plus summary').first(), 900);
+      const b = p.locator('.colis-item [data-reporter]').first();
+      if (await b.count()) { await toucher(p, b, 1200); const ok = p.locator('#clt-modal-ok'); if (await ok.isVisible().catch(() => false)) await toucher(p, ok, 1500); }
+      await dire(p, 'Demain, il revient dans « Ma journée », marqué « reporté »', 'Le bureau voit le report et son motif');
+    } },
+  { id: 'cliente-releve', espace: 'cliente', titre: 'Mon relevé : ce que CLT me doit', page: 'fournisseur.html', qui: CLIENTE1,
+    monde(m) { m.TABLES.colis.push(colis(312, { statut: 'livre', fournisseur_id: CLIENTE1, livreur_id: LIVREUR, created_at: iso(-1, 7), recupere_at: iso(-1, 8), livre_at: iso(-1, 11), description: 'Robe', montant_article: 15000, montant_livraison: 2000 })); },
+    async jouer(p) {
+      await dire(p, 'Relevé : vos ventes livrées, et ce que CLT vous reverse', 'Livré − frais de livraison = net dû');
+      await toucher(p, p.locator('#clt-bottomnav .nav[data-target="section-releve"]'), 1800);
+      await p.evaluate(() => { const s = document.getElementById('section-releve'); if (s) s.scrollIntoView({ block: 'start' }); }); await dodo(1500);
+      await dire(p, 'Chaque reversement a son reçu numéroté', 'Vous le retrouvez ici, avec la date et le mode');
+      await dodo(1500);
+    } },
+  { id: 'equipe-creer-confier', espace: 'equipe', titre: 'Créer un colis, puis le confier à un livreur', page: 'equipe.html', qui: ADMIN,
+    monde(m) { m.TABLES.programmations_collecte = m.TABLES.programmations_collecte.filter(x => x.fournisseur_id !== CLIENTE1); },
+    async jouer(p) {
+      await p.evaluate(() => showEquipeTab('colis')); await dodo(1500);
+      await dire(p, 'Colis › « Ajouter un colis sans photo »', 'Téléphone, article, livraison : trois champs');
+      await p.locator('#section-lot-colis summary').evaluate(s => { s.parentElement.open = true; }); await dodo(600);
+      await p.locator('#lot-fournisseur').selectOption(CLIENTE1); await p.locator('#lot-fournisseur').dispatchEvent('change'); await dodo(500);
+      await toucher(p, p.locator('#lot-ligne-vide'), 800);
+      await p.locator('#lot-livreur-collecte').selectOption(''); await p.locator('#lot-livreur-collecte').dispatchEvent('change');
+      const l = p.locator('#lot-lignes .lot-ligne').first();
+      await taper(p, l.locator('.lot-tel'), '0709090901'); await taper(p, l.locator('.lot-art'), '12000'); await taper(p, l.locator('.lot-liv'), '1500');
+      await dire(p, '« Enregistrer » : le colis est chez CLT, à confier', '');
+      await toucher(p, p.locator('#lot-enregistrer'), 2500);
+      await dire(p, 'En tête de l\'onglet : « À confier », par cliente', 'Choisissez le livreur, « Confier »');
+      await p.evaluate(() => { const b = document.getElementById('a-confier'); if (b) b.scrollIntoView({ block: 'start' }); }); await dodo(1200);
+      const sel = p.locator('#a-confier [data-confier-livreur]').first();
+      if (await sel.count()) { await sel.selectOption(LIVREUR); await sel.dispatchEvent('change'); await dodo(600); await toucher(p, p.locator('#a-confier [data-confier-ok]').first(), 1500); if (await p.locator('#clt-modal-ok').isVisible().catch(() => false)) await toucher(p, p.locator('#clt-modal-ok'), 1500); }
+      await dire(p, 'Le livreur le voit dans « Mes colis »', '');
+    } },
+  { id: 'equipe-express-dossier', espace: 'equipe', titre: 'CLT Express : le dossier d\'une course, attribuer', page: 'equipe.html', qui: ADMIN,
+    monde(m) { coursierDuMonde(m); m.TABLES.express_courses.push({ id: 'c-tuto', client_id: CLIENT_EXPRESS, coursier_id: null, status: 'en_attente', adresse_recuperation: 'Adjamé — Marché', adresse_livraison: 'Cocody — Riviera 3', description_colis: 'Un carton', created_at: iso(0, 8), prix_total: 1216, commission_montant: 182, montant_coursier: 1034, distance_km: 4.8 }); },
+    async jouer(p) {
+      await dire(p, 'Express › Courses : chaque course a un « Dossier »', 'Chronologie, argent, chat, preuve, gestes');
+      await p.evaluate(() => showEquipeTab('express')); await dodo(1500);
+      await p.evaluate(() => { const b = document.querySelector('[data-express-dossier="c-tuto"]'); if (b) b.scrollIntoView({ block: 'center' }); }); await dodo(800);
+      await toucher(p, p.locator('[data-express-dossier="c-tuto"]'), 1500);
+      await dire(p, 'Une course sans coursier : « Attribuer à un coursier »', 'Choisissez-le, puis le bouton ; il est prévenu');
+      const dos = p.locator('#express-dossier');
+      await p.evaluate(() => { const g = document.querySelector('#express-dossier .express-geste'); if (g) g.scrollIntoView({ block: 'center' }); }); await dodo(600);
+      await toucher(p, dos.locator('[data-express-geste="attribuer"]'), 600);
+      await dos.locator('.express-geste__coursier').selectOption(COURSIER_TUTO); await dos.locator('.express-geste__coursier').dispatchEvent('change'); await dodo(500);
+      await toucher(p, dos.locator('[data-express-geste="attribuer"]'), 600);
+      await toucher(p, p.locator('#clt-modal-ok'), 1800);
+      await dire(p, 'Acceptée à son nom, tracée « par le bureau »', 'Les gestes suivants : récupérée, livrée, annuler');
+    } },
+  { id: 'equipe-litiges-express', espace: 'equipe', titre: 'Un litige Express : je m\'en occupe, je réponds', page: 'equipe.html', qui: ADMIN,
+    monde(m) { coursierDuMonde(m); m.TABLES.express_courses.push({ id: 'c-lit', client_id: CLIENT_EXPRESS, coursier_id: COURSIER_TUTO, status: 'livree', adresse_recuperation: 'Adjamé — Marché', adresse_livraison: 'Cocody — Riviera 3', description_colis: 'Un carton', created_at: iso(0, 8), accepted_at: iso(0, 8), recuperee_at: iso(0, 9), delivered_at: iso(0, 10), prix_total: 1216, commission_montant: 182, montant_coursier: 1034, commission_reglee: true, distance_km: 4.8 }); m.TABLES.express_reclamations.push({ id: 'lit-t', course_id: 'c-lit', auteur_id: CLIENT_EXPRESS, auteur_role: 'client_express', motif: 'colis_abime', texte: 'Le carton est arrivé écrasé', statut: 'ouverte', created_at: iso(0, 11) }); },
+    async jouer(p) {
+      await dire(p, 'À traiter › « Litiges Express »', 'Qui, le motif, le mot du client, la course');
+      await p.evaluate(() => showEquipeTab('retours')); await dodo(1500);
+      await toucher(p, p.locator('[data-rt-vue="litiges"]'), 1200);
+      const ligne = p.locator('#retours-liste .rt-ligne[data-litige]').first();
+      await toucher(p, ligne.locator('[data-rt-quefaire]'), 1200);
+      await dire(p, '« Je m\'en occupe » : le client voit « pris en charge »', '« Ouvrir le dossier » donne tout pour trancher');
+      await toucher(p, ligne.locator('[data-litige-geste="en_cours"]'), 1800);
+      const ligne2 = p.locator('#retours-liste .rt-ligne[data-litige]').first();
+      if (!(await ligne2.locator('[data-litige-geste]').count())) await toucher(p, ligne2.locator('[data-rt-quefaire]'), 800);
+      await dire(p, '« Répondre et clore » : votre phrase, lue sous son signalement', '');
+      await toucher(p, ligne2.locator('[data-litige-geste="resolue"]'), 800);
+      await taper(p, p.locator('#clt-modal-input'), 'Vu la photo : la course vous est remboursée demain.');
+      await toucher(p, p.locator('#clt-modal-ok'), 1800);
+    } },
+  { id: 'equipe-coursiers-express', espace: 'equipe', titre: 'Les coursiers Express : note, suspendre, lever', page: 'equipe.html', qui: ADMIN,
+    monde(m) { coursierDuMonde(m); [4, 5, 3, 2, 3, 3, 2, 3, 3, 3].forEach((n, i) => m.TABLES.express_courses.push({ id: 'n-' + i, client_id: CLIENT_EXPRESS, coursier_id: COURSIER_TUTO, status: 'livree', adresse_recuperation: 'A', adresse_livraison: 'B', created_at: iso(-9 + i, 8), delivered_at: iso(-9 + i, 10), prix_total: 900, commission_montant: 135, montant_coursier: 765, commission_reglee: true, distance_km: 2, note_client: n })); },
+    async jouer(p) {
+      await dire(p, 'Express › « Coursiers » : la note sur les 10 dernières courses', 'Bon · À surveiller (sous 3,5) · Suspendu (sous 3)');
+      await p.evaluate(() => showEquipeTab('express')); await dodo(1500);
+      await p.evaluate(() => { const c = document.getElementById('express-coursiers-content'); if (c && !c.classList.contains('open')) toggleSection(document.querySelector('#section-express-coursiers .collapsible-header'), 'express-coursiers-content'); document.getElementById('section-express-coursiers').scrollIntoView({ block: 'start' }); }); await dodo(1500);
+      await dire(p, '« Suspendre » demande un motif, lu par le coursier', 'Il ne peut plus accepter de course');
+      await toucher(p, p.locator('#express-coursiers-list [data-coursier-suspendre]').first(), 800);
+      await taper(p, p.locator('#clt-modal-input'), 'Colis ouvert, deux plaintes');
+      await toucher(p, p.locator('#clt-modal-ok'), 1800);
+      await dire(p, 'Après l\'appel : « Lever la suspension »', 'Si la note reste sous 3, la base le suspendra à la prochaine note');
+      await toucher(p, p.locator('#express-coursiers-list [data-coursier-lever]').first(), 800);
+      await toucher(p, p.locator('#clt-modal-ok'), 1800);
+    } },
+  { id: 'equipe-sans-coursier', espace: 'equipe', titre: 'Une course que personne ne prend', page: 'equipe.html', qui: ADMIN,
+    monde(m) { coursierDuMonde(m); m.TABLES.express_courses.push({ id: 'c-sc', client_id: CLIENT_EXPRESS, coursier_id: null, status: 'en_attente', adresse_recuperation: 'Abobo — Gare', adresse_livraison: 'Cocody — Riviera', description_colis: 'Un carton', created_at: iso(0, 8), dispatch_vague: 3, dispatch_rayon_km: 12, bureau_alerte_at: iso(0, 8.3), prix_total: 1216, commission_montant: 182, montant_coursier: 1034, distance_km: 4.8 }); },
+    async jouer(p) {
+      await dire(p, 'Personne n\'a accepté après trois vagues : le bureau est alerté', 'À traiter › « Sans coursier »');
+      await p.evaluate(() => showEquipeTab('retours')); await dodo(1500);
+      await toucher(p, p.locator('[data-rt-vue="sans_coursier"]'), 1200);
+      const ligne = p.locator('#retours-liste .rt-ligne[data-course-sans-coursier]').first();
+      await toucher(p, ligne.locator('[data-rt-quefaire]'), 1200);
+      await dire(p, '« Ouvrir le dossier » : attribuer à un coursier, ou annuler', '« Appeler le client » pour le prévenir');
+      await toucher(p, ligne.locator('[data-course-geste="dossier"]'), 1800);
+      await p.evaluate(() => { const g = document.querySelector('#express-dossier .express-geste'); if (g) g.scrollIntoView({ block: 'center' }); }); await dodo(1500);
+    } },
+  { id: 'express-commander', espace: 'express-client', titre: 'Commander une course', page: 'express-client.html', qui: CLIENT_EXPRESS,
+    monde(m) { m.DRAPEAUX.exigerConditions = true; },
+    async jouer(p) {
+      await dire(p, 'La première fois : les conditions, sept lignes', '« J\'ai lu et j\'accepte »');
+      await toucher(p, p.locator('#conditions-feuille .conditions-accepter'), 1500);
+      await dire(p, '1. D\'où, vers où : la commune, puis l\'adresse', 'Posez une épingle si vous pouvez : le coursier arrive droit');
+      await p.evaluate(() => { const s = document.getElementById('course-pickup-commune'); s.value = 'Adjamé'; s.dispatchEvent(new Event('change', { bubbles: true })); }); await dodo(500);
+      await taper(p, p.locator('#course-pickup-adresse'), 'Marché, porte 3');
+      await p.evaluate(() => { const s = document.getElementById('course-dropoff-commune'); s.value = 'Cocody'; s.dispatchEvent(new Event('change', { bubbles: true })); }); await dodo(500);
+      await taper(p, p.locator('#course-dropoff-adresse'), 'Riviera 3, immeuble Alpha');
+      await dire(p, '2. Qui reçoit : le nom et le téléphone', 'Le coursier l\'appelle en arrivant');
+      await taper(p, p.locator('#course-dest-nom'), 'Koffi'); await taper(p, p.locator('#course-dest-tel'), '0701020304');
+      await dire(p, '3. Le colis : quoi, sa valeur, rien d\'interdit', 'Jusqu\'à 50 000 F ; au-dessus, appelez CLT');
+      await taper(p, p.locator('#course-description'), 'Une enveloppe de documents');
+      await taper(p, p.locator('#course-valeur'), '15000');
+      await toucher(p, p.locator('#course-objets-ok'), 800);
+      await dire(p, '4. Le prix s\'affiche ; « Commander », puis confirmer', '');
+      await toucher(p, p.locator('#btn-new-course'), 900);
+      await toucher(p, p.locator('#clt-modal-ok'), 2000);
+      await dire(p, 'Un coursier proche est prévenu ; vous suivez tout dans « Mes courses »', '');
+    } },
+  { id: 'express-suivre-code', espace: 'express-client', titre: 'Suivre ma course, donner le code de livraison', page: 'express-client.html', qui: CLIENT_EXPRESS,
+    monde(m) { coursierDuMonde(m); m.TABLES.express_courses.push({ id: 'c-suivi', client_id: CLIENT_EXPRESS, coursier_id: COURSIER_TUTO, status: 'acceptee', adresse_recuperation: 'Adjamé — Marché', adresse_livraison: 'Cocody — Riviera 3', description_colis: 'Une enveloppe', created_at: iso(0, 8), accepted_at: iso(0, 8), latitude_recuperation: 5.35, longitude_recuperation: -4.02, latitude_livraison: 5.36, longitude_livraison: -3.99, prix_total: 1216, commission_montant: 182, montant_coursier: 1034, distance_km: 4.8 }); m.TABLES.express_codes_livraison.push({ course_id: 'c-suivi', code: '0472', created_at: iso(0, 8) }); },
+    async jouer(p) {
+      await dire(p, 'Mes courses : la frise dit où en est le coursier', 'Acceptée → récupérée → livrée');
+      await toucher(p, p.locator('#clt-bottomnav [data-target="section-courses"]'), 1500);
+      await dire(p, 'Le coursier : son nom, appeler, WhatsApp, sa note', 'Et sa position sur la carte pendant la course');
+      await dodo(1500);
+      await dire(p, 'Le code de livraison : 4 chiffres à donner à la personne qui reçoit', 'Le coursier les demande à la remise — c\'est votre preuve');
+      await p.evaluate(() => { const e = document.querySelector('.preuve-code'); if (e) e.scrollIntoView({ block: 'center' }); }); await dodo(2000);
+      await dire(p, '« Discuter avec le coursier » pour une précision', '');
+      const chat = p.locator('[data-chat-toggle]').first(); if (await chat.count()) await toucher(p, chat, 1500);
+    } },
+  { id: 'express-signaler-noter', espace: 'express-client', titre: 'Après la livraison : noter, ou signaler un problème', page: 'express-client.html', qui: CLIENT_EXPRESS,
+    monde(m) { coursierDuMonde(m); m.TABLES.express_courses.push({ id: 'c-fin', client_id: CLIENT_EXPRESS, coursier_id: COURSIER_TUTO, status: 'livree', adresse_recuperation: 'Adjamé — Marché', adresse_livraison: 'Cocody — Riviera 3', description_colis: 'Une enveloppe', created_at: iso(0, 8), accepted_at: iso(0, 8), recuperee_at: iso(0, 9), delivered_at: iso(0, 10), preuve_type: 'code', preuve_at: iso(0, 10), prix_total: 1216, commission_montant: 182, montant_coursier: 1034, commission_reglee: true, distance_km: 4.8 }); },
+    async jouer(p) {
+      await toucher(p, p.locator('#clt-bottomnav [data-target="section-courses"]'), 1200);
+      await p.evaluate(() => document.querySelectorAll('details.courses-terminees').forEach(d => { d.open = true; })); await dodo(800);
+      await dire(p, 'Une course livrée est sous « Terminées » : notez le coursier', 'Sa note aide les autres clients');
+      const etoile = p.locator('.rating-block .star').nth(4); if (await etoile.count()) { await toucher(p, etoile, 600); const env = p.locator('.rating-block .rating-submit').first(); if (await env.count()) await toucher(p, env, 1500); }
+      await dire(p, 'Un problème ? « ⚠️ Signaler un problème »', 'Un motif, un mot ; CLT répond sous la course dans les 24 h');
+      await toucher(p, p.locator('[data-litige-signaler]').first(), 900);
+      await toucher(p, p.locator('#litige-feuille .litige-motif[data-motif="colis_abime"]'), 700);
+      await taper(p, p.locator('#litige-feuille .litige-texte'), 'Le carton est arrivé écrasé');
+      await toucher(p, p.locator('#litige-feuille .litige-envoyer'), 1800);
+      await dire(p, '« Signalement reçu » : la réponse du bureau viendra ici', '');
+    } },
+  { id: 'coursier-accepter', espace: 'express-coursier', titre: 'Me mettre disponible, accepter une course', page: 'express-coursier.html', qui: COURSIER_TUTO,
+    monde(m) { coursierDuMonde(m, { disponible_express: false }); m.TABLES.express_courses.push({ id: 'c-dispo', client_id: CLIENT_EXPRESS, coursier_id: null, status: 'en_attente', adresse_recuperation: 'Adjamé — Marché', adresse_livraison: 'Cocody — Riviera 3', description_colis: 'Un carton', created_at: iso(0, 8), latitude_recuperation: 5.33, longitude_recuperation: -4.02, latitude_livraison: 5.36, longitude_livraison: -3.99, prix_total: 1216, commission_montant: 182, montant_coursier: 1034, distance_km: 4.8 }); },
+    async jouer(p) {
+      await dire(p, '« Je suis disponible » : les courses proches vous sont proposées', 'Avec la localisation, les plus proches d\'abord');
+      await toucher(p, p.locator('label.switch'), 2500);
+      await dire(p, 'Une course : le trajet, la distance, votre part, le colis', '« Accepter » — le premier qui accepte la prend');
+      await toucher(p, p.locator('#disponibles-list .btn-accept-course').first(), 900);
+      if (await p.locator('#clt-modal-ok').isVisible().catch(() => false)) await toucher(p, p.locator('#clt-modal-ok'), 1500);
+      await dire(p, 'Elle est dans « Mes courses » ; le client est prévenu', 'Itinéraire, appeler, WhatsApp, discuter');
+      await toucher(p, p.locator('#clt-bottomnav [data-target="section-mescourses"]'), 1800);
+    } },
+  { id: 'coursier-livrer-code', espace: 'express-coursier', titre: 'Récupérer, puis livrer avec le code', page: 'express-coursier.html', qui: COURSIER_TUTO,
+    monde(m) { coursierDuMonde(m); m.TABLES.express_courses.push({ id: 'c-livr', client_id: CLIENT_EXPRESS, coursier_id: COURSIER_TUTO, status: 'acceptee', adresse_recuperation: 'Adjamé — Marché', adresse_livraison: 'Cocody — Riviera 3', description_colis: 'Un carton', destinataire_nom: 'Mme Koné', created_at: iso(0, 8), accepted_at: iso(0, 8), prix_total: 1216, commission_montant: 182, montant_coursier: 1034, distance_km: 4.8 }); m.TABLES.express_codes_livraison.push({ course_id: 'c-livr', code: '0472', created_at: iso(0, 8) }); },
+    async jouer(p) {
+      await toucher(p, p.locator('#clt-bottomnav [data-target="section-mescourses"]'), 1200);
+      await dire(p, '1. Chez l\'expéditeur : « J\'ai récupéré le colis »', 'Le client voit « colis récupéré »');
+      await toucher(p, p.locator('.btn-recup-course').first(), 800);
+      await toucher(p, p.locator('#clt-modal-ok'), 1500);
+      await dire(p, '2. À la remise : « Marquer livrée » demande le code', 'Les 4 chiffres que le client a donnés à la personne qui reçoit');
+      await toucher(p, p.locator('.btn-deliver-course').first(), 900);
+      await taper(p, p.locator('#preuve-feuille .preuve-saisie'), '0472');
+      await toucher(p, p.locator('#preuve-feuille .preuve-valider'), 1800);
+      await dire(p, 'Livrée, code vérifié : votre commission est débitée du solde', 'Sans le code : « livrer sans preuve », le client confirme');
+    } },
+  { id: 'coursier-recharger', espace: 'express-coursier', titre: 'Recharger mon solde', page: 'express-coursier.html', qui: COURSIER_TUTO,
+    monde(m) { coursierDuMonde(m); m.TABLES.express_wallets = [{ coursier_id: COURSIER_TUTO, solde: 0 }]; m.TABLES.express_config[0].solde_minimum = 500; m.TABLES.express_config[0].momo_wave = '0700000000'; },
+    async jouer(p) {
+      await dire(p, 'Solde : la commission de chaque course est débitée ici', 'Sous le minimum, plus d\'acceptation');
+      await toucher(p, p.locator('#clt-bottomnav [data-target="section-recharges"]'), 1500);
+      await dire(p, '« Recharger mon solde » : l\'opérateur, le montant, la référence', 'Envoyez l\'argent sur le numéro de CLT, puis déclarez-le');
+      await toucher(p, p.locator('#btn-open-recharge'), 1000);
+      const op = p.locator('#momo-grid .momo-choice').first(); if (await op.count()) await toucher(p, op, 800);
+      await taper(p, p.locator('#recharge-montant'), '2000');
+      await taper(p, p.locator('#recharge-reference'), 'WV123456');
+      await toucher(p, p.locator('#btn-submit-recharge'), 1800);
+      await dire(p, 'Le bureau vérifie et valide : vous êtes notifié, le solde est crédité', '');
+    } },
+  { id: 'coursier-signaler', espace: 'express-coursier', titre: 'Signaler un problème sur une course', page: 'express-coursier.html', qui: COURSIER_TUTO,
+    monde(m) { coursierDuMonde(m); m.TABLES.express_courses.push({ id: 'c-sig', client_id: CLIENT_EXPRESS, coursier_id: COURSIER_TUTO, status: 'livree', adresse_recuperation: 'Adjamé — Marché', adresse_livraison: 'Cocody — Riviera 3', description_colis: 'Un carton', created_at: iso(0, 8), accepted_at: iso(0, 8), recuperee_at: iso(0, 9), delivered_at: iso(0, 10), preuve_type: 'sans', prix_total: 1216, commission_montant: 182, montant_coursier: 1034, commission_reglee: true, distance_km: 4.8 }); },
+    async jouer(p) {
+      await toucher(p, p.locator('#clt-bottomnav [data-target="section-mescourses"]'), 1200);
+      await p.evaluate(() => document.querySelectorAll('details.courses-terminees').forEach(d => { d.open = true; })); await dodo(800);
+      await dire(p, 'Sous la course : « ⚠️ Signaler un problème »', 'Paiement incomplet, client injoignable, adresse introuvable…');
+      await toucher(p, p.locator('[data-litige-signaler]').first(), 900);
+      await toucher(p, p.locator('#litige-feuille .litige-motif[data-motif="paiement"]'), 700);
+      await taper(p, p.locator('#litige-feuille .litige-texte'), 'Le client a payé 1 000 au lieu de 1 216');
+      await toucher(p, p.locator('#litige-feuille .litige-envoyer'), 1800);
+      await dire(p, 'CLT vous répond sous la course, dans les 24 h', '');
+    } },
 ];
 
 async function enregistrer(sc) {
@@ -234,6 +446,12 @@ async function enregistrer(sc) {
   sc.monde(monde);
   const dossierBrut = path.join(BRUT, sc.id);
   fs.rmSync(dossierBrut, { recursive: true, force: true });
+  /* La caméra tourne dès l'ouverture du navigateur : les premières images montraient la page
+     technique par laquelle le parcours pose la session (manifest-login.json — « un code », Celtis,
+     25/09). On note l'instant où l'écran de l'application est prêt et le sous-titre posé, et le
+     montage commence LÀ. */
+  const tCamera = Date.now();
+  let coupe = 0;
   const N = await ouvrirNavigateur({ monde, contexte: { recordVideo: { dir: dossierBrut, size: { width: 390, height: 844 } } } });
   const { page } = N;
   let erreur = null;
@@ -241,6 +459,7 @@ async function enregistrer(sc) {
     await N.ouvrirConnecte(sc.page, sc.qui);
     await dodo(1500);
     await armer(page, sc.titre);
+    coupe = (Date.now() - tCamera) / 1000 + 0.3;
     await dodo(1200);
     await sc.jouer(page);
     await dodo(1500);
@@ -252,9 +471,9 @@ async function enregistrer(sc) {
   const mp4 = path.join(SORTIE, sc.id + '.mp4');
   const jpg = path.join(SORTIE, sc.id + '.jpg');
   // 12 images/s, H.264 très compressé, faststart pour lire avant d'avoir tout reçu ; l'affiche à 3 s.
-  let r = spawnSync('ffmpeg', ['-y', '-loglevel', 'error', '-i', webm, '-vf', 'fps=12,scale=390:-2', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '33', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', '-an', mp4]);
+  let r = spawnSync('ffmpeg', ['-y', '-loglevel', 'error', '-ss', coupe.toFixed(2), '-i', webm, '-vf', 'fps=12,scale=390:-2', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '35', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', '-an', mp4]);
   if (r.status !== 0) { console.error('  ❌ ffmpeg : ' + r.stderr); return false; }
-  spawnSync('ffmpeg', ['-y', '-loglevel', 'error', '-ss', '3', '-i', mp4, '-frames:v', '1', '-q:v', '6', jpg]);
+  spawnSync('ffmpeg', ['-y', '-loglevel', 'error', '-ss', '1', '-i', mp4, '-frames:v', '1', '-q:v', '6', jpg]);
   const taille = fs.statSync(mp4).size;
   const duree = spawnSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', mp4]).stdout.toString().trim();
   console.log(`  🎬 ${sc.id}.mp4 — ${Math.round(taille / 1024)} Ko, ${Math.round(Number(duree))} s${erreur ? ' (scénario interrompu : ' + (erreur.message || '').split('\n')[0].slice(0, 80) + ')' : ''}`);

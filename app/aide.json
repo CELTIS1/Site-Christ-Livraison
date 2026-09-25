@@ -34,7 +34,7 @@
               "url": "aide/videos/livreur-je-pars-recupere.mp4",
               "affiche": "aide/videos/livreur-je-pars-recupere.jpg",
               "label": "Partir chez la cliente, puis « Récupéré »",
-              "duree": "32 s"
+              "duree": "28 s"
             }
           ]
         },
@@ -55,7 +55,7 @@
               "url": "aide/videos/livreur-livre-photo.mp4",
               "affiche": "aide/videos/livreur-livre-photo.jpg",
               "label": "Livrer un colis, avec la photo de preuve",
-              "duree": "27 s"
+              "duree": "25 s"
             }
           ]
         },
@@ -75,7 +75,7 @@
               "url": "aide/videos/livreur-non-livre-a-rendre.mp4",
               "affiche": "aide/videos/livreur-non-livre-a-rendre.jpg",
               "label": "Non livré : le motif, puis « À rendre »",
-              "duree": "29 s"
+              "duree": "26 s"
             }
           ]
         },
@@ -89,7 +89,16 @@
             "Si vous le déposez au bureau CLT : « 🏢 Déposé au bureau ». Le bureau en devient responsable.",
             "Un colis rendu ou déposé ne compte plus dans ce que vous détenez."
           ],
-          "astuce": "La photo de la remise est votre preuve si la cliente dit ne pas l'avoir reçu."
+          "astuce": "La photo de la remise est votre preuve si la cliente dit ne pas l'avoir reçu.",
+          "medias": [
+            {
+              "type": "video",
+              "url": "aide/videos/livreur-rendre-retour.mp4",
+              "affiche": "aide/videos/livreur-rendre-retour.jpg",
+              "label": "Un colis revenu : le rendre à la cliente",
+              "duree": "18 s"
+            }
+          ]
         },
         {
           "id": "livreur-reporter",
@@ -100,6 +109,15 @@
             "Il ne compte plus dans le point de ce soir — c'est écrit au-dessus de la liste, avec « Voir les colis du … ».",
             "« ↩️ Remettre à aujourd'hui » annule le report.",
             "Vous pouvez prévenir la cliente d'un appui : un message est proposé."
+          ],
+          "medias": [
+            {
+              "type": "video",
+              "url": "aide/videos/livreur-reporter.mp4",
+              "affiche": "aide/videos/livreur-reporter.jpg",
+              "label": "Reporter un colis à demain",
+              "duree": "18 s"
+            }
           ]
         },
         {
@@ -118,7 +136,7 @@
               "url": "aide/videos/livreur-annoncer-remise.mp4",
               "affiche": "aide/videos/livreur-annoncer-remise.jpg",
               "label": "Le soir : annoncer ma remise",
-              "duree": "23 s"
+              "duree": "19 s"
             }
           ]
         },
@@ -165,14 +183,14 @@
               "url": "aide/videos/cliente-demander-passage.mp4",
               "affiche": "aide/videos/cliente-demander-passage.jpg",
               "label": "Demander un passage",
-              "duree": "27 s"
+              "duree": "23 s"
             },
             {
               "type": "video",
               "url": "aide/videos/cliente-ajouter-colis.mp4",
               "affiche": "aide/videos/cliente-ajouter-colis.jpg",
               "label": "Enregistrer un colis moi-même",
-              "duree": "21 s"
+              "duree": "16 s"
             }
           ]
         },
@@ -192,7 +210,7 @@
               "url": "aide/videos/cliente-suivre-signaler.mp4",
               "affiche": "aide/videos/cliente-suivre-signaler.jpg",
               "label": "Suivre un colis, signaler un problème",
-              "duree": "17 s"
+              "duree": "13 s"
             }
           ]
         },
@@ -205,6 +223,15 @@
             "Chaque reversement a son reçu, avec la liste des colis qu'il couvre.",
             "Les frais d'expédition avancés par le livreur (gare) sont retenus sur votre relevé : ils sont écrits ligne par ligne.",
             "Un chiffre vous semble faux ? « Signaler un problème » sur le colis, ou appelez-nous : la conversation laisse une trace."
+          ],
+          "medias": [
+            {
+              "type": "video",
+              "url": "aide/videos/cliente-releve.mp4",
+              "affiche": "aide/videos/cliente-releve.jpg",
+              "label": "Mon relevé : ce que CLT me doit",
+              "duree": "63 s"
+            }
           ]
         },
         {
@@ -226,7 +253,7 @@
               "url": "aide/videos/cliente-confirmer-retour.mp4",
               "affiche": "aide/videos/cliente-confirmer-retour.jpg",
               "label": "Un colis revient : confirmer que je l'ai reçu",
-              "duree": "16 s"
+              "duree": "13 s"
             }
           ]
         },
@@ -245,7 +272,7 @@
               "url": "aide/videos/cliente-suivre-signaler.mp4",
               "affiche": "aide/videos/cliente-suivre-signaler.jpg",
               "label": "Suivre un colis, signaler un problème",
-              "duree": "17 s"
+              "duree": "13 s"
             }
           ]
         },
@@ -317,7 +344,7 @@
               "url": "aide/videos/equipe-que-faire.mp4",
               "affiche": "aide/videos/equipe-que-faire.jpg",
               "label": "« À traiter » : un non livré, « Que faire ? »",
-              "duree": "26 s"
+              "duree": "21 s"
             }
           ]
         },
@@ -345,7 +372,16 @@
             "« Enregistrer » : le bloc « À confier » s'ouvre sur cette cliente, ses colis cochés. Choisissez le livreur, appuyez « Confier (n) ». C'est tout.",
             "Un colis encore chez la cliente va au livreur en récupération ; un colis déjà entre nos mains lui va en livraison — le bloc le dit sur chaque ligne."
           ],
-          "astuce": "Un colis qu'on ne veut pas confier tout de suite : décochez-le, il reste dans le bloc. « Annuler » dans le message remet tout comme avant."
+          "astuce": "Un colis qu'on ne veut pas confier tout de suite : décochez-le, il reste dans le bloc. « Annuler » dans le message remet tout comme avant.",
+          "medias": [
+            {
+              "type": "video",
+              "url": "aide/videos/equipe-creer-confier.mp4",
+              "affiche": "aide/videos/equipe-creer-confier.jpg",
+              "label": "Créer un colis, puis le confier à un livreur",
+              "duree": "32 s"
+            }
+          ]
         },
         {
           "id": "equipe-modifier-colis",
@@ -377,7 +413,7 @@
               "url": "aide/videos/equipe-programmer-demande.mp4",
               "affiche": "aide/videos/equipe-programmer-demande.jpg",
               "label": "Une demande de passage : « Programmer »",
-              "duree": "24 s"
+              "duree": "19 s"
             }
           ]
         },
@@ -410,7 +446,7 @@
               "url": "aide/videos/equipe-marquer-recuperes.mp4",
               "affiche": "aide/videos/equipe-marquer-recuperes.jpg",
               "label": "Le livreur a pris sans valider : « Marquer récupérés à sa place »",
-              "duree": "21 s"
+              "duree": "16 s"
             }
           ]
         },
@@ -430,14 +466,14 @@
               "url": "aide/videos/equipe-remise-livreur.mp4",
               "affiche": "aide/videos/equipe-remise-livreur.jpg",
               "label": "Argent : la remise du livreur",
-              "duree": "23 s"
+              "duree": "20 s"
             },
             {
               "type": "video",
               "url": "aide/videos/equipe-reverser-cliente.mp4",
               "affiche": "aide/videos/equipe-reverser-cliente.jpg",
               "label": "Argent : reverser à une cliente",
-              "duree": "29 s"
+              "duree": "24 s"
             }
           ]
         },
@@ -457,7 +493,7 @@
               "url": "aide/videos/equipe-dossiers-comptes.mp4",
               "affiche": "aide/videos/equipe-dossiers-comptes.jpg",
               "label": "Une demande de compte : accepter, refuser, joindre",
-              "duree": "26 s"
+              "duree": "22 s"
             }
           ]
         },
@@ -492,7 +528,16 @@
             "Sous le dossier, les gestes du bureau : attribuer (en attente), confier à un autre ou marquer récupérée (acceptée), marquer livrée (récupérée), annuler avec un motif lu par le client et le coursier.",
             "Chaque geste est tracé au nom du bureau ; « Marquer livrée » règle la commission comme si le coursier avait appuyé."
           ],
-          "astuce": "Le filtre « Récupérées » montre les colis en route vers la livraison : c'est là qu'on appelle si le client s'inquiète."
+          "astuce": "Le filtre « Récupérées » montre les colis en route vers la livraison : c'est là qu'on appelle si le client s'inquiète.",
+          "medias": [
+            {
+              "type": "video",
+              "url": "aide/videos/equipe-express-dossier.mp4",
+              "affiche": "aide/videos/equipe-express-dossier.jpg",
+              "label": "CLT Express : le dossier d'une course, attribuer",
+              "duree": "47 s"
+            }
+          ]
         },
         {
           "id": "equipe-litiges-express",
@@ -503,7 +548,16 @@
             "« Que faire ? » : Ouvrir le dossier de la course (chronologie, argent, gestes du bureau) · Je m'en occupe · Répondre et clore.",
             "« Répondre et clore » envoie votre phrase : la personne la lit sous sa course, dans son application."
           ],
-          "astuce": "Répondre dans les 24 h : c'est le délai promis à l'écran, et l'un des dix chiffres du gérant compte les signalements qui dépassent."
+          "astuce": "Répondre dans les 24 h : c'est le délai promis à l'écran, et l'un des dix chiffres du gérant compte les signalements qui dépassent.",
+          "medias": [
+            {
+              "type": "video",
+              "url": "aide/videos/equipe-litiges-express.mp4",
+              "affiche": "aide/videos/equipe-litiges-express.jpg",
+              "label": "Un litige Express : je m'en occupe, je réponds",
+              "duree": "26 s"
+            }
+          ]
         },
         {
           "id": "equipe-preuve-express",
@@ -513,6 +567,15 @@
             "Chaque course Express naît avec un code à 4 chiffres que seul le client (et vous) lisez ; le coursier le tape à la remise.",
             "Dossier de la course › sous l'argent : la ligne « Preuve ». « Sans code, à confirmer » veut dire que le client n'a pas encore confirmé : en cas de litige, sa parole compte.",
             "Le code d'une course en route se lit dans Supabase (table express_codes_livraison) si un client l'a perdu : donnez-le au client, jamais au coursier."
+          ],
+          "medias": [
+            {
+              "type": "video",
+              "url": "aide/videos/equipe-express-dossier.mp4",
+              "affiche": "aide/videos/equipe-express-dossier.jpg",
+              "label": "CLT Express : le dossier d'une course, attribuer",
+              "duree": "47 s"
+            }
           ]
         },
         {
@@ -523,6 +586,15 @@
             "« Bon » (≥ 3,5), « À surveiller » (3 à 3,5 : un appel), « À suspendre » (< 3 : la base suspend au prochain avis), « Suspendu ». Moins de 10 notes : la moyenne ne compte pas encore.",
             "« Suspendre » demande un motif, lu par le coursier sur son écran. « Lever la suspension » après l'appel ; si sa note reste sous 3, la base le suspendra de nouveau à la prochaine note.",
             "La charte : la date d'acceptation, ou « pas encore acceptée » (elle s'impose à sa prochaine ouverture). Les seuils sont dans express_config (SQL du 25/09)."
+          ],
+          "medias": [
+            {
+              "type": "video",
+              "url": "aide/videos/equipe-coursiers-express.mp4",
+              "affiche": "aide/videos/equipe-coursiers-express.jpg",
+              "label": "Les coursiers Express : note, suspendre, lever",
+              "duree": "25 s"
+            }
           ]
         },
         {
@@ -534,7 +606,16 @@
             "Après trois vagues, vous recevez « Course Express sans coursier » et la course apparaît dans « À traiter › 📡 Sans coursier », avec à qui elle a été proposée.",
             "« Ouvrir le dossier » : attribuer à un coursier (il est prévenu) ou annuler avec un motif ; « Appeler le client » pour le prévenir."
           ],
-          "astuce": "Une course commandée sans épingle est proposée à tous les disponibles et montrée « distance inconnue » : rien n'est plus invisible."
+          "astuce": "Une course commandée sans épingle est proposée à tous les disponibles et montrée « distance inconnue » : rien n'est plus invisible.",
+          "medias": [
+            {
+              "type": "video",
+              "url": "aide/videos/equipe-sans-coursier.mp4",
+              "affiche": "aide/videos/equipe-sans-coursier.jpg",
+              "label": "Une course que personne ne prend",
+              "duree": "17 s"
+            }
+          ]
         }
       ]
     },
@@ -551,7 +632,16 @@
             "Le prix estimé, la distance et le délai s'affichent dès que les deux communes sont choisies.",
             "« Commander cette livraison », relisez le récapitulatif, puis « Commander »."
           ],
-          "astuce": "« 📍 Placer le point précis sur la carte » aux deux adresses : le prix affiché devient exactement celui qui sera facturé."
+          "astuce": "« 📍 Placer le point précis sur la carte » aux deux adresses : le prix affiché devient exactement celui qui sera facturé.",
+          "medias": [
+            {
+              "type": "video",
+              "url": "aide/videos/express-commander.mp4",
+              "affiche": "aide/videos/express-commander.jpg",
+              "label": "Commander une course",
+              "duree": "40 s"
+            }
+          ]
         },
         {
           "id": "express-adresses",
@@ -562,7 +652,16 @@
             "La prochaine fois, touchez la puce « 📍 Domicile » : la commune et l'adresse se remplissent. Elle sert au départ comme à l'arrivée.",
             "La croix × sur la puce la supprime."
           ],
-          "astuce": "Vos adresses suivent votre compte : vous les retrouvez sur un autre téléphone."
+          "astuce": "Vos adresses suivent votre compte : vous les retrouvez sur un autre téléphone.",
+          "medias": [
+            {
+              "type": "video",
+              "url": "aide/videos/express-commander.mp4",
+              "affiche": "aide/videos/express-commander.jpg",
+              "label": "Commander une course",
+              "duree": "40 s"
+            }
+          ]
         },
         {
           "id": "express-suivre",
@@ -573,7 +672,16 @@
             "Dès qu'un coursier accepte, vous voyez son nom, son numéro (appel ou WhatsApp) et sa position sur la carte.",
             "« 💬 Discuter avec le coursier » pour un mot rapide : « je suis devant le portail »."
           ],
-          "astuce": "« Dernière position il y a X min » : le coursier a perdu le réseau ou coupé le partage. Appelez-le."
+          "astuce": "« Dernière position il y a X min » : le coursier a perdu le réseau ou coupé le partage. Appelez-le.",
+          "medias": [
+            {
+              "type": "video",
+              "url": "aide/videos/express-suivre-code.mp4",
+              "affiche": "aide/videos/express-suivre-code.jpg",
+              "label": "Suivre ma course, donner le code de livraison",
+              "duree": "20 s"
+            }
+          ]
         },
         {
           "id": "express-annuler",
@@ -592,6 +700,15 @@
             "Le montant à régler est rappelé dans « Mes courses » dès qu'un coursier est en route.",
             "Vous payez en espèces au coursier, à la livraison. Si le paiement par Wave vous est proposé, un bouton apparaît au même endroit.",
             "Après la livraison : « ⭐ Notez votre coursier ». Votre note aide les autres clients."
+          ],
+          "medias": [
+            {
+              "type": "video",
+              "url": "aide/videos/express-signaler-noter.mp4",
+              "affiche": "aide/videos/express-signaler-noter.jpg",
+              "label": "Après la livraison : noter, ou signaler un problème",
+              "duree": "29 s"
+            }
           ]
         },
         {
@@ -603,7 +720,16 @@
             "Choisissez ce qui s'est passé (colis abîmé, jamais reçu, retard, coursier absent, montant, comportement, autre) et ajoutez un mot si besoin.",
             "Vous lisez ensuite, au même endroit : « reçu », « pris en charge », puis la réponse de CLT."
           ],
-          "astuce": "Pour une urgence (coursier injoignable pendant la course), appelez CLT : le signalement, c'est pour ce qui se règle après."
+          "astuce": "Pour une urgence (coursier injoignable pendant la course), appelez CLT : le signalement, c'est pour ce qui se règle après.",
+          "medias": [
+            {
+              "type": "video",
+              "url": "aide/videos/express-signaler-noter.mp4",
+              "affiche": "aide/videos/express-signaler-noter.jpg",
+              "label": "Après la livraison : noter, ou signaler un problème",
+              "duree": "29 s"
+            }
+          ]
         },
         {
           "id": "express-code",
@@ -614,7 +740,16 @@
             "Donnez-le à la personne qui reçoit le colis (par téléphone ou WhatsApp). Le coursier ne le connaît pas : il le lui demande à la remise.",
             "Si le coursier a livré sans le code, un bouton « ✅ Confirmer la réception » apparaît sous la course : appuyez si le colis est bien arrivé ; sinon, « ⚠️ Signaler un problème »."
           ],
-          "astuce": "Le code, c'est votre preuve : une course livrée « code vérifié » ne se discute plus."
+          "astuce": "Le code, c'est votre preuve : une course livrée « code vérifié » ne se discute plus.",
+          "medias": [
+            {
+              "type": "video",
+              "url": "aide/videos/express-suivre-code.mp4",
+              "affiche": "aide/videos/express-suivre-code.jpg",
+              "label": "Suivre ma course, donner le code de livraison",
+              "duree": "20 s"
+            }
+          ]
         },
         {
           "id": "express-conditions",
@@ -625,7 +760,16 @@
             "Sur le formulaire, « Objets interdits » déplie la liste (argent liquide, bijoux, armes, produits dangereux, animaux…) ; cochez « Mon colis ne contient aucun objet interdit ».",
             "La valeur du colis est facultative, jusqu'à 50 000 F. Au-dessus, appelez CLT avant de commander : on organise la course avec vous."
           ],
-          "astuce": "Au palier 1, le colis n'est pas assuré : CLT s'engage sur le soin et la traçabilité (code de livraison, positions, dossier)."
+          "astuce": "Au palier 1, le colis n'est pas assuré : CLT s'engage sur le soin et la traçabilité (code de livraison, positions, dossier).",
+          "medias": [
+            {
+              "type": "video",
+              "url": "aide/videos/express-commander.mp4",
+              "affiche": "aide/videos/express-commander.jpg",
+              "label": "Commander une course",
+              "duree": "40 s"
+            }
+          ]
         }
       ]
     },
@@ -641,7 +785,16 @@
             "Autorisez la localisation : sans elle, toutes les courses s'affichent, même les plus lointaines.",
             "Éteignez l'interrupteur quand vous arrêtez : vous ne serez plus sollicité."
           ],
-          "astuce": "Une nouvelle course sonne et vibre, avec l'étiquette « NOUVEAU ». Gardez l'application ouverte."
+          "astuce": "Une nouvelle course sonne et vibre, avec l'étiquette « NOUVEAU ». Gardez l'application ouverte.",
+          "medias": [
+            {
+              "type": "video",
+              "url": "aide/videos/coursier-accepter.mp4",
+              "affiche": "aide/videos/coursier-accepter.jpg",
+              "label": "Me mettre disponible, accepter une course",
+              "duree": "18 s"
+            }
+          ]
         },
         {
           "id": "coursier-accepter",
@@ -652,7 +805,16 @@
             "« Accepter » : la course passe dans « Mes courses ». Si un autre a été plus rapide, l'écran vous le dit et elle disparaît.",
             "Un empêchement AVANT d'avoir récupéré le colis ? « Je ne peux pas la faire » la rend aux autres coursiers."
           ],
-          "astuce": "Ne rendez une course que si vous ne pouvez vraiment pas l'assurer : le client attend."
+          "astuce": "Ne rendez une course que si vous ne pouvez vraiment pas l'assurer : le client attend.",
+          "medias": [
+            {
+              "type": "video",
+              "url": "aide/videos/coursier-accepter.mp4",
+              "affiche": "aide/videos/coursier-accepter.jpg",
+              "label": "Me mettre disponible, accepter une course",
+              "duree": "18 s"
+            }
+          ]
         },
         {
           "id": "coursier-livrer",
@@ -663,7 +825,16 @@
             "Au départ : « J'ai récupéré le colis ». À l'arrivée : encaissez le montant affiché (« 💵 Espèces à encaisser »), puis « Marquer livrée ».",
             "Un doute sur l'adresse ? Appelez le client ou le destinataire, ou « 💬 Discuter avec le client »."
           ],
-          "astuce": "Si la course est payée en ligne (Wave), l'écran le dit : n'encaissez rien. Et tant que le paiement n'est pas confirmé, ne livrez pas."
+          "astuce": "Si la course est payée en ligne (Wave), l'écran le dit : n'encaissez rien. Et tant que le paiement n'est pas confirmé, ne livrez pas.",
+          "medias": [
+            {
+              "type": "video",
+              "url": "aide/videos/coursier-livrer-code.mp4",
+              "affiche": "aide/videos/coursier-livrer-code.jpg",
+              "label": "Récupérer, puis livrer avec le code",
+              "duree": "26 s"
+            }
+          ]
         },
         {
           "id": "coursier-position",
@@ -686,7 +857,16 @@
             "Vous passez au bureau ? Choisissez « Espèces au bureau », indiquez le montant, remettez les billets : l'équipe valide devant vous.",
             "L'équipe valide : votre solde est crédité. « Mes recharges » dit où en est chaque envoi ; « Mes débits » liste chaque commission."
           ],
-          "astuce": "Notez la référence reçue par SMS dans la déclaration : la validation est plus rapide."
+          "astuce": "Notez la référence reçue par SMS dans la déclaration : la validation est plus rapide.",
+          "medias": [
+            {
+              "type": "video",
+              "url": "aide/videos/coursier-recharger.mp4",
+              "affiche": "aide/videos/coursier-recharger.jpg",
+              "label": "Recharger mon solde",
+              "duree": "23 s"
+            }
+          ]
         },
         {
           "id": "coursier-bloque",
@@ -695,6 +875,15 @@
           "etapes": [
             "Le minimum requis est écrit sous votre solde, dans l'onglet « Solde ».",
             "Rechargez : dès que l'équipe a validé l'envoi, les courses redeviennent acceptables."
+          ],
+          "medias": [
+            {
+              "type": "video",
+              "url": "aide/videos/coursier-recharger.mp4",
+              "affiche": "aide/videos/coursier-recharger.jpg",
+              "label": "Recharger mon solde",
+              "duree": "23 s"
+            }
           ]
         },
         {
@@ -705,6 +894,15 @@
             "Mes courses › la course › « ⚠️ Signaler un problème » ; choisissez le motif, ajoutez un mot.",
             "Le bureau lit votre signalement dans « À traiter » et vous répond au même endroit dans les 24 h.",
             "Un incident (sécurité) : appelez CLT en plus, tout de suite."
+          ],
+          "medias": [
+            {
+              "type": "video",
+              "url": "aide/videos/coursier-signaler.mp4",
+              "affiche": "aide/videos/coursier-signaler.jpg",
+              "label": "Signaler un problème sur une course",
+              "duree": "21 s"
+            }
           ]
         },
         {
@@ -716,7 +914,16 @@
             "Faux code ? La feuille reste ouverte : refaites-vous confirmer les chiffres, ou appelez le client.",
             "La personne n'a vraiment pas le code ? « Livrer sans preuve » : la course est livrée, mais « à confirmer par le client » — en cas de litige, sa parole compte."
           ],
-          "astuce": "Le code vérifié vous protège aussi : personne ne pourra dire que le colis n'est pas arrivé."
+          "astuce": "Le code vérifié vous protège aussi : personne ne pourra dire que le colis n'est pas arrivé.",
+          "medias": [
+            {
+              "type": "video",
+              "url": "aide/videos/coursier-livrer-code.mp4",
+              "affiche": "aide/videos/coursier-livrer-code.jpg",
+              "label": "Récupérer, puis livrer avec le code",
+              "duree": "26 s"
+            }
+          ]
         },
         {
           "id": "coursier-charte",
@@ -738,7 +945,16 @@
             "Sans preneur en 3 minutes, le rayon s'élargit : une course plus loin peut apparaître d'un coup.",
             "« distance inconnue (adresse sans épingle) » : le client n'a pas posé de point ; appelez-le avant de partir si l'adresse est floue."
           ],
-          "astuce": "Une recharge validée ou refusée vous est notifiée ; une course rendue repart tout de suite aux autres."
+          "astuce": "Une recharge validée ou refusée vous est notifiée ; une course rendue repart tout de suite aux autres.",
+          "medias": [
+            {
+              "type": "video",
+              "url": "aide/videos/coursier-accepter.mp4",
+              "affiche": "aide/videos/coursier-accepter.jpg",
+              "label": "Me mettre disponible, accepter une course",
+              "duree": "18 s"
+            }
+          ]
         }
       ]
     },

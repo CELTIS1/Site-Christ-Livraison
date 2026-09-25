@@ -19,13 +19,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260925dispatch">
+<link rel="stylesheet" href="style.css?v=20260925videos">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260925dispatch"></script>
+<script src="theme.js?v=20260925videos"></script>
 <!-- La cloche 🔔 des notifications reçues (23/09/2026) : règle + écran, se posent seuls dans la barre du haut. -->
-<script src="notifications-recues.js?v=20260925dispatch" defer></script>
-<script src="cloche.js?v=20260925dispatch" defer></script>
-<script src="splash.js?v=20260925dispatch"></script>
+<script src="notifications-recues.js?v=20260925videos" defer></script>
+<script src="cloche.js?v=20260925videos" defer></script>
+<script src="splash.js?v=20260925videos"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
@@ -217,7 +217,7 @@
      aussi sans réseau. Voir .github/verifier-empreintes.py, qui lit ces déclarations-là. -->
 <!-- La peau v2 (25/09/2026, lot 18) : chargée EN DERNIER, elle recouvre style.css et le style de la page. -->
 <style>:root{ --clt-accent-encre:#167A42; }</style>
-<link rel="stylesheet" href="peau.css?v=20260925dispatch">
+<link rel="stylesheet" href="peau.css?v=20260925videos">
 </head>
 <body>
 
@@ -630,7 +630,7 @@
        informations peuvent embrouiller le client ; par défaut c'est replié, et quand il veut, il
        déplie ».) La ligne repliée dit quand même l'essentiel — ce que CLT lui doit — pour qu'elle
        n'ait pas à déplier pour le savoir. Il se replie à chaque ouverture de l'écran. -->
-  <div class="card" id="section-releve">
+  <div class="card" id="section-releve" data-aide-panneau="cliente-releve">
     <details id="releve-details" class="releve-repli">
       <summary><span class="releve-repli__titre">💰 Mon relevé</span><span class="releve-repli__resume" id="releve-resume"></span></summary>
       <div id="releve-libelle" style="font-size:12.5px; color:var(--muted); margin:10px 0 12px;">
@@ -694,32 +694,32 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260925dispatch"></script>
-<script src="numero-international.js?v=20260925dispatch"></script>
-<script src="voir-un-compte.js?v=20260925dispatch"></script>
-<script src="lib/bibliotheques.js?v=20260925dispatch"></script>
-<script src="lib/retours.js?v=20260925dispatch"></script>
-<script src="lib/reclamations.js?v=20260925dispatch"></script>
-<script src="lib/communes-et-tarifs.js?v=20260925dispatch"></script>
-<script src="lib/argent.js?v=20260925dispatch"></script>
-<script src="lib/releve-cliente.js?v=20260925dispatch"></script>
-<script src="lib/papier-a-en-tete.js?v=20260925dispatch"></script>
-<script src="lib/briques-argent.js?v=20260925dispatch"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260925dispatch"></script>
-<script src="lib/traces-de-report.js?v=20260925dispatch"></script>
-<script src="lib/annonce-de-remise.js?v=20260925dispatch"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260925dispatch"></script>
-<script src="lib/primes.js?v=20260925dispatch"></script>
-<script src="lib/doublons.js?v=20260925dispatch"></script>
-<script src="config.js?v=20260925dispatch"></script>
-<script src="demande-de-passage.js?v=20260925dispatch"></script>
-<script src="activite-de-la-cliente.js?v=20260925dispatch"></script>
-<script src="activite-ecran.js?v=20260925dispatch"></script>
-<script src="mes-boutiques.js?v=20260925dispatch"></script>
-<script src="etiquettes-et-scan.js?v=20260925dispatch"></script>
-<script src="import-de-colis.js?v=20260925dispatch"></script>
-<script src="biometric-lock.js?v=20260925dispatch"></script>
-<script src="clt-select-recherche.js?v=20260925dispatch"></script>
+<script src="clt-common.js?v=20260925videos"></script>
+<script src="numero-international.js?v=20260925videos"></script>
+<script src="voir-un-compte.js?v=20260925videos"></script>
+<script src="lib/bibliotheques.js?v=20260925videos"></script>
+<script src="lib/retours.js?v=20260925videos"></script>
+<script src="lib/reclamations.js?v=20260925videos"></script>
+<script src="lib/communes-et-tarifs.js?v=20260925videos"></script>
+<script src="lib/argent.js?v=20260925videos"></script>
+<script src="lib/releve-cliente.js?v=20260925videos"></script>
+<script src="lib/papier-a-en-tete.js?v=20260925videos"></script>
+<script src="lib/briques-argent.js?v=20260925videos"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260925videos"></script>
+<script src="lib/traces-de-report.js?v=20260925videos"></script>
+<script src="lib/annonce-de-remise.js?v=20260925videos"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260925videos"></script>
+<script src="lib/primes.js?v=20260925videos"></script>
+<script src="lib/doublons.js?v=20260925videos"></script>
+<script src="config.js?v=20260925videos"></script>
+<script src="demande-de-passage.js?v=20260925videos"></script>
+<script src="activite-de-la-cliente.js?v=20260925videos"></script>
+<script src="activite-ecran.js?v=20260925videos"></script>
+<script src="mes-boutiques.js?v=20260925videos"></script>
+<script src="etiquettes-et-scan.js?v=20260925videos"></script>
+<script src="import-de-colis.js?v=20260925videos"></script>
+<script src="biometric-lock.js?v=20260925videos"></script>
+<script src="clt-select-recherche.js?v=20260925videos"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;

@@ -98,6 +98,111 @@
       "titre": "Une demande de compte : accepter, refuser, joindre",
       "url": "aide/videos/equipe-dossiers-comptes.mp4",
       "affiche": "aide/videos/equipe-dossiers-comptes.jpg"
+    },
+    {
+      "id": "livreur-rendre-retour",
+      "espace": "livreur",
+      "titre": "Un colis revenu : le rendre à la cliente",
+      "url": "aide/videos/livreur-rendre-retour.mp4",
+      "affiche": "aide/videos/livreur-rendre-retour.jpg"
+    },
+    {
+      "id": "livreur-reporter",
+      "espace": "livreur",
+      "titre": "Reporter un colis à demain",
+      "url": "aide/videos/livreur-reporter.mp4",
+      "affiche": "aide/videos/livreur-reporter.jpg"
+    },
+    {
+      "id": "cliente-releve",
+      "espace": "cliente",
+      "titre": "Mon relevé : ce que CLT me doit",
+      "url": "aide/videos/cliente-releve.mp4",
+      "affiche": "aide/videos/cliente-releve.jpg"
+    },
+    {
+      "id": "equipe-creer-confier",
+      "espace": "equipe",
+      "titre": "Créer un colis, puis le confier à un livreur",
+      "url": "aide/videos/equipe-creer-confier.mp4",
+      "affiche": "aide/videos/equipe-creer-confier.jpg"
+    },
+    {
+      "id": "equipe-express-dossier",
+      "espace": "equipe",
+      "titre": "CLT Express : le dossier d'une course, attribuer",
+      "url": "aide/videos/equipe-express-dossier.mp4",
+      "affiche": "aide/videos/equipe-express-dossier.jpg"
+    },
+    {
+      "id": "equipe-litiges-express",
+      "espace": "equipe",
+      "titre": "Un litige Express : je m'en occupe, je réponds",
+      "url": "aide/videos/equipe-litiges-express.mp4",
+      "affiche": "aide/videos/equipe-litiges-express.jpg"
+    },
+    {
+      "id": "equipe-coursiers-express",
+      "espace": "equipe",
+      "titre": "Les coursiers Express : note, suspendre, lever",
+      "url": "aide/videos/equipe-coursiers-express.mp4",
+      "affiche": "aide/videos/equipe-coursiers-express.jpg"
+    },
+    {
+      "id": "equipe-sans-coursier",
+      "espace": "equipe",
+      "titre": "Une course que personne ne prend",
+      "url": "aide/videos/equipe-sans-coursier.mp4",
+      "affiche": "aide/videos/equipe-sans-coursier.jpg"
+    },
+    {
+      "id": "express-commander",
+      "espace": "express-client",
+      "titre": "Commander une course",
+      "url": "aide/videos/express-commander.mp4",
+      "affiche": "aide/videos/express-commander.jpg"
+    },
+    {
+      "id": "express-suivre-code",
+      "espace": "express-client",
+      "titre": "Suivre ma course, donner le code de livraison",
+      "url": "aide/videos/express-suivre-code.mp4",
+      "affiche": "aide/videos/express-suivre-code.jpg"
+    },
+    {
+      "id": "express-signaler-noter",
+      "espace": "express-client",
+      "titre": "Après la livraison : noter, ou signaler un problème",
+      "url": "aide/videos/express-signaler-noter.mp4",
+      "affiche": "aide/videos/express-signaler-noter.jpg"
+    },
+    {
+      "id": "coursier-accepter",
+      "espace": "express-coursier",
+      "titre": "Me mettre disponible, accepter une course",
+      "url": "aide/videos/coursier-accepter.mp4",
+      "affiche": "aide/videos/coursier-accepter.jpg"
+    },
+    {
+      "id": "coursier-livrer-code",
+      "espace": "express-coursier",
+      "titre": "Récupérer, puis livrer avec le code",
+      "url": "aide/videos/coursier-livrer-code.mp4",
+      "affiche": "aide/videos/coursier-livrer-code.jpg"
+    },
+    {
+      "id": "coursier-recharger",
+      "espace": "express-coursier",
+      "titre": "Recharger mon solde",
+      "url": "aide/videos/coursier-recharger.mp4",
+      "affiche": "aide/videos/coursier-recharger.jpg"
+    },
+    {
+      "id": "coursier-signaler",
+      "espace": "express-coursier",
+      "titre": "Signaler un problème sur une course",
+      "url": "aide/videos/coursier-signaler.mp4",
+      "affiche": "aide/videos/coursier-signaler.jpg"
     }
   ]
 }
