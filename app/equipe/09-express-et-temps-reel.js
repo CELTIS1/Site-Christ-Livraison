@@ -53,14 +53,12 @@ faviconLink.setAttribute('href', "data:image/svg+xml,%3Csvg xmlns='http://www.w3
 let expressCourses = [];
 let expressStatusFilter = 'tous';
 
-const EXPRESS_STATUTS = {
-en_attente: { label: "En attente d'un coursier", color: "#5b6573", bg: "#eef0f3" },
-acceptee:   { label: "Coursier en route",         color: "#0D9488", bg: "#dcf5f2" },
-livree:     { label: "Livrée",                    color: "#1a7d3c", bg: "#e3f6ea" },
-annulee:    { label: "Annulée",                   color: "#c0392b", bg: "#fce4e2" },
-};
+/* Les cinq états, depuis la règle (app/express-dossier.js) — 25/09/2026, lot P-1 : « récupérée »
+   manquait ici depuis le 20/09 et s'affichait « en attente d'un coursier ». */
+const EXPRESS_STATUTS = Object.fromEntries(Object.entries((window.CLTExpressDossier || {}).STATUTS || {}).map(([k, v]) => [k, { label: v.label, color: v.couleur, bg: v.fond }]));
+if (!EXPRESS_STATUTS.en_attente) Object.assign(EXPRESS_STATUTS, { en_attente: { label: "En attente d'un coursier", color: '#5b6573', bg: '#eef0f3' }, acceptee: { label: 'Coursier en route', color: '#0F766E', bg: '#dcf5f2' }, recuperee: { label: 'Colis récupéré, en route', color: '#BF5210', bg: '#FBE7D8' }, livree: { label: 'Livrée', color: '#167A42', bg: '#e3f6ea' }, annulee: { label: 'Annulée', color: '#c0392b', bg: '#fce4e2' } });
 
-const EXPRESS_STATUS_FILTER_LABELS = { tous: 'Tous', en_attente: 'En attente', acceptee: 'Acceptées', livree: 'Livrées', annulee: 'Annulées' };
+const EXPRESS_STATUS_FILTER_LABELS = { tous: 'Tous', en_attente: 'En attente', acceptee: 'Acceptées', recuperee: 'Récupérées', livree: 'Livrées', annulee: 'Annulées' };
 
 function expressStatutBadgeHTML(statut) {
 const s = EXPRESS_STATUTS[statut] || EXPRESS_STATUTS.en_attente;
@@ -83,13 +81,66 @@ return `
 <div class="meta">Coursier : ${escapeHTML(courierName || 'En attente')} · Distance : ${course.distance_km || '?'} km</div>
 <div class="meta">Prix : ${formatMontant(course.prix_total)} · Commission : ${formatMontant(course.commission_montant)}</div>
 </div>
-<div class="status-col" style="flex-direction:column; align-items:flex-end; gap:4px;">
-
+<div class="status-col" style="flex-direction:column; align-items:flex-end; gap:6px;">
 ${expressStatutBadgeHTML(course.status)}
+${(() => { const a = window.CLTExpressDossier ? CLTExpressDossier.attente(course) : null; return a && a.texte ? `<span class="meta${a.urgent ? ' express-attente--urgent' : ''}">${escapeHTML(a.texte)}</span>` : ''; })()}
+<button type="button" class="btn btn-outline btn-sm" data-express-dossier="${course.id}">📂 Dossier</button>
 </div>
 </div>
 `;
 }
+
+/* ---------- LE DOSSIER D'UNE COURSE (25/09/2026, chantier P, lot P-1) ----------
+   Cahier des charges § 3.1 : chronologie complète, les deux notes, le chat, les positions,
+   l'argent — dans une fenêtre par-dessus la liste (une couche : Échap et le retour la ferment).
+   Les gestes du bureau (attribuer, marquer à sa place, annuler) viennent avec la seconde moitié
+   du lot, après relecture des déclencheurs de la base. */
+async function ouvrirDossierExpress(id) {
+  const ancien = document.getElementById('express-dossier'); if (ancien) ancien.remove();
+  const ov = document.createElement('div');
+  ov.id = 'express-dossier'; ov.className = 'clt-nouveautes clt-aide';
+  ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', 'Dossier de la course');
+  ov.setAttribute('data-clt-couche', 'express-dossier');
+  ov.innerHTML = `<div class="clt-nouveautes__boite clt-aide__boite"><div class="clt-nouveautes__tete"><h2>📂 Dossier de la course</h2><button type="button" class="clt-nouveautes__fermer" data-clt-fermer aria-label="Fermer">×</button></div><div class="clt-nouveautes__corps express-dossier__corps"><div class="empty-state">Chargement…</div></div></div>`;
+  const clore = () => ov.remove();
+  ov.querySelector('.clt-nouveautes__fermer').addEventListener('click', clore);
+  ov.addEventListener('click', (e) => { if (e.target === ov) clore(); });
+  document.body.appendChild(ov);
+  const corps = ov.querySelector('.express-dossier__corps');
+  const q = async (p) => { try { const r = await p; return r.error ? null : r.data; } catch (e) { return null; } };
+  const [course, messages, positions] = await Promise.all([
+    q(supabaseClient.from('express_courses').select('*').eq('id', id).single()),
+    q(supabaseClient.from('express_messages').select('id, sender_id, body, created_at').eq('course_id', id).order('created_at', { ascending: true }).limit(200)),
+    q(supabaseClient.from('express_course_positions').select('id, created_at').eq('course_id', id).limit(2000)),
+  ]);
+  if (!course) { corps.innerHTML = '<div class="empty-state">Course introuvable.</div>'; return; }
+  const ids = [course.client_id, course.coursier_id, course.annulation_par].filter(Boolean);
+  const profils = ids.length ? (await q(supabaseClient.from('profiles').select('id, full_name, phone, role').in('id', ids))) || [] : [];
+  const noms = Object.fromEntries(profils.map(p => [p.id, p.full_name || p.phone || '?']));
+  const lisible = (n) => (typeof CLTNumero !== 'undefined' && CLTNumero.lisible) ? CLTNumero.lisible(n) : n;
+  const appel = (n) => (typeof CLTNumero !== 'undefined' && CLTNumero.pourAppel) ? CLTNumero.pourAppel(n) : 'tel:' + n;
+  const tel = (pid) => { const p = profils.find(x => x.id === pid); return p && p.phone ? `<a class="btn btn-outline btn-sm" href="${escapeHTML(appel(p.phone))}">📞 ${escapeHTML(lisible(p.phone))}</a>` : ''; };
+  const D = window.CLTExpressDossier;
+  const chrono = D ? D.chronologie(course, { noms }) : [];
+  const argent = D ? D.argent(course) : { phrase: '' };
+  const fmt = (iso) => typeof formatDate === 'function' ? formatDate(iso) : String(iso).slice(0, 16);
+  corps.innerHTML = `
+    <div class="express-dossier__tete">${expressStatutBadgeHTML(course.status)} <b>${escapeHTML(course.adresse_recuperation || '?')}</b> → <b>${escapeHTML(course.adresse_livraison || '?')}</b>${course.description_colis ? `<div class="meta">${escapeHTML(course.description_colis)}</div>` : ''}${course.photo_colis_path ? `<div class="meta">📷 photo du colis jointe</div>` : ''}</div>
+    <div class="express-dossier__personnes">
+      <div><div class="meta">Client</div><b>${escapeHTML(noms[course.client_id] || '?')}</b> ${tel(course.client_id)}</div>
+      <div><div class="meta">Coursier</div><b>${escapeHTML(course.coursier_id ? (noms[course.coursier_id] || '?') : 'aucun pour l\'instant')}</b> ${course.coursier_id ? tel(course.coursier_id) : ''}</div>
+      <div><div class="meta">Destinataire</div><b>${escapeHTML(course.destinataire_nom || '—')}</b>${course.destinataire_telephone ? ` <a class="btn btn-outline btn-sm" href="${escapeHTML(appel(course.destinataire_telephone))}">📞 ${escapeHTML(lisible(course.destinataire_telephone))}</a>` : ''}</div>
+    </div>
+    <h3 class="panel-subtitle" style="font-size:15px;margin:14px 0 6px;">Chronologie</h3>
+    <ol class="express-chrono">${chrono.map(e => `<li><span class="express-chrono__quand">${escapeHTML(fmt(e.quand))}</span> <span>${escapeHTML(e.quoi)}</span> <span class="meta">— ${escapeHTML(e.qui)}</span></li>`).join('') || '<li class="meta">rien encore</li>'}</ol>
+    <h3 class="panel-subtitle" style="font-size:15px;margin:14px 0 6px;">Argent</h3>
+    <div class="express-dossier__argent">${escapeHTML(argent.phrase)} · ${course.distance_km || '?'} km</div>
+    <h3 class="panel-subtitle" style="font-size:15px;margin:14px 0 6px;">Échanges et trajet</h3>
+    <div class="meta">${(messages || []).length} message${(messages || []).length > 1 ? 's' : ''} dans le chat · ${(positions || []).length} position${(positions || []).length > 1 ? 's' : ''} enregistrée${(positions || []).length > 1 ? 's' : ''}</div>
+    ${(messages || []).length ? `<div class="express-dossier__chat">${messages.slice(-20).map(m => `<div class="express-msg"><span class="meta">${escapeHTML(fmt(m.created_at))} · ${escapeHTML(noms[m.sender_id] || (m.sender_id === course.client_id ? 'client' : 'coursier'))}</span><div>${escapeHTML(m.body || '')}</div></div>`).join('')}</div>` : ''}
+  `;
+}
+document.addEventListener('click', (e) => { const b = e.target.closest('[data-express-dossier]'); if (b) ouvrirDossierExpress(b.dataset.expressDossier); });
 
 async function loadExpressCourses() {
 const { data, error } = await supabaseClient

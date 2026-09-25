@@ -219,8 +219,23 @@ export function nouveauMonde() {
       return { data: null, error: { message: 'transition_interdite: essai', code: 'P0001' }, count: null };
     }
     if (q.op === 'update') {
+      /* CLT EXPRESS — express_figer_course + express_regler_commission_solde (BEFORE UPDATE), contrat
+         connu par les bancs Postgres : acceptee → livree sans récupération est refusée ; à la livraison
+         en espèces, la commission est débitée du solde du coursier (dette possible). */
+      if (table === 'express_courses' && q.valeurs && q.valeurs.status === 'livree' && lignes.some(l => l.status === 'acceptee')) {
+        journal.push({ table, op: 'update-refuse', ids: lignes.map(l => l.id) });
+        return { data: null, error: { message: 'transition_interdite: acceptee → livree', code: 'P0001' }, count: null };
+      }
       lignes.forEach(l => {
         const v = Object.assign({}, q.valeurs);
+        if (table === 'express_courses' && v.status === 'livree' && l.status !== 'livree' && (l.paiement_mode || 'especes') === 'especes') {
+          TABLES.express_wallets ||= [];
+          let w = TABLES.express_wallets.find(x => x.coursier_id === l.coursier_id);
+          if (!w) { w = { coursier_id: l.coursier_id, solde: 0 }; TABLES.express_wallets.push(w); }
+          w.solde -= Number(l.commission_montant) || 0;
+          v.commission_reglee = true;
+          v.delivered_at = v.delivered_at || maintenant;
+        }
         // colis_en_main_a_l_assignation (16/09) : un livreur posé sur un colis « en attente » créé par l'équipe, sans collecte → « récupéré ».
         if (table === 'colis' && v.livreur_id && v.livreur_id !== l.livreur_id && l.statut === 'en_attente' && !v.statut && ['equipe', 'admin'].includes(l.cree_par_role) && !l.livreur_collecte_id && !v.livreur_collecte_id && !l.collecte_depart_at) v.statut = 'recupere';
         if (table === 'colis' && v.statut && v.statut !== l.statut) {
@@ -256,6 +271,20 @@ export function nouveauMonde() {
         const tournee = (TABLES.programmations_collecte || []).find(p => p.fournisseur_id === r.fournisseur_id && p.jour === jour);
         if (r.statut === 'en_attente' && ['equipe', 'admin'].includes(role) && !r.livreur_collecte_id && !r.jour_recuperation_prevu && !tournee) { r.statut = 'recupere'; r.recupere_at = maintenant; }
         if (!r.livreur_collecte_id && tournee && tournee.livreur_id) r.livreur_collecte_id = tournee.livreur_id;
+      });
+      /* CLT EXPRESS — express_calculer_prix (BEFORE INSERT), comme en base (25/09/2026, lot P-1) :
+         distance à vol d'oiseau si les deux épingles sont là (sinon 5 km), prix = base + km × tarif,
+         commission = prix × pct, part du coursier = le reste. */
+      if (table === 'express_courses') rows.forEach(r => {
+        const cfg = (TABLES.express_config || [])[0] || { tarif_base: 500, tarif_par_km: 150, commission_pct: 0.15 };
+        const km = (r.latitude_recuperation != null && r.latitude_livraison != null) ? Math.round(haversineKm(r.latitude_recuperation, r.longitude_recuperation, r.latitude_livraison, r.longitude_livraison) * 100) / 100 : 5;
+        r.distance_km = r.distance_km ?? km;
+        r.prix_total = r.prix_total ?? Math.round(cfg.tarif_base + r.distance_km * cfg.tarif_par_km);
+        r.commission_montant = r.commission_montant ?? Math.round(r.prix_total * cfg.commission_pct);
+        r.montant_coursier = r.montant_coursier ?? (r.prix_total - r.commission_montant);
+        if (r.status === undefined) r.status = 'en_attente';
+        if (r.commission_reglee === undefined) r.commission_reglee = false;
+        if (r.paiement_mode === undefined) r.paiement_mode = 'especes';
       });
       (TABLES[table] ||= []).push(...rows);
       if (table === 'colis') rows.forEach(r => consommeLAvance(null, r, q.user, maintenant));
@@ -322,9 +351,50 @@ export function nouveauMonde() {
     if ((Number(apres.frais_additionnels_montant) || 0) > 0 && !apres.frais_additionnels_rembourse_at) apres.frais_additionnels_rembourse_at = maintenant;
   }
 
+  function haversineKm(a, b, c, d) { const R = 6371, r = (x) => x * Math.PI / 180; const h = Math.sin(r(c - a) / 2) ** 2 + Math.cos(r(a)) * Math.cos(r(c)) * Math.sin(r(d - b) / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); }
   const REPONSES_RPC = {};
   function rpc(nom, args, user) {
     journal.push({ op: 'rpc', nom, args });
+    /* CLT EXPRESS (25/09/2026, lot P-1) — les fonctions telles que relues en base le 25/09. */
+    if (nom === 'express_accepter_course' || nom === 'express_rendre_course') {
+      const lecteur = PROFILS.find(p => p.id === user);
+      const c = (TABLES.express_courses || []).find(x => x.id === (args && args.p_course));
+      if (!user) return { data: null, error: { message: 'non_connecte' } };
+      if (nom === 'express_accepter_course') {
+        if (!lecteur || lecteur.role !== 'coursier_express' || lecteur.status !== 'valide') return { data: null, error: { message: 'pas_coursier_valide' } };
+        const w = (TABLES.express_wallets || []).find(x => x.coursier_id === user);
+        if ((w ? w.solde : 0) < ((TABLES.express_config || [])[0] || {}).solde_minimum || 0) return { data: null, error: { message: 'solde_insuffisant' } };
+        if (!c || c.status !== 'en_attente' || c.coursier_id) return { data: null, error: { message: 'deja_prise' } };
+        Object.assign(c, { status: 'acceptee', coursier_id: user, accepted_at: new Date().toISOString() });
+        journal.push({ table: 'express_courses', op: 'update', valeurs: { status: 'acceptee' }, ids: [c.id], user });
+        return { data: c, error: null };
+      }
+      if (!c || c.status !== 'acceptee' || c.coursier_id !== user) return { data: null, error: { message: 'pas_rendable' } };
+      Object.assign(c, { status: 'en_attente', coursier_id: null, accepted_at: null });
+      return { data: c, error: null };
+    }
+    if (nom === 'express_courses_proximite') {
+      const lecteur = PROFILS.find(p => p.id === user);
+      if (!lecteur || lecteur.role !== 'coursier_express' || lecteur.status !== 'valide') return { data: [], error: null };
+      const rayon = ((TABLES.express_config || [])[0] || {}).rayon_dispatch_km || 3;
+      const lat = args && args.p_lat, lng = args && args.p_lng;
+      const d = (TABLES.express_courses || []).filter(c => c.status === 'en_attente' && !c.coursier_id)
+        .map(c => Object.assign({}, c, { destinataire_nom: null, destinataire_telephone: null, distance_pickup_km: (lat == null || c.latitude_recuperation == null) ? null : Math.round(haversineKm(lat, lng, c.latitude_recuperation, c.longitude_recuperation) * 100) / 100 }))
+        .filter(c => lat == null || (c.distance_pickup_km != null && c.distance_pickup_km <= rayon));
+      return { data: d, error: null };
+    }
+    if (nom === 'express_noter_coursier' || nom === 'express_noter_client') {
+      const c = (TABLES.express_courses || []).find(x => x.id === (args && args.p_course_id));
+      if (!c || c.status !== 'livree') return { data: null, error: { message: 'course_non_livree' } };
+      if (nom === 'express_noter_coursier') { if (c.client_id !== user) return { data: null, error: { message: 'pas_votre_course' } }; c.note_client = args.p_note; c.avis_client = args.p_avis || null; }
+      else { if (c.coursier_id !== user) return { data: null, error: { message: 'pas_votre_course' } }; c.note_coursier = args.p_note; c.avis_coursier = args.p_avis || null; }
+      return { data: true, error: null };
+    }
+    if (nom === 'express_note_moyenne_coursier') {
+      const notes = (TABLES.express_courses || []).filter(c => c.coursier_id === (args && args.p_coursier_id) && c.note_client).map(c => c.note_client);
+      return { data: notes.length ? { moyenne: Math.round(notes.reduce((t, n) => t + n, 0) / notes.length * 10) / 10, nombre: notes.length } : null, error: null };
+    }
+    if (nom === 'express_messages_marquer_lus') return { data: true, error: null };
     if (nom === 'annonce_remise_en_cours') {
       // Comme en base : la dernière annonce NON réglée du livreur demandé (null quand il n'y en a pas).
       const a = (TABLES.annonces_remise || []).filter(x => x.livreur_id === (args && args.p_livreur_id) && !x.remise_id);

@@ -2815,7 +2815,7 @@ html[data-theme="dark"] .pdj-cliente{ background:#1A2433; border-color:#2B3A4E; 
 .clt-nouveautes__boite { background: #fff; color: #1f2937; border-radius: 16px; width: min(560px, 100%); max-height: min(80vh, 640px); display: flex; flex-direction: column; box-shadow: 0 24px 60px rgba(0,0,0,.35); }
 .clt-nouveautes__tete { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid #e5e7eb; }
 .clt-nouveautes__tete h2 { margin: 0; font-size: 18px; }
-.clt-nouveautes__fermer { background: none; border: none; font-size: 26px; line-height: 1; cursor: pointer; color: #6b7280; width: 40px; height: 40px; border-radius: 10px; }
+.clt-nouveautes__fermer { background: none; border: none; font-size: 26px; line-height: 1; cursor: pointer; color: #6b7280; width: 44px; height: 44px; /* 44 px (25/09/2026) : la croix de toutes les fenêtres — nouveautés, aide, dossier Express */ border-radius: 10px; }
 .clt-nouveautes__fermer:hover { background: #f3f4f6; }
 .clt-nouveautes__corps { overflow: auto; padding: 6px 18px 18px; }
 .clt-nouveautes__entree { padding: 12px 0; border-bottom: 1px solid #f1f5f9; }
@@ -4721,3 +4721,20 @@ html[data-theme="dark"] .confier-groupe.confier-retard{ border-left-color:#F0A07
 html[data-theme="dark"] .confier-retard .confier-compte b{ color:#F0A070; }
 html[data-theme="dark"] .confier-etat--livrer{ background:#243247; color:#BFD0E6; }
 html[data-theme="dark"] .confier-etat--recuperer{ background:#3a2a1a; color:#F0C8A8; }
+
+/* LE DOSSIER D'UNE COURSE EXPRESS (25/09/2026, chantier P, lot P-1) : la fenêtre par-dessus la liste. */
+.express-dossier__corps{ padding:4px 18px 18px; font-size:14px; }
+.express-dossier__tete{ margin:8px 0 12px; line-height:1.5; }
+.express-dossier__personnes{ display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px; }
+.express-dossier__personnes > div{ background:var(--grey-bg); border-radius:12px; padding:10px 12px; display:flex; flex-direction:column; gap:6px; }
+.express-dossier__personnes .btn{ align-self:flex-start; }
+.express-chrono{ list-style:none; margin:0; padding:0 0 0 14px; border-left:2px solid var(--border-strong); }
+.express-chrono li{ position:relative; padding:0 0 10px 12px; }
+.express-chrono li::before{ content:''; position:absolute; left:-19px; top:6px; width:8px; height:8px; border-radius:50%; background:var(--navy); }
+.express-chrono__quand{ font-weight:700; margin-right:6px; white-space:nowrap; }
+.express-dossier__argent{ background:var(--grey-bg); border-radius:12px; padding:10px 12px; }
+.express-dossier__chat{ margin-top:8px; display:flex; flex-direction:column; gap:6px; max-height:220px; overflow:auto; }
+.express-msg{ background:var(--grey-bg); border-radius:10px; padding:6px 10px; }
+.express-attente--urgent{ color:#BF5210; font-weight:700; }
+html[data-theme="dark"] .express-dossier__personnes > div, html[data-theme="dark"] .express-dossier__argent, html[data-theme="dark"] .express-msg{ background:#243247; }
+html[data-theme="dark"] .express-attente--urgent{ color:#F58A45; }

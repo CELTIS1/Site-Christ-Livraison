@@ -481,6 +481,17 @@
             "En tête du tableau de bord : les dix chiffres de la semaine, chacun avec son verdict (vert, orange, rouge). Un appui ouvre l'onglet de l'équipe concerné.",
             "Le mardi : les dix chiffres, « À faire par le gérant », puis Argent › Ce qui manque. Deux minutes chacun."
           ]
+        },
+        {
+          "id": "equipe-express-dossier",
+          "titre": "CLT Express : le dossier d'une course",
+          "resume": "Onglet Express : chaque course a un bouton « Dossier » — qui, quand, où, les notes, le chat, l'argent.",
+          "etapes": [
+            "Onglet Express › la liste des courses : le statut (en attente · acceptée · récupérée · livrée · annulée) et, à côté, depuis combien de temps elle attend — en orange quand ça traîne.",
+            "« 📂 Dossier » : le client, le coursier et le destinataire (un appui pour appeler), la chronologie complète, l'argent (prix, commission, part du coursier, commission débitée ou non), les messages du chat.",
+            "Les gestes du bureau sur une course (attribuer, marquer à sa place, annuler avec motif) arrivent dans la mise à jour suivante."
+          ],
+          "astuce": "Le filtre « Récupérées » montre les colis en route vers la livraison : c'est là qu'on appelle si le client s'inquiète."
         }
       ]
     },
