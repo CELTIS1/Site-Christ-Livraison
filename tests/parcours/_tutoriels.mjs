@@ -36,6 +36,7 @@ async function dire(page, texte, sous) {
 }
 async function toucher(page, locator, attente) {
   const el = locator.first();
+  if (process.env.TUTO_DEBUG) console.log('    · toucher', String(locator).slice(0, 90), 'visible=' + await el.isVisible().catch(() => 'err'));
   await el.scrollIntoViewIfNeeded().catch(() => {});
   await dodo(300);
   const b = await el.boundingBox();
@@ -43,7 +44,10 @@ async function toucher(page, locator, attente) {
     await page.evaluate(([x, y, w, h]) => { const r = document.getElementById('clt-tuto-ring'); if (!r) return; r.style.display = 'block'; r.style.left = (x - 10) + 'px'; r.style.top = (y - 10) + 'px'; r.style.width = (w + 20) + 'px'; r.style.height = (h + 20) + 'px'; }, [b.x, b.y, b.width, b.height]);
     await dodo(900);
   }
-  await el.click();
+  // Un clic Playwright peut être intercepté par une couche au-dessus (dossier Express + fenêtre de confirmation) :
+  // après 5 s, on clique par le DOM sur l'élément visible — l'image montre la même chose (26/09).
+  try { await el.click({ timeout: 5000 }); }
+  catch (e) { const ok = await el.evaluate((n) => { if (!n.getBoundingClientRect().width) return false; n.click(); return true; }).catch(() => false); if (!ok) throw e; }
   await page.evaluate(() => { const r = document.getElementById('clt-tuto-ring'); if (r) r.style.display = 'none'; });
   await dodo(attente || 900);
 }
@@ -260,10 +264,13 @@ const SCENARIOS = [
     monde(m) { m.TABLES.colis.push(colis(312, { statut: 'livre', fournisseur_id: CLIENTE1, livreur_id: LIVREUR, created_at: iso(-1, 7), recupere_at: iso(-1, 8), livre_at: iso(-1, 11), description: 'Robe', montant_article: 15000, montant_livraison: 2000 })); },
     async jouer(p) {
       await dire(p, 'Relevé : vos ventes livrées, et ce que CLT vous reverse', 'Livré − frais de livraison = net dû');
-      await toucher(p, p.locator('#clt-bottomnav .nav[data-target="section-releve"]'), 1800);
-      await p.evaluate(() => { const s = document.getElementById('section-releve'); if (s) s.scrollIntoView({ block: 'start' }); }); await dodo(1500);
+      // Le relevé est sous l'onglet « Récap » (pas d'onglet « Relevé » dans la barre du bas) — corrigé le 26/09.
+      await toucher(p, p.locator('#clt-bottomnav .nav[data-target="section-recap"]'), 1500);
+      await p.evaluate(() => { const s = document.getElementById('section-releve'); if (s) s.scrollIntoView({ block: 'start' }); }); await dodo(1200);
+      await toucher(p, p.locator('#releve-details summary'), 1800);
+      await p.evaluate(() => { const s = document.getElementById('section-releve'); if (s) s.scrollIntoView({ block: 'start' }); }); await dodo(1200);
       await dire(p, 'Chaque reversement a son reçu numéroté', 'Vous le retrouvez ici, avec la date et le mode');
-      await dodo(1500);
+      await p.evaluate(() => { const s = document.getElementById('releve-tiles'); if (s) s.scrollIntoView({ block: 'center' }); }); await dodo(2500);
     } },
   { id: 'equipe-creer-confier', espace: 'equipe', titre: 'Créer un colis, puis le confier à un livreur', page: 'equipe.html', qui: ADMIN,
     monde(m) { m.TABLES.programmations_collecte = m.TABLES.programmations_collecte.filter(x => x.fournisseur_id !== CLIENTE1); },
@@ -296,8 +303,8 @@ const SCENARIOS = [
       await p.evaluate(() => { const g = document.querySelector('#express-dossier .express-geste'); if (g) g.scrollIntoView({ block: 'center' }); }); await dodo(600);
       await toucher(p, dos.locator('[data-express-geste="attribuer"]'), 600);
       await dos.locator('.express-geste__coursier').selectOption(COURSIER_TUTO); await dos.locator('.express-geste__coursier').dispatchEvent('change'); await dodo(500);
-      await toucher(p, dos.locator('[data-express-geste="attribuer"]'), 600);
-      await toucher(p, p.locator('#clt-modal-ok'), 1800);
+      await toucher(p, dos.locator('[data-express-geste="attribuer"]'), 1200);
+      if (await p.locator('#clt-modal-ok').isVisible().catch(() => false)) await toucher(p, p.locator('#clt-modal-ok'), 1800); else await dodo(1200);
       await dire(p, 'Acceptée à son nom, tracée « par le bureau »', 'Les gestes suivants : récupérée, livrée, annuler');
     } },
   { id: 'equipe-litiges-express', espace: 'equipe', titre: 'Un litige Express : je m\'en occupe, je réponds', page: 'equipe.html', qui: ADMIN,
@@ -468,6 +475,9 @@ async function enregistrer(sc) {
   await N.fermer();
   const webm = video ? await video.path() : null;
   if (!webm || !fs.existsSync(webm)) { console.error('  ❌ pas de vidéo pour ' + sc.id); return false; }
+  // Un scénario interrompu (clic impossible, écran absent) ne produit pas de vidéo : on garderait une image
+  // figée pendant une minute (cliente-releve, 25/09). L'ancienne vidéo reste en place.
+  if (erreur) { console.error('  ❌ ' + sc.id + ' : scénario interrompu, vidéo non écrite — ' + (erreur.message || '').split('\n')[0].slice(0, 120)); return false; }
   const mp4 = path.join(SORTIE, sc.id + '.mp4');
   const jpg = path.join(SORTIE, sc.id + '.jpg');
   // 12 images/s, H.264 très compressé, faststart pour lire avant d'avoir tout reçu ; l'affiche à 3 s.

@@ -13,6 +13,7 @@
    normaliser, chercherFiches, intention). */
 (function () {
   'use strict';
+  var ICONE_BULLE = '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-8 8H8l-4 3v-3.5A8 8 0 1 1 21 12z"/><circle cx="8.5" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="15.5" cy="12" r="1" fill="currentColor" stroke="none"/></svg>';
   var WHATSAPP = '2250546818640';
   var SYNONYMES = {
     solde: ['solde', 'recharge', 'recharger', 'argent', 'portefeuille', 'wave', 'momo', 'credit'],
@@ -185,7 +186,7 @@
     // Échap est géré ici, à la main.
     var sugg = SUGGESTIONS[etat.espace] || ['Comment faire ?'];
     ov.innerHTML = '<div class="clt-assistant__boite">' +
-      '<div class="clt-assistant__tete"><div class="clt-assistant__avatar">🎧</div><div><strong>Assistant CLT</strong><small>Je réponds tout de suite ; un humain est à un clic.</small></div><button type="button" class="clt-assistant__fermer" data-clt-fermer aria-label="Fermer">×</button></div>' +
+      '<div class="clt-assistant__tete"><div class="clt-assistant__avatar">' + ICONE_BULLE.replace('width="28" height="28"', 'width="22" height="22"') + '</div><div><strong>Assistant CLT</strong><small>Je réponds tout de suite ; un humain est à un clic.</small></div><button type="button" class="clt-assistant__fermer" data-clt-fermer aria-label="Fermer">×</button></div>' +
       '<div class="clt-assistant__fil" id="clt-assistant-fil">' + bulle('Bonjour' + (etat.nom ? ' ' + esc(etat.nom.split(' ')[0]) : '') + ' 👋 Je peux vous aider ? Choisissez une question, ou écrivez la vôtre.', 'clt') + '</div>' +
       '<div class="clt-assistant__sugg">' + sugg.map(function (s) { return '<button type="button" class="clt-assistant__q" data-assistant-q="' + esc(s) + '">' + esc(s) + '</button>'; }).join('') + '</div>' +
       '<form class="clt-assistant__saisie" id="clt-assistant-form"><input type="text" id="clt-assistant-champ" placeholder="Votre question…" maxlength="300" autocomplete="off" aria-label="Votre question"><button type="submit" class="btn" aria-label="Envoyer">➤</button></form>' +
@@ -213,7 +214,9 @@
     etat.espace = typeof cltEspaceDeLaPage === 'function' ? cltEspaceDeLaPage() : null;
     if (!etat.espace) return;
     var b = document.createElement('button'); b.type = 'button'; b.id = 'clt-assistant-bouton'; b.className = 'clt-assistant-bouton';
-    b.setAttribute('aria-label', 'Assistant CLT : poser une question'); b.setAttribute('aria-expanded', 'false'); b.innerHTML = '🎧';
+    b.setAttribute('aria-label', 'Assistant CLT : poser une question'); b.setAttribute('aria-expanded', 'false');
+    // L'icône universelle de l'assistant (Intercom, Messenger, Crisp) : la bulle de conversation à trois points — pas le casque (Celtis, 26/09).
+    b.innerHTML = ICONE_BULLE;
     b.addEventListener('click', function () { if (etat.ouvert) { var o = document.getElementById('clt-assistant'); if (o) { o.classList.add('hidden'); o.setAttribute('hidden', ''); } etat.ouvert = false; b.setAttribute('aria-expanded', 'false'); return; } dessiner(); b.setAttribute('aria-expanded', 'true'); });
     document.body.appendChild(b);
     // Qui parle : posé par la page quand elle connaît la personne (CLTAssistant.personne(id, nom)).
