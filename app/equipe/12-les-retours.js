@@ -124,6 +124,7 @@ function rtLignes(){
   const A = window.CLTATraiter;
   return A.lignesATraiter({ colis: rtColis, reportes: rtReportes, reclamations: Array.isArray(window.__reclamationsClientes) ? window.__reclamationsClientes : [], demandes: rtDemandes, litiges: Array.isArray(window.__litigesExpress) ? window.__litigesExpress : [], coursesExpress: Array.isArray(window.__coursesSansCoursier) ? window.__coursesSansCoursier : [] }, todayLocalISODate(), { retourNiveau, retourEnRetard, retourDepart });
 }
+window.rtLignes = rtLignes;   // l'assistant (25/09) lit le compte des lignes
 function rtLigneCorrespond(l, q){
   if (!q) return true;
   if (l.colis) return window.CLTRetoursBureau ? CLTRetoursBureau.correspond(l.colis, q, rtNomsPourRecherche(l.colis)) : true;

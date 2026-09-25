@@ -991,6 +991,17 @@
           "astuce": "Pour envoyer une vidéo à quelqu'un : « Copier le lien » sous la fiche, puis coller sur WhatsApp."
         },
         {
+          "id": "l-assistant",
+          "titre": "L'assistant 🎧 : une question, une réponse tout de suite",
+          "resume": "Le rond en bas à droite ouvre une conversation : il répond avec l'aide et les vidéos, sur vos propres données (« où est ma course ? », « combien CLT me doit ? »), et passe la main à CLT sur WhatsApp.",
+          "etapes": [
+            "Appuyez sur le rond 🎧, choisissez une question proposée ou écrivez la vôtre, en français de tous les jours.",
+            "Il répond avec les fiches et vidéos qui correspondent, ou avec vos chiffres du moment (votre course, votre solde, votre relevé, votre journée).",
+            "« Parler à CLT sur WhatsApp » envoie votre question à l'équipe avec votre nom et votre rôle déjà écrits : pas besoin de vous présenter."
+          ],
+          "astuce": "Il ne devine pas : si votre question n'est dans aucune fiche, il vous propose directement de l'envoyer à CLT."
+        },
+        {
           "id": "nouveautes",
           "titre": "Quoi de neuf dans l'application",
           "resume": "Chaque mise à jour est expliquée en deux lignes.",

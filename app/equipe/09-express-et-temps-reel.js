@@ -600,6 +600,7 @@ setTimeout(function () { if (window.CLTBioLock) CLTBioLock.maybeOfferEnrollment(
 window.CLTProfil = profile;
 applyPwaIdentityForRole(isAdmin);
 document.getElementById('user-name').textContent = profile.full_name || '';
+if (window.CLTAssistant) CLTAssistant.personne(currentUser.id, profile.full_name);
 document.getElementById('user-first-name').textContent = profile.full_name || '';
 initAvatarUpload({ profile, previewContainerId: 'avatar-preview', topbarContainerId: 'user-avatar-topbar', cameraInputId: 'avatar-input-camera', libraryInputId: 'avatar-input-library', statusId: 'avatar-msg' });
 initProfileInfoForm({ profile, formId: 'form-profile-info', fullNameId: 'profile-full-name', msgId: 'profile-info-msg', primaryNameDisplayId: 'user-name', secondaryNameDisplayId: 'user-first-name' });
