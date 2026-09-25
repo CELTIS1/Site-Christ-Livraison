@@ -1457,10 +1457,11 @@ v236 — 23 septembre 2026 — La barre du bas, fixée en bas
    v264, le 25/09/2026 — CLT Express, la preuve de livraison (chantier P, lot P-3, 1/2) : express-preuve.js (code à 4 chiffres lu par le client, tapé par le coursier, express_livrer_course ; sans code, le client confirme), preuve dans le dossier ; SQL 2026-09-25-express-la-preuve-de-livraison.sql ; parcours la-preuve-de-livraison. Étiquette 20260925preuve.
    v265, le 25/09/2026 — CLT Express, la notation qui compte, les conditions, la valeur (chantier P, lot P-3, 2/2) : express-notation.js (seuils, état d'un coursier), express-conditions-texte.js (CGU, charte, objets, plafond), express-conditions.js (feuille, champs, note, bandeau), carte « Coursiers » au bureau ; SQL 2026-09-25-express-notation-conditions-valeur.sql ; parcours la-notation-et-les-conditions-express. Étiquette 20260925conditions.
    v266, le 25/09/2026 — CLT Express, le dispatch (chantier P, lot P-4) : express_diffusions et trois vagues (SQL 2026-09-25-express-le-dispatch.sql, pg_cron), envoyer-push ne pousse qu'aux coursiers de la vague, alerte bureau, course rendue, recharges notifiées ; « À traiter › Sans coursier » (a-traiter.js, 12-les-retours.js — et la vue Litiges qui retombait sur Tout, corrigée) ; courses sans épingle visibles ; parcours le-dispatch-express. Étiquette 20260925dispatch.
-   v267, le 25/09/2026 — Les vidéos partout (demande de Celtis) : 15 scénarios de plus dans tests/parcours/_tutoriels.mjs (livreur, cliente, équipe, client et coursier Express), le début coupé à l'écran prêt (plus de manifest-login.json à l'image), 24 liens de plus dans aide.json, « Comment faire ? » sur les écrans Express, relevé, Colis et Express du bureau. Étiquette 20260925videos. */
+   v267, le 25/09/2026 — Les vidéos partout (demande de Celtis) : 15 scénarios de plus dans tests/parcours/_tutoriels.mjs (livreur, cliente, équipe, client et coursier Express), le début coupé à l'écran prêt (plus de manifest-login.json à l'image), 24 liens de plus dans aide.json, « Comment faire ? » sur les écrans Express, relevé, Colis et Express du bureau. Étiquette 20260925videos.
+   v268, le 25/09/2026 — Le site (chantier Q, lots S-1 et S-3) : accueil — promesse, bouton WhatsApp unique, chiffres en direct (site_chiffres, SQL 2026-09-25-le-site-les-chiffres-en-direct.sql), vidéos, objections ; livreurs.html — trois formules, simulateur (règles de primes.js), primes, kit, vidéos, parcours de recrutement, FAQ ; banc le-site-qui-vend. Étiquette 20260925site. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v267'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v268'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

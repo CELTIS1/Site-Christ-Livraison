@@ -241,6 +241,26 @@
     --section-tint:#EEF3F9;
   }
   *{box-sizing:border-box;margin:0;padding:0;}
+  /* S-1 (25/09/2026) : la preuve, le produit, les objections. */
+  .preuve{ background:var(--navy); color:var(--white); padding:22px 0; }
+  .preuve-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+  .preuve-item{ text-align:center; padding:8px 6px; }
+  .preuve-item strong{ display:block; font-family:Poppins,Inter,sans-serif; font-size:34px; font-weight:700; line-height:1.1; color:#FFD8BF; font-variant-numeric:tabular-nums; }
+  .preuve-item span{ display:block; margin-top:4px; font-size:13.5px; opacity:.92; }
+  .preuve-note{ margin:12px 0 0; text-align:center; font-size:12.5px; opacity:.75; }
+  .produit{ padding:56px 0; background:var(--white); }
+  .produit-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:22px; margin-top:28px; }
+  .produit-item{ margin:0; text-align:center; }
+  .produit-item video{ width:100%; max-width:300px; height:auto; aspect-ratio:390/844; border-radius:22px; background:#0f1e33; box-shadow:0 12px 32px rgba(27,67,116,.18); border:6px solid #123252; }
+  .produit-item figcaption{ margin-top:12px; font-size:14.5px; color:var(--muted); line-height:1.5; }
+  .produit-item figcaption strong{ color:var(--navy); }
+  .section-sub{ text-align:center; max-width:720px; margin:-8px auto 0; color:var(--muted); font-size:16px; line-height:1.55; }
+  .objections{ padding:56px 0; background:var(--section-tint); }
+  .objections-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:18px; margin-top:28px; }
+  .objection{ background:var(--white); border-radius:16px; padding:22px 22px 20px; border-left:5px solid var(--orange); box-shadow:0 6px 18px rgba(27,67,116,.06); }
+  .objection h3{ font-size:17px; color:var(--navy); margin-bottom:8px; }
+  .objection p{ font-size:14.5px; line-height:1.6; color:#33475B; }
+  @media(max-width:860px){ .preuve-grid{ grid-template-columns:repeat(2,1fr); } .produit-grid{ grid-template-columns:1fr; } .objections-grid{ grid-template-columns:1fr; } .preuve-item strong{ font-size:28px; } }
   html{scroll-behavior:smooth; scroll-padding-top:110px;}
   body{
     font-family:Arial, Helvetica, sans-serif;
@@ -982,6 +1002,7 @@
         <li><a href="#comment-ca-marche" onclick="closeMenu()">Comment ça marche</a></li>
         <li class="nav-only-mobile"><a href="#couverture" onclick="closeMenu()">Zone de couverture</a></li>
         <li><a href="tarifs.html" onclick="closeMenu()">Tarifs</a></li>
+        <li><a href="livreurs.html" onclick="closeMenu()">Devenir livreur</a></li>
         <li><a href="#a-propos" onclick="closeMenu()">À propos</a></li>
         <li><a href="suivi.html" onclick="closeMenu()">Suivre un colis</a></li>
         <li><a href="installer.html" onclick="closeMenu()">Installer l'application</a></li>
@@ -1029,10 +1050,12 @@
       <div class="container hero-text-inner">
         <div class="hero-text">
           <span class="pill" id="heroPill">CRÉDIBLE • SIMPLE • SÉCURISÉE</span>
-          <h1 id="heroTitle">Votre partenaire livraison au quotidien, partout à Abidjan.</h1>
-          <p class="lead" id="heroLead">Colis, courriers, documents administratifs et courses : nous nous occupons de vos livraisons pour que vous n'ayez pas à le faire.</p>
+          <h1 id="heroTitle">Votre colis livré, votre argent rendu, et vous savez où en est chaque colis.</h1>
+          <p class="lead" id="heroLead">On récupère chez vous, on livre à vos clientes partout à Abidjan, on encaisse pour vous et on vous reverse — avec un reçu. Première livraison offerte.</p>
           <div class="hero-actions">
-            <a href="#devis" class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i> Demander un devis</a>
+            <!-- S-1 (25/09/2026) : UN bouton, celui qui fait entrer les clientes ; le devis reste plus bas. -->
+            <a href="https://wa.me/2250546818640?text=Bonjour%20CLT%2C%20je%20vends%20%C3%A0%20Abidjan%20et%20je%20veux%20essayer%20la%20premi%C3%A8re%20livraison%20offerte." class="btn btn-primary" id="heroWhatsApp" target="_blank" rel="noopener" data-site-compteur="whatsapp-heros"><i class="fa-brands fa-whatsapp"></i> Commencer sur WhatsApp</a>
+            <a href="suivi.html" class="btn btn-secondary"><i class="fa-solid fa-location-dot"></i> Suivre un colis</a>
           </div>
           <div class="hero-audience" id="heroAudience">
             <span><i class="fa-solid fa-user"></i> Particuliers</span>
@@ -1055,6 +1078,20 @@
   <div class="marquee-track" id="marqueeTrack"></div>
 </div>
 
+<!-- S-1 (25/09/2026) : LA PREUVE, EN CHIFFRES, EN DIRECT. Lus dans la base (site_chiffres, fonction publique
+     qui ne rend que des totaux), remis à jour à chaque visite ; sans réseau, les tirets restent. -->
+<section class="preuve" id="preuve" aria-label="Nos chiffres">
+  <div class="container">
+    <div class="preuve-grid">
+      <div class="preuve-item"><strong id="chiffre-livres-mois">—</strong><span>colis livrés ce mois</span></div>
+      <div class="preuve-item"><strong id="chiffre-taux">—</strong><span>livrés du premier coup</span></div>
+      <div class="preuve-item"><strong id="chiffre-vendeuses">—</strong><span>vendeuses livrées ce mois</span></div>
+      <div class="preuve-item"><strong id="chiffre-reverse">—</strong><span>reversés aux vendeuses ce mois</span></div>
+    </div>
+    <p class="preuve-note" id="preuve-note">Chiffres réels, lus dans notre application au moment où vous ouvrez cette page.</p>
+  </div>
+</section>
+
 <section class="trust">
   <div class="container">
     <div class="trust-grid" id="trustGrid">
@@ -1076,6 +1113,41 @@
       <a class="service-card reveal" href="services.html?s=ecommerce"><div class="service-icon"><i class="fa-solid fa-cart-shopping"></i></div><h3>Livraison e-commerce</h3><p>Nous livrons les commandes de votre boutique en ligne directement à vos clients.</p><span class="service-learn">En savoir plus <i class="fa-solid fa-arrow-right"></i></span></a>
       <a class="service-card reveal" href="services.html?s=entreprises"><div class="service-icon"><i class="fa-solid fa-briefcase"></i></div><h3>Courses pour entreprises</h3><p>Un coursier dédié pour vos courses professionnelles : documents, achats, commissions diverses.</p><span class="service-learn">En savoir plus <i class="fa-solid fa-arrow-right"></i></span></a>
       <a class="service-card reveal" href="services.html?s=expedition"><div class="service-icon"><i class="fa-solid fa-paper-plane"></i></div><h3>Expédition vers l'intérieur</h3><p>Nous récupérons votre colis là où vous êtes et nous l'expédions vers l'intérieur du pays par les compagnies de transport.</p><span class="service-learn">En savoir plus <i class="fa-solid fa-arrow-right"></i></span></a>
+    </div>
+  </div>
+</section>
+
+<!-- S-1 (25/09/2026) : LE PRODUIT MONTRÉ, PAS DÉCRIT. Les vidéos sont celles de l'aide de l'application (390 × 844, 20 s). -->
+<section id="produit" class="produit">
+  <div class="container">
+    <h2 class="section-title reveal">Ce que vous voyez, vous, sur votre téléphone</h2>
+    <p class="section-sub reveal">Chaque colis a un numéro, chaque livraison une preuve, chaque reversement un reçu. Regardez, c'est plus court qu'un discours.</p>
+    <div class="produit-grid">
+      <figure class="produit-item reveal">
+        <video controls preload="none" playsinline muted poster="app/aide/videos/cliente-suivre-signaler.jpg" width="390" height="844"><source src="app/aide/videos/cliente-suivre-signaler.mp4" type="video/mp4"></video>
+        <figcaption><strong>Suivre un colis</strong> — la frise dit où il est, et vous pouvez signaler un problème sous le colis.</figcaption>
+      </figure>
+      <figure class="produit-item reveal">
+        <video controls preload="none" playsinline muted poster="app/aide/videos/cliente-releve.jpg" width="390" height="844"><source src="app/aide/videos/cliente-releve.mp4" type="video/mp4"></video>
+        <figcaption><strong>Votre relevé</strong> — ce que CLT vous doit, et chaque reversement avec son reçu numéroté.</figcaption>
+      </figure>
+      <figure class="produit-item reveal">
+        <video controls preload="none" playsinline muted poster="app/aide/videos/cliente-confirmer-retour.jpg" width="390" height="844"><source src="app/aide/videos/cliente-confirmer-retour.mp4" type="video/mp4"></video>
+        <figcaption><strong>Un colis revient</strong> — vous le savez, et vous confirmez quand il vous est rendu. Rien ne se perd.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- S-1 (25/09/2026) : LES OBJECTIONS, ÉCRITES. Ce que les vendeuses demandent avant de dire oui. -->
+<section id="objections" class="objections">
+  <div class="container">
+    <h2 class="section-title reveal">Ce que vous vous demandez avant de nous confier vos colis</h2>
+    <div class="objections-grid">
+      <div class="objection reveal"><h3>« Et si mon colis se perd ? »</h3><p>Chaque colis a un numéro et un livreur nommé. Livré, c'est une photo ou un code. Non livré, vous le savez dans l'heure, avec le motif. Un litige est tranché par le bureau en 24 h.</p></div>
+      <div class="objection reveal"><h3>« Et mon argent ? »</h3><p>L'argent de l'article est à vous. Il apparaît sur votre relevé le soir même ; le reversement se fait avec un reçu numéroté que vous gardez. Vous pouvez vérifier seule, sans appeler.</p></div>
+      <div class="objection reveal"><h3>« Vos livreurs sont sérieux ? »</h3><p>Formés, équipés, notés sur chaque colis ; le bureau voit leur tournée en direct. Un livreur qui prend un colis sans le valider, on le sait.</p></div>
+      <div class="objection reveal"><h3>« Ça coûte combien ? »</h3><p>À partir de 1 000 F la livraison dans Abidjan, selon la commune, prix annoncé avant. Pas d'abonnement. La première livraison est offerte pour voir.</p></div>
     </div>
   </div>
 </section>
@@ -1340,6 +1412,7 @@
           <li><a href="#devis">Demander un devis</a></li>
           <li><a href="express.html">CLT Express, la livraison à la demande</a></li>
           <li><a href="tarifs.html">Nos tarifs</a></li>
+          <li><a href="livreurs.html">Devenir livreur chez CLT</a></li>
           <li><a href="installer.html">Installer l'application sur votre téléphone</a></li>
           <li><a href="contact.html">Contact</a></li>
           <li><a href="conditions-generales.html">Conditions générales</a></li>
@@ -1662,6 +1735,32 @@
       .then(function(rows){ if (rows && rows[0] && rows[0].contenu) return rows[0].contenu; return Promise.reject('fiche vide'); })
       .catch(function(){ return secours(); });
   }
+
+  /* S-1 (25/09/2026) : les chiffres en direct. site_chiffres() ne rend que des totaux (rien de nominatif). */
+  function chargerChiffres(){
+    var URL_BASE = "https://xkfltqjbmolmdwdafzcx.supabase.co", CLE = "sb_publishable_wn9f6Way_wMzCVypmJo5zA_yWYPqJzP";
+    var f = function(n){ return Number(n || 0).toLocaleString('fr-FR'); };
+    fetch(URL_BASE + '/rest/v1/rpc/site_chiffres', { method: 'POST', headers: { 'apikey': CLE, 'Authorization': 'Bearer ' + CLE, 'Content-Type': 'application/json' }, body: '{}' })
+      .then(function(r){ return r.ok ? r.json() : Promise.reject(r.status); })
+      .then(function(c){
+        if (!c) return;
+        var pose = function(id, v){ var e = document.getElementById(id); if (e && v != null) e.textContent = v; };
+        pose('chiffre-livres-mois', f(c.colis_livres_mois));
+        pose('chiffre-taux', c.taux_livres_mois != null ? Math.round(c.taux_livres_mois) + ' %' : null);
+        pose('chiffre-vendeuses', f(c.vendeuses_mois));
+        pose('chiffre-reverse', c.reverse_mois != null ? f(c.reverse_mois) + ' F' : null);
+        var n = document.getElementById('preuve-note'); if (n && c.a_jour_le) n.textContent = 'Chiffres réels de notre application, au ' + new Date(c.a_jour_le).toLocaleDateString('fr-FR') + '.';
+      }).catch(function(){ /* sans réseau ou sans la fonction : les tirets restent */ });
+  }
+  chargerChiffres();
+  /* Ce qu'on mesure (S-1) : les clics sur « Commencer sur WhatsApp », comptés sans rien d'autre (stats_visites, si présent). */
+  document.addEventListener('click', function(e){
+    var b = e.target.closest('[data-site-compteur]'); if (!b) return;
+    try {
+      var URL_BASE = "https://xkfltqjbmolmdwdafzcx.supabase.co", CLE = "sb_publishable_wn9f6Way_wMzCVypmJo5zA_yWYPqJzP";
+      fetch(URL_BASE + '/rest/v1/site_visits', { method: 'POST', keepalive: true, headers: { 'apikey': CLE, 'Authorization': 'Bearer ' + CLE, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }, body: JSON.stringify({ visitor_id: 'clic', page: b.dataset.siteCompteur }) }).catch(function(){});
+    } catch (x) {}
+  });
 
   function applyContent(data){
     SITE = data;
