@@ -30,7 +30,7 @@
     {
       "icon": "fa-handshake",
       "title": "Nos partenariats",
-      "text": "Plus de {commercants_nombre|60} commerçants et entreprises nous confient déjà leurs livraisons à Abidjan."
+      "text": "Plus de {commercants_nombre|60} fournisseurs et entreprises nous confient déjà leurs livraisons à Abidjan."
     }
   ],
   "services": [
@@ -504,7 +504,7 @@
     "stats": [
       {
         "number": "{commercants|60+}",
-        "label": "commerçants et entreprises partenaires"
+        "label": "fournisseurs nous font confiance"
       },
       {
         "number": "{colis_livres|1 000+}",

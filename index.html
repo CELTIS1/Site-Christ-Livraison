@@ -243,9 +243,9 @@
   *{box-sizing:border-box;margin:0;padding:0;}
   /* S-1 (25/09/2026) : la preuve, le produit, les objections. */
   .preuve{ background:var(--navy); color:var(--white); padding:22px 0; }
-  .preuve-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+  .preuve-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; max-width:860px; margin:0 auto; }
   .preuve-item{ text-align:center; padding:8px 6px; }
-  .preuve-item strong{ display:block; font-family:Poppins,Inter,sans-serif; font-size:34px; font-weight:700; line-height:1.1; color:#FFD8BF; font-variant-numeric:tabular-nums; }
+  .preuve-item strong{ display:block; font-family:Poppins,Inter,sans-serif; font-size:34px; font-weight:700; line-height:1.1; color:#FFD8BF; font-variant-numeric:tabular-nums; white-space:nowrap; }
   .preuve-item span{ display:block; margin-top:4px; font-size:13.5px; opacity:.92; }
   .preuve-note{ margin:12px 0 0; text-align:center; font-size:12.5px; opacity:.75; }
   .produit{ padding:56px 0; background:var(--white); }
@@ -260,7 +260,8 @@
   .objection{ background:var(--white); border-radius:16px; padding:22px 22px 20px; border-left:5px solid var(--orange); box-shadow:0 6px 18px rgba(27,67,116,.06); }
   .objection h3{ font-size:17px; color:var(--navy); margin-bottom:8px; }
   .objection p{ font-size:14.5px; line-height:1.6; color:#33475B; }
-  @media(max-width:860px){ .preuve-grid{ grid-template-columns:repeat(2,1fr); } .produit-grid{ grid-template-columns:1fr; } .objections-grid{ grid-template-columns:1fr; } .preuve-item strong{ font-size:28px; } }
+  @media(max-width:380px){ .preuve-item strong{ font-size:23px !important; } .preuve-item{ padding:8px 2px; } }
+  @media(max-width:860px){ .preuve-grid{ gap:8px; } .preuve-item span{ font-size:12.5px; } .produit-grid{ grid-template-columns:1fr; } .objections-grid{ grid-template-columns:1fr; } .preuve-item strong{ font-size:28px; } }
   html{scroll-behavior:smooth; scroll-padding-top:110px;}
   body{
     font-family:Arial, Helvetica, sans-serif;
@@ -1093,7 +1094,7 @@
             <li><a href="express.html" onclick="closeMenu()">CLT Express — à la demande</a></li>
           </ul>
         </li>
-        <li><a href="vendeuses.html" onclick="closeMenu()">Vendeuses</a></li>
+        <li><a href="vendeuses.html" onclick="closeMenu()">Fournisseurs</a></li>
         <li><a href="livreurs.html" onclick="closeMenu()">Devenir livreur</a></li>
         <li><a href="suivi.html" onclick="closeMenu()">Suivre un colis</a></li>
         <li class="nav-groupe">
@@ -1164,35 +1165,36 @@
   <div class="marquee-track" id="marqueeTrack"></div>
 </div>
 
-<!-- S-1 (25/09/2026) : LA PREUVE, EN CHIFFRES, EN DIRECT. Lus dans la base (site_chiffres, fonction publique
-     qui ne rend que des totaux), remis à jour à chaque visite ; sans réseau, les tirets restent. -->
+<!-- S-1 (25/09/2026) : LA PREUVE, EN CHIFFRES. Revue le 26/09 (v285), Celtis : « le nombre de colis doit être
+     approximatif et pareil d'une section à l'autre ; pareil pour les vendeuses, qu'on appelle fournisseurs ; pas de
+     montant ». Colis et fournisseurs viennent d'UNE source, site_chiffres() (arrondis vers le bas : 1 500+, 60+), les
+     mêmes qu'« À propos » ; le taux du mois, seul, vient de site_chiffres_mois(). Aucun montant d'argent. -->
 <section class="preuve" id="preuve" aria-label="Nos chiffres">
   <div class="container">
     <div class="preuve-grid">
-      <div class="preuve-item"><strong id="chiffre-livres-mois">—</strong><span>colis livrés ce mois</span></div>
+      <div class="preuve-item"><strong data-chiffre="colis_livres">1 000+</strong><span>colis livrés à Abidjan</span></div>
       <div class="preuve-item"><strong id="chiffre-taux">—</strong><span>livrés du premier coup</span></div>
-      <div class="preuve-item"><strong id="chiffre-vendeuses">—</strong><span>vendeuses livrées ce mois</span></div>
-      <div class="preuve-item"><strong id="chiffre-reverse">—</strong><span>reversés aux vendeuses ce mois</span></div>
+      <div class="preuve-item"><strong data-chiffre="commercants">60+</strong><span>fournisseurs nous font confiance</span></div>
     </div>
-    <p class="preuve-note" id="preuve-note">Chiffres réels, lus dans notre application au moment où vous ouvrez cette page.</p>
+    <p class="preuve-note" id="preuve-note">Chiffres arrondis, tirés de notre application ; taux du mois en cours.</p>
   </div>
 </section>
 
 <!-- S-5 (26/09/2026) : LA VENDEUSE DE LA SEMAINE. Une fiche de « Nos vendeuses » (site_vendeuses : consentie ET
      validée par le bureau), choisie par le numéro de la semaine — la même pour tout le monde, toute la semaine.
      Cachée tant qu'il n'y a aucune fiche. -->
-<section class="semaine" id="vendeuse-semaine" hidden aria-label="Vendeuse de la semaine">
+<section class="semaine" id="vendeuse-semaine" hidden aria-label="Fournisseur de la semaine">
   <div class="container semaine-inner">
     <div class="semaine-texte">
-      <span class="semaine-etiquette">⭐ Vendeuse de la semaine</span>
+      <span class="semaine-etiquette">⭐ Fournisseur de la semaine</span>
       <h3 id="vs-nom"></h3>
       <p id="vs-desc"></p>
       <div class="semaine-actions">
-        <a id="vs-wa" class="btn btn-primary" target="_blank" rel="noopener" href="#" data-site-compteur="vendeuse-semaine"><i class="fa-brands fa-whatsapp"></i> Commander chez elle</a>
-        <a class="btn btn-secondary" href="vendeuses.html#nos-vendeuses">Toutes nos vendeuses</a>
+        <a id="vs-wa" class="btn btn-primary" target="_blank" rel="noopener" href="#" data-site-compteur="vendeuse-semaine"><i class="fa-brands fa-whatsapp"></i> Commander</a>
+        <a class="btn btn-secondary" href="vendeuses.html#nos-vendeuses">Tous nos fournisseurs</a>
       </div>
     </div>
-    <div class="semaine-note">Elle vend, CLT livre et lui reverse son argent. Vous vendez aussi ? <a href="vendeuses.html">Votre boutique peut être ici.</a></div>
+    <div class="semaine-note">Nos fournisseurs vendent, CLT livre et leur reverse leur argent. Vous vendez aussi ? <a href="vendeuses.html">Votre boutique peut être ici.</a></div>
   </div>
 </section>
 
@@ -1327,7 +1329,7 @@
       <div class="about-value reveal"><i class="fa-solid fa-location-dot"></i><h4>Proximité</h4><p>Une équipe joignable et à l'écoute, toujours proche de ses clients et fournisseurs.</p></div>
     </div>
     <div class="about-stats reveal" id="aboutStats">
-      <div class="about-stat"><div class="stat-number" data-chiffre="commercants">60+</div><div class="stat-label">commerçants et entreprises partenaires</div></div>
+      <div class="about-stat"><div class="stat-number" data-chiffre="commercants">60+</div><div class="stat-label">fournisseurs nous font confiance</div></div>
       <div class="about-stat"><div class="stat-number" data-chiffre="colis_livres">1 000+</div><div class="stat-label">colis livrés à Abidjan</div></div>
       <div class="about-stat"><div class="stat-number">1000 FCFA</div><div class="stat-label">tarif de départ pour vos livraisons</div></div>
     </div>
@@ -1528,7 +1530,7 @@
           <li><a href="#devis">Demander un devis</a></li>
           <li><a href="express.html">CLT Express, la livraison à la demande</a></li>
           <li><a href="tarifs.html">Nos tarifs</a></li>
-          <li><a href="vendeuses.html">Vendeuses : ce que vous gagnez, nos vendeuses</a></li>
+          <li><a href="vendeuses.html">Fournisseurs : ce que vous gagnez, nos fournisseurs</a></li>
           <li><a href="livreurs.html">Devenir livreur chez CLT</a></li>
           <li><a href="installer.html">Installer l'application sur votre téléphone</a></li>
           <li><a href="contact.html">Contact</a></li>
@@ -1872,17 +1874,13 @@
      nominatif). Distinct de chargerChiffres() (16/09, les ordres de grandeur des textes) — corrigé le 26/09. */
   function chargerChiffresDuMois(){
     var URL_BASE = "https://xkfltqjbmolmdwdafzcx.supabase.co", CLE = "sb_publishable_wn9f6Way_wMzCVypmJo5zA_yWYPqJzP";
-    var f = function(n){ return Number(n || 0).toLocaleString('fr-FR'); };
+    /* v285 : on n'en garde que le taux. Le nombre de colis et de fournisseurs du bandeau vient de site_chiffres()
+       (data-chiffre, arrondi, le même qu'« À propos ») ; le montant reversé n'est plus affiché. */
     fetch(URL_BASE + '/rest/v1/rpc/site_chiffres_mois', { method: 'POST', headers: { 'apikey': CLE, 'Authorization': 'Bearer ' + CLE, 'Content-Type': 'application/json' }, body: '{}' })
       .then(function(r){ return r.ok ? r.json() : Promise.reject(r.status); })
       .then(function(c){
-        if (!c) return;
-        var pose = function(id, v){ var e = document.getElementById(id); if (e && v != null) e.textContent = v; };
-        pose('chiffre-livres-mois', f(c.colis_livres_mois));
-        pose('chiffre-taux', c.taux_livres_mois != null ? Math.round(c.taux_livres_mois) + ' %' : null);
-        pose('chiffre-vendeuses', f(c.vendeuses_mois));
-        pose('chiffre-reverse', c.reverse_mois != null ? f(c.reverse_mois) + ' F' : null);
-        var n = document.getElementById('preuve-note'); if (n && c.a_jour_le) n.textContent = 'Chiffres réels de notre application, au ' + new Date(c.a_jour_le).toLocaleDateString('fr-FR') + '.';
+        var e = document.getElementById('chiffre-taux');
+        if (c && e && c.taux_livres_mois != null) e.textContent = Math.round(c.taux_livres_mois) + ' %';
       }).catch(function(){ /* sans réseau ou sans la fonction : les tirets restent */ });
   }
   chargerChiffresDuMois();
@@ -1904,7 +1902,7 @@
         document.getElementById('vs-desc').textContent = desc;
         var wa = document.getElementById('vs-wa');
         var tel = String(v.whatsapp || '').replace(/\D/g, ''); if (tel && tel.length === 10) tel = '225' + tel;
-        if (tel) wa.href = 'https://wa.me/' + tel + '?text=' + encodeURIComponent('Bonjour ' + v.nom + ', je vous ai trouvée sur le site de CLT (vendeuse de la semaine). Je voudrais commander.'); else wa.hidden = true;
+        if (tel) wa.href = 'https://wa.me/' + tel + '?text=' + encodeURIComponent('Bonjour ' + v.nom + ', je vous ai trouvé(e) sur le site de CLT (fournisseur de la semaine). Je voudrais commander.'); else wa.hidden = true;
         s.removeAttribute('hidden');
       }).catch(function(){ /* pas de fiche, pas de section */ });
   })();
