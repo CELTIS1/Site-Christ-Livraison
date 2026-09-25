@@ -52,7 +52,29 @@
     if (!blocs.length) return '';
     return `<details class="rap-detail"${aVoir === r.id || !r.lu_at ? ' open' : ''}><summary>🧠 Lire l'analyse</summary>
       ${blocs.map((b) => `<section class="rap-bloc${b.titre === 'PROPOSITIONS' ? ' rap-bloc--propositions' : ''}">${b.titre ? `<h4>${esc(b.titre)}</h4>` : ''}${b.lignes.map((l) => `<p>${esc(l)}</p>`).join('')}${b.puces.length ? `<ul>${b.puces.map((p) => `<li>${esc(p)}</li>`).join('')}</ul>` : ''}</section>`).join('')}
+      <div class="rap-vers-claude"><button type="button" class="btn btn-primary btn-sm" data-rap-claude="${esc(r.id)}">📨 Confier à Claude</button><span class="rap-vers-claude__mot">Le rapport et ses propositions sont copiés, prêts à coller dans la conversation Claude : elle s'ouvre, faites Cmd+V (ou appui long › Coller).</span></div>
     </details>`;
+  }
+
+  /* « Confier à Claude » (26/09, Celtis : « les recommandations en bas ne me servent à rien, il faut un bouton qui les
+     envoie dans la conversation »). Une conversation Claude ne peut pas être écrite depuis le site ; le geste le plus
+     court : le rapport entier, avec la consigne, est mis dans le presse-papiers, et Claude s'ouvre — il reste Cmd+V. */
+  function texteVersClaude(r) {
+    const R2 = R();
+    return ['Claude — rapport d\'usage CLT à traiter : ' + r.titre, '', 'CHIFFRES', ...R2.lignesDuCorps(r.corps).lignes, '', String(r.detail || '').trim(), '',
+      'Consigne : applique tout de suite les propositions qui te reviennent (code, SQL, base, aide), livre un paquet, et consigne en section 2 de la feuille de route ce qui me revient (décisions, gestes du bureau). Réponds court, en français.'].join('\n');
+  }
+  async function confierAClaude(id) {
+    const r = rapports.concat(archives).find((x) => x.id === id);
+    if (!r) return;
+    const texte = texteVersClaude(r);
+    let copie = false;
+    try { await navigator.clipboard.writeText(texte); copie = true; } catch (e) { copie = false; }
+    if (!copie) {
+      try { const ta = document.createElement('textarea'); ta.value = texte; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); copie = document.execCommand('copy'); ta.remove(); } catch (e) { copie = false; }
+    }
+    if (window.cltToast) cltToast(copie ? 'Copié. Claude s\'ouvre : collez (Cmd+V) et envoyez.' : 'Le presse-papiers est refusé ici : sélectionnez l\'analyse et copiez-la à la main.', { type: copie ? 'success' : 'error' });
+    if (copie) window.open('https://claude.ai/new', '_blank', 'noopener');
   }
 
   async function genererMaintenant(genre) {
@@ -81,6 +103,7 @@
       el.addEventListener(el.tagName === 'INPUT' ? 'change' : 'click', () => marquer(el.closest('.rap-ligne').dataset.rap, el.dataset.rapGeste));
     });
     carte.querySelectorAll('[data-rap-generer]').forEach((b) => b.addEventListener('click', () => genererMaintenant(b.dataset.rapGenerer)));
+    carte.querySelectorAll('[data-rap-claude]').forEach((b) => b.addEventListener('click', () => confierAClaude(b.dataset.rapClaude)));
     const det = carte.querySelector('.rap-archives');
     if (det) det.addEventListener('toggle', () => { archivesOuvertes = det.open; });
     // Toucher le rapport encadré, c'est l'avoir vu.
@@ -119,5 +142,5 @@
     else { aVoir = null; carte.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
   }
 
-  window.CLTRapportsRecusEcran = { ouvrir, charger };
+  window.CLTRapportsRecusEcran = { ouvrir, charger, texteVersClaude };
 })();

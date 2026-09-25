@@ -50,6 +50,13 @@ const usage = page.locator('#rap-carte > .rap-ligne[data-rap="ru-3"]');
 verifier('le rapport d\'usage est dans la carte, avec ses trois lignes de chiffres et « Lire l\'analyse » ouvert (non lu)', (await usage.count()) === 1 && /Rappel d'usage — semaine/.test(await usage.innerText()) && (await usage.locator('.rap-corps li').count()) === 3 && await usage.locator('details.rap-detail').evaluate((d) => d.open));
 const blocs = await usage.locator('.rap-bloc h4').allInnerTexts();
 verifier('l\'analyse est découpée : EN UN MOT, BIEN UTILISÉ, MAL UTILISÉ, JAMAIS UTILISÉ, À ÉVITER, PROPOSITIONS (encadrées)', blocs.join('|') === 'EN UN MOT|BIEN UTILISÉ|MAL UTILISÉ|JAMAIS UTILISÉ|À ÉVITER|PROPOSITIONS' && (await usage.locator('.rap-bloc--propositions li').count()) === 3, blocs.join('|'));
+// 26/09 — « Confier à Claude » : un bouton sous l'analyse copie le rapport entier et ouvre la conversation Claude.
+const btnClaude = usage.locator('[data-rap-claude]');
+verifier('sous l\'analyse, « Confier à Claude », ≥ 44 px, avec sa phrase d\'explication', (await btnClaude.count()) === 1 && await btnClaude.evaluate((b) => b.getBoundingClientRect().height >= 44) && /Cmd\+V/.test(await usage.locator('.rap-vers-claude__mot').innerText()));
+await page.evaluate(() => { window.__ouvert = []; window.open = (u, c) => { window.__ouvert.push(u + '|' + c); return null; }; window.__copie = ''; navigator.clipboard.writeText = async (t) => { window.__copie = t; }; });
+await btnClaude.evaluate((b) => b.click()); await dodo(500);
+const copie = await page.evaluate(() => window.__copie);
+verifier('un clic : le rapport entier (titre, chiffres, analyse, consigne) est dans le presse-papiers et Claude s\'ouvre dans un nouvel onglet', /^Claude — rapport d'usage CLT à traiter : 🔁 Rappel d'usage/.test(copie) && /CHIFFRES\nColis : 12 créés/.test(copie) && /PROPOSITIONS\n- Rendre la photo obligatoire/.test(copie) && /Consigne : applique tout de suite/.test(copie) && (await page.evaluate(() => window.__ouvert.join())) === 'https://claude.ai/new|_blank' && /Copié\. Claude s'ouvre/.test(await page.evaluate(() => document.body.innerText)), copie.slice(0, 200));
 await page.setViewportSize({ width: 390, height: 844 }); await dodo(400);
 verifier('sur 390 px : l\'analyse tient dans la largeur', await usage.locator('.rap-detail').evaluate((d) => d.scrollWidth <= d.clientWidth + 1 && d.getBoundingClientRect().right <= 390));
 verifier('aucune erreur JavaScript', erreurs.length === 0, erreurs.join('\n       '));

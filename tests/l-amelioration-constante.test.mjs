@@ -48,5 +48,16 @@ verifier('l\'écran : « Lire l\'analyse » replié (ouvert si non lu ou visé),
 verifier('CSS : cibles ≥ 44 px (boutons, résumé), nuit prévue', /\.rap-generer \.btn\{ min-height:44px; \}/.test(lire('app/gestion.html')) && /\.rap-detail > summary\{[^}]*min-height:44px/.test(lire('app/gestion.html')) && /html\[data-theme="dark"\] \.rap-detail\{/.test(lire('app/gestion.html')));
 verifier('la fonction est inscrite au registre des déploiements', !!JSON.parse(lire('supabase-functions/_deploye-le.json')).fonctions['rapport-usage']);
 
+console.log('\n4. « Confier à Claude » (26/09) — le rapport entier, prêt à coller dans la conversation');
+{
+  const w = { CLTRapportsRecus: R, addEventListener() {}, location: { search: '' } };
+  const d = { getElementById: () => null, querySelectorAll: () => [], addEventListener() {} };
+  new Function('window', 'document', 'navigator', ecran)(w, d, {});
+  const t = w.CLTRapportsRecusEcran.texteVersClaude({ titre: '🔁 Rappel d\'usage — semaine du 21 au 27 septembre', corps: 'Colis : 12 créés\nGestes : 4 remises', detail: 'EN UN MOT\nBien.\nPROPOSITIONS\n- Photo obligatoire.' });
+  const l = t.split('\n');
+  verifier('texteVersClaude : titre, chiffres ligne par ligne, analyse entière, consigne — rien de perdu', l[0] === 'Claude — rapport d\'usage CLT à traiter : 🔁 Rappel d\'usage — semaine du 21 au 27 septembre' && l.slice(2, 5).join('|') === 'CHIFFRES|Colis : 12 créés|Gestes : 4 remises' && t.includes('PROPOSITIONS\n- Photo obligatoire.') && /Consigne : applique tout de suite les propositions .* en français\.$/.test(t), t);
+  verifier('l\'écran : un bouton « Confier à Claude » par analyse, copie (avec repli execCommand), toast, puis claude.ai/new dans un nouvel onglet', /data-rap-claude="\$\{esc\(r\.id\)\}"/.test(ecran) && /navigator\.clipboard\.writeText/.test(ecran) && /execCommand\('copy'\)/.test(ecran) && /window\.open\('https:\/\/claude\.ai\/new', '_blank', 'noopener'\)/.test(ecran) && /\.rap-vers-claude \.btn\{ min-height:44px; \}/.test(lire('app/gestion.html')));
+}
+
 console.log('\n' + reussies + ' réussie(s), ' + echouees + ' échouée(s).');
 process.exit(echouees ? 1 : 0);
