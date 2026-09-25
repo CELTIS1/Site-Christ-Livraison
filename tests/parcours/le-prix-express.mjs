@@ -84,6 +84,8 @@ titre('5. Ce que la base reçoit est ce que Yao a lu');
 await page.fill('#course-pickup-adresse', 'Marché d\'Adjamé, près de la pharmacie');
 await page.fill('#course-dropoff-adresse', 'Riviera 3, immeuble Alpha');
 await page.fill('#course-dest-tel', '0701020304');
+// Lot P-3 : la case « aucun objet interdit » est obligatoire.
+await page.evaluate(() => { const c = document.getElementById('course-objets-ok'); if (c) c.checked = true; });
 await page.locator('#btn-new-course').click();
 await dodo(500);
 // La fenêtre de confirmation annonce un prix : c'est celui-là qui engage.

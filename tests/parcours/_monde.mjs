@@ -90,7 +90,7 @@ export function nouveauMonde() {
     /* CLT Express (18/09/2026, point 5.5). Le tarif est celui relevé en production le 18/09 :
        500 F de base, 150 F du kilomètre. Un tarif inventé ici ferait un banc qui ne mesure rien. */
     express_config: [{ id: 1, tarif_base: 500, tarif_par_km: 150, commission_pct: 0.2, vitesse_moy_kmh: 18, delai_prise_en_charge_min: 10 }],
-    express_courses: [], express_messages: [], express_course_positions: [], express_reclamations: [], express_codes_livraison: [],
+    express_courses: [], express_messages: [], express_course_positions: [], express_reclamations: [], express_codes_livraison: [], acceptations: [],
     /* UN REÇU DE REVERSEMENT DÉJÀ ÉCRIT (18/09/2026, point 10.3), avec son numéro : la cliente
        Mariam a été payée pour son colis n°2, livré. C'est la pièce que les deux écrans impriment. */
     reversements_clientes: [{
@@ -118,6 +118,10 @@ export function nouveauMonde() {
   };
   const journal = [];
   const REFUS = new Set();
+  /* Les conditions (lot P-3, 25/09/2026) : par défaut, tout le monde les a déjà acceptées (la feuille
+     n'apparaît pas et les parcours d'avant restent lisibles) ; un parcours qui veut la voir pose
+     monde.DRAPEAUX.exigerConditions = true. */
+  const DRAPEAUX = { exigerConditions: false };
 
   /* Ce que font les deux triggers de la migration du 20/09 (retour_defauts, retour_journal),
      refait sur ce faux monde pour que les écrans voient la base « répondre » comme la vraie. Les
@@ -214,6 +218,7 @@ export function nouveauMonde() {
     // Une panne à la demande (20/09/2026, 20.C) : un parcours pose des identifiants dans
     // monde.REFUS et toute écriture sur ces colis est refusée « par le serveur » (pas une panne
     // réseau) — c'est ainsi qu'on fabrique une file hors-ligne bloquée.
+    if (table === 'acceptations' && q.op === 'select' && !DRAPEAUX.exigerConditions) return { data: [{ id: 'deja-acceptees' }], error: null, count: 1 };
     if (q.op === 'update' && table === 'colis' && REFUS.size && lignes.some(l => REFUS.has(l.id))) {
       journal.push({ table, op: 'update-refuse', ids: lignes.map(l => l.id) });
       return { data: null, error: { message: 'transition_interdite: essai', code: 'P0001' }, count: null };
@@ -257,7 +262,7 @@ export function nouveauMonde() {
       const rows = [].concat(q.valeurs).map((v, i) => Object.assign({ id: `nouveau-${Date.now()}-${i}`, created_at: maintenant }, v));
       rows.forEach(r => { if (table === 'colis') { if (r.statut === undefined) r.statut = 'en_attente'; if (!r.numero) r.numero = 'CLT-TEST-' + String(TABLES.colis.length + 1).padStart(5, '0'); } });
       // Les valeurs par défaut de la base, pour les tables où l'écran ne les envoie pas.
-      rows.forEach(r => { if ((table === 'reclamations_clientes' || table === 'express_reclamations') && r.statut === undefined) r.statut = 'ouverte'; if (table === 'demandes_de_passage' && r.statut === undefined) r.statut = 'en_attente'; });
+      rows.forEach(r => { if ((table === 'reclamations_clientes' || table === 'express_reclamations') && r.statut === undefined) r.statut = 'ouverte'; if (table === 'demandes_de_passage' && r.statut === undefined) r.statut = 'en_attente'; if (table === 'acceptations' && r.accepted_at === undefined) r.accepted_at = maintenant; });
       // L'activité de la cliente (23/09/2026) : une ligne par compte — un upsert remplace la sienne.
       if (table === 'activites_clientes') { const ids = new Set(rows.map(r => r.profile_id)); TABLES[table] = (TABLES[table] || []).filter(l => !ids.has(l.profile_id)); }
       /* LES DÉCLENCHEURS DE LA CRÉATION D'UN COLIS (25/09/2026, lot 17), dans l'ordre de la base :
@@ -357,6 +362,17 @@ export function nouveauMonde() {
 
   function haversineKm(a, b, c, d) { const R = 6371, r = (x) => x * Math.PI / 180; const h = Math.sin(r(c - a) / 2) ** 2 + Math.cos(r(a)) * Math.cos(r(c)) * Math.sin(r(d - b) / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); }
   const REPONSES_RPC = {};
+  /* La notation qui compte (lot P-3) : les N dernières notes d'un coursier, et la suspension automatique. */
+  function seuilsNotation() { const c = (TABLES.express_config || [])[0] || {}; return { note_surveillance: c.note_surveillance ?? 3.5, note_suspension: c.note_suspension ?? 3, notes_minimum: c.notes_minimum ?? 10 }; }
+  function notationDe(coursierId) {
+    const s = seuilsNotation();
+    const notes = (TABLES.express_courses || []).filter(c => c.coursier_id === coursierId && c.status === 'livree' && c.note_client).sort((a, b) => String(a.delivered_at || a.created_at).localeCompare(String(b.delivered_at || b.created_at))).map(c => c.note_client).slice(-s.notes_minimum);
+    return { moyenne: notes.length ? Math.round(notes.reduce((t, n) => t + n, 0) / notes.length * 10) / 10 : null, nombre: notes.length };
+  }
+  function surveillerNote(coursierId) {
+    const s = seuilsNotation(), n = notationDe(coursierId), p = PROFILS.find(x => x.id === coursierId);
+    if (p && !p.express_suspendu_at && n.nombre >= s.notes_minimum && n.moyenne < s.note_suspension) Object.assign(p, { express_suspendu_at: new Date().toISOString(), express_suspendu_par: null, express_suspension_motif: 'Note ' + String(n.moyenne).replace('.', ',') + ' / 5 sur les ' + n.nombre + ' dernières courses' });
+  }
   function rpc(nom, args, user) {
     journal.push({ op: 'rpc', nom, args });
     /* CLT EXPRESS (25/09/2026, lot P-1) — les fonctions telles que relues en base le 25/09. */
@@ -369,6 +385,7 @@ export function nouveauMonde() {
         const w = (TABLES.express_wallets || []).find(x => x.coursier_id === user);
         if ((w ? w.solde : 0) < ((TABLES.express_config || [])[0] || {}).solde_minimum || 0) return { data: null, error: { message: 'solde_insuffisant' } };
         if (!c || c.status !== 'en_attente' || c.coursier_id) return { data: null, error: { message: 'deja_prise' } };
+        if (lecteur.express_suspendu_at) return { data: null, error: { message: 'coursier_suspendu' } };   // express_refuser_suspendu (lot P-3)
         Object.assign(c, { status: 'acceptee', coursier_id: user, accepted_at: new Date().toISOString() });
         journal.push({ table: 'express_courses', op: 'update', valeurs: { status: 'acceptee' }, ids: [c.id], user });
         return { data: c, error: null };
@@ -416,9 +433,26 @@ export function nouveauMonde() {
     if (nom === 'express_noter_coursier' || nom === 'express_noter_client') {
       const c = (TABLES.express_courses || []).find(x => x.id === (args && args.p_course_id));
       if (!c || c.status !== 'livree') return { data: null, error: { message: 'course_non_livree' } };
-      if (nom === 'express_noter_coursier') { if (c.client_id !== user) return { data: null, error: { message: 'pas_votre_course' } }; c.note_client = args.p_note; c.avis_client = args.p_avis || null; }
+      if (nom === 'express_noter_coursier') { if (c.client_id !== user) return { data: null, error: { message: 'pas_votre_course' } }; c.note_client = args.p_note; c.avis_client = args.p_avis || null; surveillerNote(c.coursier_id); }
       else { if (c.coursier_id !== user) return { data: null, error: { message: 'pas_votre_course' } }; c.note_coursier = args.p_note; c.avis_coursier = args.p_avis || null; }
       return { data: true, error: null };
+    }
+    /* express_notation_coursier / express_coursiers_etat / suspendre / lever (lot P-3, 25/09/2026). */
+    if (nom === 'express_notation_coursier') { const n = notationDe(args && args.p_coursier); return { data: [n], error: null }; }
+    if (nom === 'express_coursiers_etat') {
+      const lecteur = PROFILS.find(p => p.id === user);
+      if (!lecteur || !['equipe', 'admin'].includes(lecteur.role)) return { data: [], error: null };
+      const d = PROFILS.filter(p => p.role === 'coursier_express').map(p => { const n = notationDe(p.id); const a = (TABLES.acceptations || []).filter(x => x.user_id === p.id && x.document === 'charte_coursier_express').pop(); return { coursier_id: p.id, full_name: p.full_name, phone: p.phone, status: p.status, disponible_express: !!p.disponible_express, moyenne: n.moyenne, nombre: n.nombre, courses_livrees: (TABLES.express_courses || []).filter(c => c.coursier_id === p.id && c.status === 'livree').length, suspendu_at: p.express_suspendu_at || null, suspension_motif: p.express_suspension_motif || null, charte_version: a ? a.version : null, charte_at: a ? a.accepted_at : null }; });
+      d.sort((a, b) => (b.suspendu_at ? 1 : 0) - (a.suspendu_at ? 1 : 0) || ((a.moyenne ?? 9) - (b.moyenne ?? 9)));
+      return { data: d, error: null };
+    }
+    if (nom === 'express_suspendre_coursier' || nom === 'express_lever_suspension') {
+      const lecteur = PROFILS.find(p => p.id === user);
+      if (!lecteur || !['equipe', 'admin'].includes(lecteur.role)) return { data: null, error: { message: 'reserve_au_bureau' } };
+      const p = PROFILS.find(x => x.id === (args && args.p_coursier)); if (!p) return { data: null, error: null };
+      if (nom === 'express_suspendre_coursier') Object.assign(p, { express_suspendu_at: new Date().toISOString(), express_suspendu_par: user, express_suspension_motif: (args.p_motif || '').trim() || null });
+      else Object.assign(p, { express_suspendu_at: null, express_suspendu_par: null, express_suspension_motif: null });
+      return { data: null, error: null };
     }
     if (nom === 'express_note_moyenne_coursier') {
       const notes = (TABLES.express_courses || []).filter(c => c.coursier_id === (args && args.p_coursier_id) && c.note_client).map(c => c.note_client);
@@ -800,5 +834,5 @@ export function nouveauMonde() {
     return { user: { id: compte.user_id, phone: compte.phone, user_metadata: { full_name: profil.full_name } }, error: null };
   }
 
-  return { TABLES, journal, REFUS, REPONSES_RPC, executer, rpc, connexion, COMPTES, PROFILS };
+  return { TABLES, journal, REFUS, DRAPEAUX, REPONSES_RPC, executer, rpc, connexion, COMPTES, PROFILS };
 }

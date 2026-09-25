@@ -514,6 +514,16 @@
             "Dossier de la course › sous l'argent : la ligne « Preuve ». « Sans code, à confirmer » veut dire que le client n'a pas encore confirmé : en cas de litige, sa parole compte.",
             "Le code d'une course en route se lit dans Supabase (table express_codes_livraison) si un client l'a perdu : donnez-le au client, jamais au coursier."
           ]
+        },
+        {
+          "id": "equipe-coursiers-express",
+          "titre": "Les coursiers Express : note, état, charte, suspension",
+          "resume": "Équipe › Express › « CLT Express — Coursiers » : chaque coursier, sa note sur ses 10 dernières courses, son état, sa charte, suspendre ou lever.",
+          "etapes": [
+            "« Bon » (≥ 3,5), « À surveiller » (3 à 3,5 : un appel), « À suspendre » (< 3 : la base suspend au prochain avis), « Suspendu ». Moins de 10 notes : la moyenne ne compte pas encore.",
+            "« Suspendre » demande un motif, lu par le coursier sur son écran. « Lever la suspension » après l'appel ; si sa note reste sous 3, la base le suspendra de nouveau à la prochaine note.",
+            "La charte : la date d'acceptation, ou « pas encore acceptée » (elle s'impose à sa prochaine ouverture). Les seuils sont dans express_config (SQL du 25/09)."
+          ]
         }
       ]
     },
@@ -594,6 +604,17 @@
             "Si le coursier a livré sans le code, un bouton « ✅ Confirmer la réception » apparaît sous la course : appuyez si le colis est bien arrivé ; sinon, « ⚠️ Signaler un problème »."
           ],
           "astuce": "Le code, c'est votre preuve : une course livrée « code vérifié » ne se discute plus."
+        },
+        {
+          "id": "express-conditions",
+          "titre": "Les conditions, les objets interdits, la valeur du colis",
+          "resume": "Les conditions, à approuver une fois ; la liste des objets refusés ; la valeur déclarée jusqu'à 50 000 F (au-delà, appelez-nous).",
+          "etapes": [
+            "À la première ouverture (et à chaque nouvelle version), les conditions s'affichent : sept lignes, en clair. « J'ai lu et j'accepte » pour continuer.",
+            "Sur le formulaire, « Objets interdits » déplie la liste (argent liquide, bijoux, armes, produits dangereux, animaux…) ; cochez « Mon colis ne contient aucun objet interdit ».",
+            "La valeur du colis est facultative, jusqu'à 50 000 F. Au-dessus, appelez CLT avant de commander : on organise la course avec vous."
+          ],
+          "astuce": "Au palier 1, le colis n'est pas assuré : CLT s'engage sur le soin et la traçabilité (code de livraison, positions, dossier)."
         }
       ]
     },
@@ -685,6 +706,17 @@
             "La personne n'a vraiment pas le code ? « Livrer sans preuve » : la course est livrée, mais « à confirmer par le client » — en cas de litige, sa parole compte."
           ],
           "astuce": "Le code vérifié vous protège aussi : personne ne pourra dire que le colis n'est pas arrivé."
+        },
+        {
+          "id": "coursier-charte",
+          "titre": "La charte, votre note, la suspension",
+          "resume": "Huit règles à accepter une fois ; votre note sur vos 10 dernières courses ; sous 3, le compte est suspendu jusqu'à un appel.",
+          "etapes": [
+            "À la première ouverture, la charte s'affiche (tenue, colis interdits, code de livraison, prix, politesse, note, prévenir, suspension). « J'ai lu et j'accepte ».",
+            "Sous « Je suis disponible », votre note : la moyenne de vos 10 dernières courses notées. Sous 3,5, CLT vous appelle.",
+            "Sous 3 sur 10 courses, le compte est suspendu automatiquement : un bandeau rouge le dit, vous ne pouvez plus accepter. Appelez CLT : la suspension se lève au téléphone."
+          ],
+          "astuce": "Une valeur déclarée apparaît sur la course : au-dessus de 50 000 F ou colis interdit, refusez et appelez CLT."
         }
       ]
     },

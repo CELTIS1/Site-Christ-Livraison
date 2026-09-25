@@ -143,7 +143,7 @@ async function ouvrirDossierExpress(id) {
     <h3 class="panel-subtitle" style="font-size:15px;margin:14px 0 6px;">Chronologie</h3>
     <ol class="express-chrono">${chrono.map(e => `<li><span class="express-chrono__quand">${escapeHTML(fmt(e.quand))}</span> <span>${escapeHTML(e.quoi)}</span> <span class="meta">— ${escapeHTML(e.qui)}</span></li>`).join('') || '<li class="meta">rien encore</li>'}</ol>
     <h3 class="panel-subtitle" style="font-size:15px;margin:14px 0 6px;">Argent</h3>
-    <div class="express-dossier__argent">${escapeHTML(argent.phrase)} · ${course.distance_km || '?'} km</div>
+    <div class="express-dossier__argent">${escapeHTML(argent.phrase)} · ${course.distance_km || '?'} km${course.valeur_declaree ? ' · valeur déclarée ' + formatMontant(course.valeur_declaree) : ''}</div>
     ${(() => { const p = D && D.preuve ? D.preuve(course) : null; return p && p.texte ? `<div class="express-dossier__preuve express-dossier__preuve--${p.cle}">${p.aSurveiller ? '⚠️ ' : '🔐 '}${escapeHTML(p.texte)}</div>` : ''; })()}
     <h3 class="panel-subtitle" style="font-size:15px;margin:14px 0 6px;">Échanges et trajet</h3>
     <div class="meta">${(messages || []).length} message${(messages || []).length > 1 ? 's' : ''} dans le chat · ${(positions || []).length} position${(positions || []).length > 1 ? 's' : ''} enregistrée${(positions || []).length > 1 ? 's' : ''}</div>
@@ -307,6 +307,74 @@ async function initExpressCourses() {
 await loadExpressCourses();
 renderExpressStatusFilters();
 }
+
+// ---------- CLT Express — Les coursiers : note, état, charte, suspension (lot P-3, 25/09/2026) ----------
+let expressCoursiersEtat = [];
+let expressSeuils = null;
+/* La liste vient de express_coursiers_etat() (SQL du 25/09). Sans elle : les profils et les notes lues à la main. */
+async function chargerCoursiersExpress() {
+  const r = await supabaseClient.rpc('express_coursiers_etat');
+  if (!r.error && Array.isArray(r.data)) { expressCoursiersEtat = r.data; return; }
+  const [profils, courses] = await Promise.all([
+    supabaseClient.from('profiles').select('id, full_name, phone, status, disponible_express').eq('role', 'coursier_express'),
+    supabaseClient.from('express_courses').select('coursier_id, note_client, status, delivered_at').eq('status', 'livree').order('delivered_at', { ascending: true }),
+  ]);
+  const notes = {};
+  (courses.data || []).forEach(c => { if (!c.coursier_id) return; (notes[c.coursier_id] ||= { toutes: [], livrees: 0 }); notes[c.coursier_id].livrees++; if (c.note_client) notes[c.coursier_id].toutes.push(c.note_client); });
+  const NX = window.CLTNotationExpress;
+  expressCoursiersEtat = (profils.data || []).map(p => { const n = notes[p.id] || { toutes: [], livrees: 0 }; const d = n.toutes.slice(-10); return { coursier_id: p.id, full_name: p.full_name, phone: p.phone, status: p.status, disponible_express: p.disponible_express, moyenne: NX ? NX.moyenneDesDernieres(d) : null, nombre: d.length, courses_livrees: n.livrees, suspendu_at: null, suspension_motif: null, charte_version: null, charte_at: null }; });
+}
+function expressCoursierRowHTML(k) {
+  const NX = window.CLTNotationExpress;
+  const e = NX ? NX.etatCoursier({ moyenne: k.moyenne, nombre: k.nombre, suspendu_at: k.suspendu_at, suspension_motif: k.suspension_motif }, expressSeuils) : { cle: 'ok', libelle: '', couleur: 'gris', explication: '' };
+  const note = k.moyenne != null ? String(k.moyenne).replace('.', ',') + ' / 5 · ' + k.nombre + ' avis' : 'pas encore noté';
+  const charte = k.charte_at ? '📜 charte acceptée le ' + formatDate(k.charte_at) : '📜 charte pas encore acceptée';
+  return `<div class="colis-item express-coursier-item express-coursier-item--${e.couleur}" data-coursier="${escapeHTML(k.coursier_id)}">
+    <div class="info">
+      <div class="desc">${escapeHTML(k.full_name || 'Coursier')} <span class="express-coursier-etat express-coursier-etat--${e.couleur}">${escapeHTML(e.libelle)}</span>${k.status !== 'valide' ? ' <span class="meta">(compte ' + escapeHTML(k.status) + ')</span>' : ''}</div>
+      <div class="meta">⭐ ${escapeHTML(note)} · ${k.courses_livrees || 0} livrée${k.courses_livrees > 1 ? 's' : ''} · ${k.disponible_express ? 'disponible' : 'indisponible'}${k.phone ? ' · <a href="tel:' + escapeHTML(k.phone) + '">📞 ' + escapeHTML(k.phone) + '</a>' : ''}</div>
+      <div class="meta">${escapeHTML(e.explication)} ${escapeHTML(charte)}</div>
+      ${k.suspendu_at ? `<div class="meta express-coursier-suspension">⛔ Suspendu depuis le ${formatDate(k.suspendu_at)}${k.suspension_motif ? ' — ' + escapeHTML(k.suspension_motif) : ''}</div>` : ''}
+    </div>
+    <div class="status-col">
+      ${k.suspendu_at ? `<button type="button" class="btn btn-sm" data-coursier-lever="${escapeHTML(k.coursier_id)}">Lever la suspension</button>` : `<button type="button" class="btn btn-sm btn-outline" data-coursier-suspendre="${escapeHTML(k.coursier_id)}">Suspendre</button>`}
+    </div>
+  </div>`;
+}
+function renderCoursiersExpress() {
+  const box = document.getElementById('express-coursiers-list'); if (!box) return;
+  const n = document.getElementById('express-coursiers-n');
+  if (n) { const s = expressCoursiersEtat.filter(k => k.suspendu_at).length; n.textContent = expressCoursiersEtat.length ? String(expressCoursiersEtat.length) + (s ? ' · ' + s + ' suspendu' + (s > 1 ? 's' : '') : '') : ''; }
+  cltPoserHTML(box, expressCoursiersEtat.length ? expressCoursiersEtat.map(expressCoursierRowHTML).join('') : '<div class="empty-state">Aucun coursier Express.</div>');
+}
+async function initExpressCoursiers() {
+  const s = await supabaseClient.from('express_config').select('note_surveillance, note_suspension, notes_minimum').eq('id', 1).single();
+  expressSeuils = s.error ? null : s.data;
+  await chargerCoursiersExpress();
+  renderCoursiersExpress();
+}
+async function expressSuspension(bouton) {
+  const lever = bouton.dataset.coursierLever, suspendre = bouton.dataset.coursierSuspendre;
+  const id = lever || suspendre;
+  const k = expressCoursiersEtat.find(x => x.coursier_id === id) || {};
+  let r;
+  if (lever) {
+    if (!(await cltConfirm({ title: 'Lever la suspension de ' + (k.full_name || 'ce coursier') + ' ?', sub: 'Après l\'appel : il peut de nouveau accepter des courses. Si sa note reste sous 3, la base le suspendra au prochain avis.', okLabel: 'Lever la suspension' }))) return;
+    bouton.disabled = true;
+    r = await supabaseClient.rpc('express_lever_suspension', { p_coursier: id });
+  } else {
+    const motif = await cltPrompt({ title: 'Suspendre ' + (k.full_name || 'ce coursier'), sub: 'Il ne pourra plus accepter de course. Le motif est lu par lui, sur son écran.', placeholder: 'Ex : colis ouvert, comportement, deux plaintes en une semaine…', okLabel: 'Suspendre' });
+    if (!motif || !motif.trim()) return;
+    bouton.disabled = true;
+    r = await supabaseClient.rpc('express_suspendre_coursier', { p_coursier: id, p_motif: motif.trim() });
+  }
+  bouton.disabled = false;
+  if (r.error) { cltToast(/could not find|does not exist|schema cache/i.test(r.error.message || '') ? 'La suspension n\'est pas encore ouverte en base : jouez le SQL du 25/09 (notation, conditions, valeur).' : friendlyErrorMessage(r.error.message), { type: 'error' }); return; }
+  supabaseClient.from('activity_log').insert([{ action: lever ? 'express_coursier_suspension_levee' : 'express_coursier_suspendu', target_id: id, target_type: 'profiles', details: lever ? {} : { motif: bouton.dataset.motif || '' } }]).then(() => {}, () => {});
+  cltToast(lever ? 'Suspension levée.' : 'Coursier suspendu.', { type: 'success' });
+  await chargerCoursiersExpress(); renderCoursiersExpress();
+}
+document.addEventListener('click', (e) => { const b = e.target.closest('[data-coursier-lever], [data-coursier-suspendre]'); if (b) expressSuspension(b); });
 
 // ---------- CLT Express — Recharges coursiers (validation) ----------
 let expressRecharges = [];
@@ -644,7 +712,7 @@ cltFocusColisFromUrl({ onMiss: () => {
 // L'historique des actions est réservé à l'administrateur.
 if (isAdmin) await loadActivityLog();
 // 05/09/2026 — Express est réservé à l'admin : inutile d'interroger la base pour l'équipe.
-if (isAdmin) { await initExpressCourses(); await initExpressRecharges(); }
+if (isAdmin) { await initExpressCourses(); await initExpressRecharges(); await initExpressCoursiers(); }
 initLotColis();
 
 // Mises à jour en temps réel sur tous les colis. La notification « Nouveau colis » est gérée
@@ -713,6 +781,8 @@ if (isAdmin) trackChannel(supabaseClient
 .channel('express-courses-equipe')
 .on('postgres_changes', { event: '*', schema: 'public', table: 'express_courses' }, () => {
 loadExpressCourses();
+// Une note qui tombe peut changer l'état d'un coursier (lot P-3).
+chargerCoursiersExpress().then(renderCoursiersExpress, () => {});
 })
 // Un litige Express qui arrive (25/09/2026, lot P-2) : la liste « À traiter » se recharge.
 .on('postgres_changes', { event: '*', schema: 'public', table: 'express_reclamations' }, () => {

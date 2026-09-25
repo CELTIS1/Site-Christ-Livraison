@@ -134,6 +134,19 @@
       "aSavoir": "Décision `express-decisions` (1) appliquée : le code, recommandé ; la photo à la remise viendra en repli si le terrain le demande."
     },
     {
+      "id": "express-notation-conditions",
+      "espace": "express",
+      "titre": "Express : la note qui compte, les conditions, la valeur",
+      "enBref": "Sous 3,5 sur 10 courses, à surveiller ; sous 3, la base suspend. CGU et charte acceptées, horodatées. Valeur déclarée jusqu'à 50 000 F.",
+      "ou": "Équipe › Express › « CLT Express — Coursiers » ; côté client et coursier, à l'ouverture et sur la commande",
+      "etapes": [
+        "La suspension automatique est posée par la base à la 10e note (pas par l'écran) ; l'acceptation d'une course est refusée à un coursier suspendu. Vous levez après l'appel.",
+        "Les conditions vivent dans express-conditions-texte.js avec une version datée : changer une ligne, c'est changer la version, et tout le monde ré-accepte.",
+        "SQL du 25/09 à jouer : seuils dans express_config, colonnes de suspension, table acceptations, valeur_declaree, la liste des coursiers pour le bureau."
+      ],
+      "aSavoir": "Pas d'assurance au palier 1 : c'est écrit dans les CGU et sous le champ de valeur. Décisions (2) plafond de dette et (3) frais d'annulation : lot P-5."
+    },
+    {
       "id": "l-argent",
       "espace": "bureau",
       "titre": "L'argent en deux écrans (et ce qui manque)",

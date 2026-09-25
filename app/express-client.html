@@ -17,13 +17,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260925preuve">
+<link rel="stylesheet" href="style.css?v=20260925conditions">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260925preuve"></script>
+<script src="theme.js?v=20260925conditions"></script>
 <!-- La cloche 🔔 des notifications reçues (23/09/2026) : règle + écran, se posent seuls dans la barre du haut. -->
-<script src="notifications-recues.js?v=20260925preuve" defer></script>
-<script src="cloche.js?v=20260925preuve" defer></script>
-<script src="splash.js?v=20260925preuve"></script>
+<script src="notifications-recues.js?v=20260925conditions" defer></script>
+<script src="cloche.js?v=20260925conditions" defer></script>
+<script src="splash.js?v=20260925conditions"></script>
 <style>
   /* ===== Thème violet CLT Express + rafraîchissement visuel (2026) ===== */
   :root{
@@ -367,7 +367,7 @@
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <!-- La peau v2 (25/09/2026, lot 18) : chargée EN DERNIER, elle recouvre style.css et le style de la page. -->
 <style>:root{ --clt-accent-encre:#5B21B6; }</style>
-<link rel="stylesheet" href="peau.css?v=20260925preuve">
+<link rel="stylesheet" href="peau.css?v=20260925conditions">
 </head>
 <body>
 
@@ -585,6 +585,8 @@
         <label>Que faut-il livrer ?</label>
         <textarea id="course-description" rows="2" placeholder="Ex : une enveloppe de documents, un colis de vêtements..."></textarea>
       </div>
+      <!-- Lot P-3 (25/09/2026) : la valeur déclarée et la case « aucun objet interdit », dessinées par express-conditions.js. -->
+      <div id="course-conditions-champs"></div>
 
       <div class="field photo-field">
         <label>Photo du colis (recommandé)</label>
@@ -627,13 +629,16 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260925preuve"></script>
-<script src="lib/reclamations.js?v=20260925preuve"></script>
-<script src="express-litige.js?v=20260925preuve"></script>
-  <script src="express-preuve.js?v=20260925preuve"></script>
-<script src="express-config.js?v=20260925preuve"></script>
-<script src="biometric-lock.js?v=20260925preuve"></script>
-<script src="clt-select-recherche.js?v=20260925preuve"></script>
+<script src="clt-common.js?v=20260925conditions"></script>
+<script src="lib/reclamations.js?v=20260925conditions"></script>
+<script src="express-litige.js?v=20260925conditions"></script>
+  <script src="express-preuve.js?v=20260925conditions"></script>
+  <script src="express-conditions-texte.js?v=20260925conditions"></script>
+  <script src="express-notation.js?v=20260925conditions"></script>
+  <script src="express-conditions.js?v=20260925conditions"></script>
+<script src="express-config.js?v=20260925conditions"></script>
+<script src="biometric-lock.js?v=20260925conditions"></script>
+<script src="clt-select-recherche.js?v=20260925conditions"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -1456,9 +1461,14 @@
       return;
     }
 
+    // Lot P-3 : la valeur déclarée (plafonnée) et la case « aucun objet interdit ».
+    const conditions = window.CLTConditions ? CLTConditions.lireCommande() : { ok: true, valeur: null };
+    if (!conditions.ok) { msgBox.innerHTML = `<div class="msg msg-error">${escapeHTML(conditions.message)}</div>`; return; }
+
     const est = expressConfig ? estimatePrixExpress(pickupCommune, dropoffCommune, expressConfig, epinglesCourse()) : null;
     const eta = est ? estimateEtaExpress(est.distanceKm, expressConfig) : null;
     const recapLignes = [`Trajet : ${pickupCommune} → ${dropoffCommune}`];
+    if (conditions.valeur) recapLignes.push(`Valeur déclarée : ${formatMontant(conditions.valeur)} (non assurée au palier 1)`);
     if (est) recapLignes.push(`Distance : ${est.distanceKm.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} km — Prix estimé : ${formatMontant(est.prixTotal)}`);
     if (eta) recapLignes.push(`Délai estimé : ${eta.texte}`);
     recapLignes.push(`Destinataire : ${destNom ? destNom + ' — ' : ''}${destTel}`);
@@ -1485,7 +1495,7 @@
     }
 
     btn.textContent = 'Envoi...';
-    const { error } = await supabaseClient.from('express_courses').insert({
+    const nouvelleCourse = {
       client_id: currentUser.id,
       adresse_recuperation: `${pickupCommune} — ${pickupAdresse}`,
       latitude_recuperation: pickupCoords ? pickupCoords.lat : null,
@@ -1497,7 +1507,14 @@
       destinataire_telephone: destTel ? toE164(destTel) : null,
       description_colis: description || null,
       photo_colis_path: photoPath,
-    });
+    };
+    if (conditions.valeur != null) nouvelleCourse.valeur_declaree = conditions.valeur;
+    let { error } = await supabaseClient.from('express_courses').insert(nouvelleCourse);
+    // Colonne valeur_declaree pas encore en base (SQL du 25/09) : on commande sans elle.
+    if (error && nouvelleCourse.valeur_declaree != null && /valeur_declaree|schema cache/i.test(error.message || '')) {
+      delete nouvelleCourse.valeur_declaree;
+      ({ error } = await supabaseClient.from('express_courses').insert(nouvelleCourse));
+    }
     btn.disabled = false; btn.textContent = 'Commander cette livraison';
 
     if (error) {
@@ -1697,6 +1714,8 @@
     // --- Déverrouillage biométrique (Face ID / Touch ID / empreinte) — opt-in, par appareil ---
     if (window.CLTBioLock) { try { await CLTBioLock.guard(currentUser); } catch (e) {} }
     setTimeout(function () { if (window.CLTBioLock) CLTBioLock.maybeOfferEnrollment(currentUser); }, 2500);
+    // Lot P-3 : les conditions (version courante) acceptées avant tout, et les champs objets / valeur.
+    if (window.CLTConditions) { try { await CLTConditions.exiger(currentUser.id, 'client_express'); } catch (e) {} const ch = document.getElementById('course-conditions-champs'); if (ch) ch.innerHTML = CLTConditions.champsCommandeHTML(); }
 
     currentProfile = profile;
     document.getElementById('user-name').textContent = profile.full_name || '';

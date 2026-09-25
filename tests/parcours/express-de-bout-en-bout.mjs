@@ -32,6 +32,8 @@ await page.locator('#course-dropoff-adresse').fill('Riviera 3, immeuble Alpha');
 await page.locator('#course-dest-nom').fill('Koffi');
 await page.locator('#course-dest-tel').fill('0701020304');
 await page.locator('#course-description').fill('Une enveloppe');
+// Lot P-3 : la case « aucun objet interdit » est obligatoire.
+await page.evaluate(() => { const c = document.getElementById('course-objets-ok'); if (c) c.checked = true; });
 await page.locator('#btn-new-course').click();
 await dodo(800);
 await page.locator('#clt-modal-ok').click();

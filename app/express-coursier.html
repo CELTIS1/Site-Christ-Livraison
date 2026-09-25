@@ -17,13 +17,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260925preuve">
+<link rel="stylesheet" href="style.css?v=20260925conditions">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260925preuve"></script>
+<script src="theme.js?v=20260925conditions"></script>
 <!-- La cloche 🔔 des notifications reçues (23/09/2026) : règle + écran, se posent seuls dans la barre du haut. -->
-<script src="notifications-recues.js?v=20260925preuve" defer></script>
-<script src="cloche.js?v=20260925preuve" defer></script>
-<script src="splash.js?v=20260925preuve"></script>
+<script src="notifications-recues.js?v=20260925conditions" defer></script>
+<script src="cloche.js?v=20260925conditions" defer></script>
+<script src="splash.js?v=20260925conditions"></script>
 <style>
   .topbar{ background:#0D9488; }
   .topbar .brand .logo-mark{ background:#0b6e64; }
@@ -308,7 +308,7 @@
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <!-- La peau v2 (25/09/2026, lot 18) : chargée EN DERNIER, elle recouvre style.css et le style de la page. -->
 <style>:root{ --clt-accent-encre:#0F766E; }</style>
-<link rel="stylesheet" href="peau.css?v=20260925preuve">
+<link rel="stylesheet" href="peau.css?v=20260925conditions">
 </head>
 <body>
 
@@ -642,13 +642,16 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260925preuve"></script>
-<script src="lib/reclamations.js?v=20260925preuve"></script>
-<script src="express-litige.js?v=20260925preuve"></script>
-  <script src="express-preuve.js?v=20260925preuve"></script>
-<script src="express-config.js?v=20260925preuve"></script>
-<script src="recharges-express.js?v=20260925preuve"></script>
-<script src="biometric-lock.js?v=20260925preuve"></script>
+<script src="clt-common.js?v=20260925conditions"></script>
+<script src="lib/reclamations.js?v=20260925conditions"></script>
+<script src="express-litige.js?v=20260925conditions"></script>
+  <script src="express-preuve.js?v=20260925conditions"></script>
+  <script src="express-conditions-texte.js?v=20260925conditions"></script>
+  <script src="express-notation.js?v=20260925conditions"></script>
+  <script src="express-conditions.js?v=20260925conditions"></script>
+<script src="express-config.js?v=20260925conditions"></script>
+<script src="recharges-express.js?v=20260925conditions"></script>
+<script src="biometric-lock.js?v=20260925conditions"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -900,7 +903,7 @@
         ${courseStepperHTML(c.status)}
         <div class="info">
           <div class="desc">${escapeHTML(c.adresse_recuperation)} → ${escapeHTML(c.adresse_livraison)}</div>
-          <div class="meta">${escapeHTML(c.description_colis || 'Colis')} · Accepté le ${formatDate(c.accepted_at)}</div>
+          <div class="meta">${escapeHTML(c.description_colis || 'Colis')}${c.valeur_declaree ? ' · Valeur déclarée ' + formatMontant(c.valeur_declaree) : ''} · Accepté le ${formatDate(c.accepted_at)}</div>
           ${clientInfo}
           ${destInfo}
           ${active ? paiementCoursierHTML(c) : ''}
@@ -969,6 +972,8 @@
             if (await cltConfirm({ title: 'Solde insuffisant', sub: 'Votre solde ne permet pas d\'accepter cette course. Rechargez pour continuer.', okLabel: 'Recharger', cancelLabel: 'Plus tard' })) openRechargeModal();
           } else if (/deja_prise/.test(m)) {
             cltToast('Cette course vient d\'être acceptée par un autre coursier.', { type: 'warning' });
+          } else if (/coursier_suspendu/.test(m)) {
+            cltToast(window.CLTConditions ? CLTConditions.messageErreurSuspendu : 'Compte suspendu : appelez CLT.', { type: 'error' });
           } else {
             cltToast('Erreur : ' + friendlyErrorMessage(m), { type: 'error' });
           }
@@ -1768,6 +1773,8 @@
     // --- Déverrouillage biométrique (Face ID / Touch ID / empreinte) — opt-in, par appareil ---
     if (window.CLTBioLock) { try { await CLTBioLock.guard(currentUser); } catch (e) {} }
     setTimeout(function () { if (window.CLTBioLock) CLTBioLock.maybeOfferEnrollment(currentUser); }, 2500);
+    // Lot P-3 : la charte du coursier (version courante) acceptée avant tout.
+    if (window.CLTConditions) { try { await CLTConditions.exiger(currentUser.id, 'coursier_express'); } catch (e) {} }
 
     currentProfile = profile;
     document.getElementById('user-name').textContent = profile.full_name || '';
@@ -1790,6 +1797,11 @@
     if (cfg) {
       soldeMinimum = Number(cfg.solde_minimum) || 0;
       momoNumbers = { wave: cfg.momo_wave, orange: cfg.momo_orange, mtn: cfg.momo_mtn, moov: cfg.momo_moov };
+    }
+    // Lot P-3 : ma note (les dernières courses) et, s'il y a lieu, le bandeau « compte suspendu ».
+    if (window.CLTConditions) {
+      const seuils = await supabaseClient.from('express_config').select('note_surveillance, note_suspension, notes_minimum').eq('id', 1).single();
+      CLTConditions.afficherEtatCoursier(profile, seuils.error ? null : seuils.data);
     }
 
     await Promise.all([loadWallet(), loadRecharges(), loadMesCourses()]);

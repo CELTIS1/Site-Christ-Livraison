@@ -4791,3 +4791,37 @@ html[data-theme="dark"] .preuve-etat--sans, html[data-theme="dark"] .express-dos
 html[data-theme="dark"] .express-dossier__preuve--ancienne{ background:#243247; }
 html[data-theme="dark"] input.preuve-saisie[type="text"]{ background:#1a2230; border-color:#3A4B60; color:#E6ECF3; }
 html[data-theme="dark"] .preuve-erreur{ color:#F5A3A3; }
+
+/* LES CONDITIONS, LA VALEUR, LA NOTE ET LA SUSPENSION (25/09/2026, chantier P, lot P-3, 2/2). */
+.conditions-feuille{ z-index:10050; }
+.conditions-corps{ padding:4px 18px 18px; }
+.conditions-lignes{ margin:0 0 6px; padding-left:22px; font-size:15px; line-height:1.5; }
+.conditions-lignes li{ margin-bottom:8px; }
+.conditions-refuser{ margin-top:10px; width:100%; min-height:44px; justify-content:center; white-space:normal; }
+.colis-valeur__erreur{ margin-top:6px; color:#B3261E; font-size:13.5px; font-weight:600; }
+.colis-objets__liste{ margin-bottom:8px; font-size:14px; }
+.colis-objets__liste summary{ cursor:pointer; min-height:44px; display:flex; align-items:center; font-weight:600; }
+.colis-objets__liste ul{ margin:4px 0 8px; padding-left:22px; line-height:1.5; }
+.colis-objets__case{ display:flex; align-items:center; gap:10px; min-height:44px; font-size:15px; font-weight:600; cursor:pointer; }
+.colis-objets__case input{ width:22px; height:22px; margin:0; flex:none; }
+.ma-note{ margin-top:4px; font-size:13px; font-weight:600; color:#0F766E; }
+.ma-note--a_surveiller, .ma-note--a_suspendre{ color:#8a4b00; }
+.ma-note--suspendu{ color:#B3261E; }
+.ma-note--nouveau{ color:#5b6573; font-weight:500; }
+.suspendu-bandeau{ margin:0 0 12px; padding:12px 14px; border-radius:12px; background:#fce4e2; color:#7a1f18; border:1.5px solid #f2b8b3; font-size:14.5px; line-height:1.45; }
+.express-coursier-etat{ display:inline-block; margin-left:6px; padding:1px 9px; border-radius:999px; font-size:12px; font-weight:700; background:#eef0f3; color:#5b6573; vertical-align:middle; }
+.express-coursier-etat--vert{ background:#e3f6ea; color:#167A42; }
+.express-coursier-etat--ambre{ background:#FDF3D6; color:#8a4b00; }
+.express-coursier-etat--rouge{ background:#fce4e2; color:#B3261E; }
+.express-coursier-item--rouge{ border-left:4px solid #c0392b; }
+.express-coursier-item--ambre{ border-left:4px solid #BF5210; }
+.express-coursier-suspension{ color:#B3261E; font-weight:600; }
+html[data-theme="dark"] .colis-valeur__erreur, html[data-theme="dark"] .ma-note--suspendu, html[data-theme="dark"] .express-coursier-suspension{ color:#F5A3A3; }
+html[data-theme="dark"] .ma-note{ color:#7fe4d6; }
+html[data-theme="dark"] .ma-note--a_surveiller, html[data-theme="dark"] .ma-note--a_suspendre{ color:#f2c98a; }
+html[data-theme="dark"] .ma-note--nouveau{ color:#C5CFDB; }
+html[data-theme="dark"] .suspendu-bandeau{ background:#3a1a1a; color:#F5A3A3; border-color:#6a2a2a; }
+html[data-theme="dark"] .express-coursier-etat{ background:#243247; color:#C5CFDB; }
+html[data-theme="dark"] .express-coursier-etat--vert{ background:#1f3a2a; color:#8fe3b0; }
+html[data-theme="dark"] .express-coursier-etat--ambre{ background:#3a3320; color:#f2c98a; }
+html[data-theme="dark"] .express-coursier-etat--rouge{ background:#3a1a1a; color:#F5A3A3; }

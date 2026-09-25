@@ -61,6 +61,11 @@ async function getExpressProfile(userId) {
     .single();
   // decision_motif est né le 24/09/2026 (lot 12, dossiers de comptes) : sans lui, on relit sans.
   if (error && /decision_motif/.test(error.message || "")) ({ data, error } = await supabaseClient.from("profiles").select(COLS).eq("id", userId).single());
+  // La suspension d'un coursier (25/09/2026, lot P-3) : deux colonnes de plus, lues à part pour ne rien casser sans le SQL.
+  if (!error && data && data.role === "coursier_express") {
+    const s = await supabaseClient.from("profiles").select("express_suspendu_at, express_suspension_motif").eq("id", userId).single();
+    if (!s.error && s.data) Object.assign(data, s.data);
+  }
   if (error) {
     console.error("Erreur chargement profil:", error);
     return null;
