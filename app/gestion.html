@@ -15,14 +15,14 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260926constante">
+<link rel="stylesheet" href="style.css?v=20260926gestion">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
 <script>/* Intégré dans l'application de l'équipe (lot 15) : gestion.html?integre=1 cache sa barre du haut. */if(/[?&]integre=1/.test(location.search)){document.documentElement.classList.add('integre');}</script>
-<script src="theme.js?v=20260926constante"></script>
+<script src="theme.js?v=20260926gestion"></script>
 <!-- La cloche 🔔 des notifications reçues (23/09/2026) : règle + écran, se posent seuls dans la barre du haut. -->
-<script src="notifications-recues.js?v=20260926constante" defer></script>
-<script src="cloche.js?v=20260926constante" defer></script>
-<script src="splash.js?v=20260926constante"></script>
+<script src="notifications-recues.js?v=20260926gestion" defer></script>
+<script src="cloche.js?v=20260926gestion" defer></script>
+<script src="splash.js?v=20260926gestion"></script>
 <style>
   :root{ --clt-teal:#0F766E; --clt-teal-dark:#0b5a54; --clt-teal-light:#e5f4f2; --clt-green:#15803d; --clt-red:#b91c1c; --clt-amber:#b45309; --clt-accent:#0F766E; }   /* vert/rouge/ambre assombris : ≥ 4,5 sur blanc (24/09/2026) */
   body{ background:linear-gradient(180deg,#e9f5f3 0%, #f5f7fa 260px, #f5f7fa 100%) !important; }
@@ -267,6 +267,40 @@
   .gbl-item--actif{ border-left-color:var(--clt-teal-dark); font-weight:800; }
   .gbl-onglet:focus-visible, .gbl-item:focus-visible{ outline:2px solid var(--clt-teal-dark); outline-offset:-2px; }
   @media print{ body.gbl-active .gbl-barre{ display:none; } body.gbl-active .wrap{ margin-left:auto; margin-right:auto; } }
+  /* Replier / déplier / chercher (26/09/2026, gestion-replier.js). Cibles ≥ 44 px. */
+  .gbl-recherche{ padding:4px 6px 10px; }
+  .gbl-recherche input{ width:100%; min-height:44px; padding:0 12px; border:1.5px solid #d7dee6; border-radius:10px; font:inherit; font-size:14px; background:#fff; }
+  .gbl-recherche input:focus{ outline:none; border-color:var(--clt-teal-dark); box-shadow:0 0 0 3px rgba(15,118,110,.15); }
+  .gbl-tete{ display:flex; align-items:center; }
+  .gbl-tete .gbl-onglet{ flex:1; }
+  .gbl-pli{ flex:none; width:44px; height:44px; border:0; background:none; color:#5b6573; cursor:pointer; border-radius:9px; display:flex; align-items:center; justify-content:center; }
+  .gbl-pli:hover{ background:#f1f6f5; }
+  .gbl-pli svg{ transition:transform .15s ease; }
+  .gbl-tete--plie .gbl-pli svg{ transform:rotate(-90deg); }
+  .gbl-vide{ padding:12px 10px; font-size:13px; color:#5b6573; }
+  .gm-recherche{ position:relative; margin:0 0 10px; }
+  .gm-recherche input{ width:100%; min-height:44px; padding:0 12px; border:1.5px solid #d7dee6; border-radius:12px; font:inherit; font-size:15px; background:#fff; }
+  .gm-resultats{ position:absolute; left:0; right:0; top:calc(100% + 4px); z-index:60; background:#fff; border:1px solid #e3e8ee; border-radius:12px; box-shadow:0 12px 30px rgba(16,40,70,.14); padding:6px; }
+  .gm-res{ display:block; width:100%; text-align:left; min-height:44px; padding:0 12px; border:0; background:none; font:inherit; font-size:14px; font-weight:600; color:#1f2937; border-radius:9px; cursor:pointer; }
+  .gm-res:hover{ background:#f1f6f5; }
+  .gm-vide{ padding:10px 12px; font-size:13px; color:#5b6573; }
+  body.gbl-active .gm-recherche{ display:none; }
+  /* Avec la barre latérale, le rond de l'assistant se pose à droite d'elle (il cachait « Documents »). */
+  body.gbl-active .clt-assistant-bouton{ left:262px; }
+  body.gbl-active .gbl-barre{ padding-bottom:40px; }
+  .cartes-tout{ display:flex; gap:8px; justify-content:flex-end; margin:0 0 10px; }
+  .cartes-tout .btn{ min-height:40px; }
+  .card-tete--pliable{ position:relative; padding-right:48px; }
+  .card-pli{ position:absolute; right:-4px; top:50%; transform:translateY(-50%); width:44px; height:44px; border:0; background:none; color:#5b6573; cursor:pointer; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+  .card-pli:hover{ background:#f1f6f5; }
+  .card-pli svg{ transition:transform .15s ease; }
+  .card--plie .card-pli svg{ transform:rotate(-90deg); }
+  .card--plie > :not(:first-child){ display:none !important; }
+  .card--plie{ padding-bottom:12px; }
+  html[data-theme="dark"] .gbl-recherche input, html[data-theme="dark"] .gm-recherche input, html[data-theme="dark"] .gm-resultats{ background:#1B2635; border-color:#2A3849; color:#E6ECF3; }
+  html[data-theme="dark"] .gbl-pli, html[data-theme="dark"] .card-pli{ color:#C9D3DF; }
+  html[data-theme="dark"] .gbl-pli:hover, html[data-theme="dark"] .card-pli:hover, html[data-theme="dark"] .gm-res:hover{ background:#243247; }
+  html[data-theme="dark"] .gm-res{ color:#E6ECF3; }
   /* ---------- LE BILAN DE LA SEMAINE (20/09/2026, 12.3) ---------- */
   #cdd-semaine{ padding:16px 18px; margin-bottom:16px; }
   .cds-nav{ display:inline-flex; align-items:center; gap:6px; }
@@ -834,7 +868,7 @@
 </style>
 <!-- La peau v2 (25/09/2026, lot 18) : chargée EN DERNIER, elle recouvre style.css et le style de la page. -->
 <style>:root{ --clt-accent-encre:#0F766E; }</style>
-<link rel="stylesheet" href="peau.css?v=20260926constante">
+<link rel="stylesheet" href="peau.css?v=20260926gestion">
 </head>
 <body>
 <div class="topbar">
@@ -1879,51 +1913,52 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"
         integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3"
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="clt-common.js?v=20260926constante"></script>
-<script src="assistant.js?v=20260926constante"></script>
-<script src="numero-international.js?v=20260926constante"></script>
-<script src="lib/bibliotheques.js?v=20260926constante"></script>
-<script src="lib/retours.js?v=20260926constante"></script>
-<script src="lib/reclamations.js?v=20260926constante"></script>
-<script src="lib/communes-et-tarifs.js?v=20260926constante"></script>
-<script src="lib/argent.js?v=20260926constante"></script>
-<script src="lib/releve-cliente.js?v=20260926constante"></script>
-<script src="lib/papier-a-en-tete.js?v=20260926constante"></script>
-<script src="lib/briques-argent.js?v=20260926constante"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260926constante"></script>
-<script src="lib/traces-de-report.js?v=20260926constante"></script>
-<script src="lib/annonce-de-remise.js?v=20260926constante"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260926constante"></script>
-<script src="lib/primes.js?v=20260926constante"></script>
-<script src="lib/doublons.js?v=20260926constante"></script>
-<script src="config.js?v=20260926constante"></script>
-<script src="biometric-lock.js?v=20260926constante"></script>
-<script src="clt-select-recherche.js?v=20260926constante"></script>
-<script src="site-editeur.js?v=20260926constante"></script>
+<script src="clt-common.js?v=20260926gestion"></script>
+<script src="assistant.js?v=20260926gestion"></script>
+<script src="numero-international.js?v=20260926gestion"></script>
+<script src="lib/bibliotheques.js?v=20260926gestion"></script>
+<script src="lib/retours.js?v=20260926gestion"></script>
+<script src="lib/reclamations.js?v=20260926gestion"></script>
+<script src="lib/communes-et-tarifs.js?v=20260926gestion"></script>
+<script src="lib/argent.js?v=20260926gestion"></script>
+<script src="lib/releve-cliente.js?v=20260926gestion"></script>
+<script src="lib/papier-a-en-tete.js?v=20260926gestion"></script>
+<script src="lib/briques-argent.js?v=20260926gestion"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260926gestion"></script>
+<script src="lib/traces-de-report.js?v=20260926gestion"></script>
+<script src="lib/annonce-de-remise.js?v=20260926gestion"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260926gestion"></script>
+<script src="lib/primes.js?v=20260926gestion"></script>
+<script src="lib/doublons.js?v=20260926gestion"></script>
+<script src="config.js?v=20260926gestion"></script>
+<script src="biometric-lock.js?v=20260926gestion"></script>
+<script src="clt-select-recherche.js?v=20260926gestion"></script>
+<script src="site-editeur.js?v=20260926gestion"></script>
 <!-- La règle de comparaison, puis l'écran qui s'en sert. Ni l'une ni l'autre n'est dans lib/ :
      elles ne servent qu'à cet écran, et le téléphone du livreur n'a pas à les télécharger. -->
-<script src="bilan-de-la-semaine.js?v=20260926constante"></script>
-<script src="argent-a-suivre.js?v=20260926constante"></script>
-<script src="dix-chiffres.js?v=20260926constante"></script>
-<script src="gestion-dix-chiffres.js?v=20260926constante"></script>
-<script src="express-chiffres.js?v=20260926constante"></script>
-<script src="gestion-express-chiffres.js?v=20260926constante"></script>
-<script src="causes-des-echecs.js?v=20260926constante"></script>
-<script src="activite-de-la-cliente.js?v=20260926constante"></script>
-<script src="qui-vend-quoi.js?v=20260926constante"></script>
-<script src="analyse-profonde.js?v=20260926constante"></script>
-<script src="ce-qui-a-change.js?v=20260926constante"></script>
-<script src="les-questions.js?v=20260926constante"></script>
-<script src="console-du-dirigeant.js?v=20260926constante"></script>
-<script src="rapports-recus.js?v=20260926constante"></script>
-<script src="rapports-recus-ecran.js?v=20260926constante"></script>
-<script src="gestion.js?v=20260926constante"></script>
+<script src="bilan-de-la-semaine.js?v=20260926gestion"></script>
+<script src="argent-a-suivre.js?v=20260926gestion"></script>
+<script src="dix-chiffres.js?v=20260926gestion"></script>
+<script src="gestion-dix-chiffres.js?v=20260926gestion"></script>
+<script src="express-chiffres.js?v=20260926gestion"></script>
+<script src="gestion-express-chiffres.js?v=20260926gestion"></script>
+<script src="causes-des-echecs.js?v=20260926gestion"></script>
+<script src="activite-de-la-cliente.js?v=20260926gestion"></script>
+<script src="qui-vend-quoi.js?v=20260926gestion"></script>
+<script src="analyse-profonde.js?v=20260926gestion"></script>
+<script src="ce-qui-a-change.js?v=20260926gestion"></script>
+<script src="les-questions.js?v=20260926gestion"></script>
+<script src="console-du-dirigeant.js?v=20260926gestion"></script>
+<script src="rapports-recus.js?v=20260926gestion"></script>
+<script src="rapports-recus-ecran.js?v=20260926gestion"></script>
+<script src="gestion.js?v=20260926gestion"></script>
 <!-- La barre latérale (14.3) se charge APRÈS gestion.js : elle enveloppe switchTab / switchSub. -->
-<script src="guide-du-gerant.js?v=20260926constante"></script>
-<script src="avance-de-travail.js?v=20260926constante"></script>
-<script src="avance-de-travail-ecran.js?v=20260926constante"></script>
-<script src="regulariser.js?v=20260926constante"></script>
-<script src="regulariser-ecran.js?v=20260926constante"></script>
-<script src="gestion-barre-laterale.js?v=20260926constante"></script>
+<script src="guide-du-gerant.js?v=20260926gestion"></script>
+<script src="avance-de-travail.js?v=20260926gestion"></script>
+<script src="avance-de-travail-ecran.js?v=20260926gestion"></script>
+<script src="regulariser.js?v=20260926gestion"></script>
+<script src="regulariser-ecran.js?v=20260926gestion"></script>
+<script src="gestion-barre-laterale.js?v=20260926gestion"></script>
+<script src="gestion-replier.js?v=20260926gestion"></script>
 </body>
 </html>

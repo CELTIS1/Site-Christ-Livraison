@@ -66,7 +66,9 @@
 
   function dessiner() {
     if (!barre) return;
-    barre.innerHTML = carteHTML(lireLaCarte());
+    // gestion-replier.js (26/09) habille cette fonction (blocs repliables, recherche) : on passe par la version exposée.
+    const dessine = (window.CLTBarreLaterale && window.CLTBarreLaterale.carteHTML) || carteHTML;
+    barre.innerHTML = dessine(lireLaCarte());
     const actif = barre.querySelector('[aria-current="page"]');
     // L'endroit où l'on est reste en vue, sans faire bouger la page elle-même.
     if (actif && typeof actif.scrollIntoView === 'function' && barre.scrollHeight > barre.clientHeight) {

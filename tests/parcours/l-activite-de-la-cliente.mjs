@@ -69,6 +69,8 @@ if (await box.isVisible().catch(() => false)) {
 titre('3. Gestion : « Qui vend quoi »');
 await N.ouvrirConnecte('gestion.html', ADMIN);
 await dodo(3500);
+// Depuis le 26/09, les cartes d'analyse du tableau de bord sont repliées par défaut : on déplie celle-ci, comme le gérant.
+await page.evaluate(() => window.CLTGestionReplier.basculerCarte(document.getElementById('cdd-qui-vend-quoi'), false)); await dodo(300);
 const boite = page.locator('#cdd-qui-vend-quoi');
 await boite.scrollIntoViewIfNeeded().catch(() => {});
 const t = await lireTexte(boite);

@@ -66,6 +66,8 @@ titre('1. Le gérant ouvre son tableau de bord : la boîte est là, remplie');
 await N.ouvrirConnecte('gestion.html', ADMIN);
 await dodo(3500);
 verifier('la page s\'ouvre sans une seule erreur', erreurs.length === 0, erreurs.join('\n       '));
+// Depuis le 26/09, les cartes d'analyse sont repliées par défaut : on déplie la console et la boîte, comme le gérant.
+await page.evaluate(() => document.querySelector('[data-cartes="deplier"]').click()); await dodo(300);
 
 const boite = page.locator('#cdd-questions');
 verifier('la carte des questions existe', (await boite.count()) === 1);
@@ -265,6 +267,8 @@ verifier('sur téléphone : pas de barre, les onglets du haut sont là', await p
 await page.setViewportSize({ width: 1440, height: 900 });
 await dodo(500);
 verifier('à 1 440 px : la barre prend la gauche, les onglets du haut s\'effacent', await page.evaluate(() => document.body.classList.contains('gbl-active') && getComputedStyle(document.querySelector('.navsticky')).display === 'none' && document.getElementById('gbl-barre').getBoundingClientRect().width === 248));
+// Depuis le 26/09, seul l'onglet courant est déplié dans la barre : on déplie les autres avant de comparer.
+await page.evaluate(() => { for (let i = 0; i < 10; i++) { const b = document.querySelector('#gbl-barre [data-gbl-pli][aria-expanded="false"]'); if (!b) break; b.click(); } }); await dodo(400);
 const carte = await page.evaluate(() => ({ barre: [...document.querySelectorAll('#gbl-barre [data-gbl-sub]')].map((b) => b.dataset.gblTab + '/' + b.dataset.gblSub), page: [...document.querySelectorAll('.tabs .tab')].filter((t) => t.style.display !== 'none').flatMap((t) => [...document.querySelectorAll('#sec-' + t.dataset.tab + ' > .subtabs-groupes .subtab')].filter((x) => x.style.display !== 'none').map((x) => t.dataset.tab + '/' + x.dataset.sub)) }));
 verifier('elle montre exactement les sous-onglets de la page — elle les lit, elle n\'en déclare aucun', carte.barre.length >= 20 && carte.barre.join() === carte.page.join(), JSON.stringify(carte).slice(0, 300));
 await page.locator('#gbl-barre [data-gbl-sub="echeances"]').click();
