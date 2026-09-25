@@ -31,6 +31,7 @@
     { cle: 'signalements', libelle: 'Signalements' },
     { cle: 'demandes', libelle: 'Demandes' },
     { cle: 'litiges', libelle: 'Litiges Express' },   // 25/09/2026, chantier P, lot P-2
+    { cle: 'sans_coursier', libelle: 'Sans coursier' },   // 25/09/2026, chantier P, lot P-4 : une course Express que personne ne prend
   ];
 
   const AIDE = {
@@ -41,7 +42,19 @@
     signalements: 'Une cliente ou un livreur a signalé un problème. <b>« Je m\'en occupe »</b> le prend en charge ; <b>« Répondre et clore »</b> envoie la réponse, qu\'ils lisent sous leur signalement.',
     demandes: 'Une cliente demande un passage. <b>« Programmer »</b> ouvre la tournée de ce jour avec tout rempli ; <b>« Refuser »</b> lui envoie le motif ; <b>« Traitée »</b> si vous avez répondu autrement.',
     litiges: 'Un client ou un coursier Express a signalé un problème sur une course. <b>« Ouvrir le dossier »</b> montre tout (chronologie, argent, gestes) ; <b>« Je m\'en occupe »</b> le prend en charge ; <b>« Répondre et clore »</b> envoie la réponse, lue sous le signalement. Un litige de plus d\'un jour brûle.',
+    sans_coursier: 'Une course Express que personne n\'a prise : la base l\'a proposée trois fois, en élargissant le rayon, puis vous a alerté. <b>« Ouvrir le dossier »</b> pour l\'attribuer à un coursier, ou l\'annuler avec un motif ; <b>« Appeler le client »</b> pour le prévenir.',
   };
+
+  /* Une course Express sans coursier (lot P-4) : trois vagues de diffusion, puis la base pose
+     bureau_alerte_at ; sans le SQL, on regarde l'âge (10 min sans coursier, comme attente()). */
+  const SANS_COURSIER_MIN = 10;
+  function courseSansCoursier(c, maintenant) {
+    if (!c || c.status !== 'en_attente' || c.coursier_id) return false;
+    if (c.bureau_alerte_at) return true;
+    const m = (new Date(maintenant || Date.now()) - new Date(c.created_at)) / 60000;
+    return m >= SANS_COURSIER_MIN;
+  }
+  function minutesTexte(m) { return m < 60 ? Math.round(m) + ' min' : Math.floor(m / 60) + ' h ' + String(Math.round(m % 60)).padStart(2, '0'); }
 
   function joursEntre(iso, aujourdhui) {
     if (!iso) return null;
@@ -90,6 +103,13 @@
       const j = joursEntre(r.created_at, aujourdhui);
       lignes.push({ genre: 'litiges', cle: 'litige:' + r.id, id: r.id, litige: r, urgence: (j || 0) >= 1 ? 0 : 1, jours: j, depuis: depuisTexte(j), tri: String(r.created_at || '') });
     });
+    /* Les courses Express sans coursier (25/09/2026, lot P-4) : elles brûlent (urgence 0) — un
+       client attend, sans savoir. */
+    const maintenant = (outils && outils.maintenant) || Date.now();
+    (S.coursesExpress || []).filter(function (c) { return courseSansCoursier(c, maintenant); }).forEach(function (c) {
+      const m = (new Date(maintenant) - new Date(c.created_at)) / 60000;
+      lignes.push({ genre: 'sans_coursier', cle: 'course:' + c.id, id: c.id, course: c, urgence: 0, jours: 0, depuis: 'depuis ' + minutesTexte(m), tri: String(c.created_at || '') });
+    });
     (S.demandes || []).forEach(function (d) {
       const j = joursEntre(d.jour, aujourdhui);   // ≤ 0 : à venir
       lignes.push({ genre: 'demandes', cle: 'demande:' + d.id, id: d.id, demande: d, urgence: j >= 0 ? 1 : 3, jours: j, depuis: j === 0 ? "pour aujourd'hui" : j === -1 ? 'pour demain' : j < 0 ? 'pour dans ' + (-j) + ' jours' : 'jour passé', tri: String(d.jour || '') });
@@ -99,7 +119,7 @@
   }
 
   function compterParGenre(lignes) {
-    const n = { tout: 0, non_livres: 0, retours: 0, reportes: 0, signalements: 0, demandes: 0, litiges: 0, urgent: 0 };
+    const n = { tout: 0, non_livres: 0, retours: 0, reportes: 0, signalements: 0, demandes: 0, litiges: 0, sans_coursier: 0, urgent: 0 };
     (lignes || []).forEach(function (l) { n.tout += 1; n[l.genre] = (n[l.genre] || 0) + 1; if (l.urgence < 1) n.urgent += 1; });
     return n;
   }
@@ -150,6 +170,12 @@
       choix.push({ cle: 'resolue', libelle: '✅ Répondre et clore', explication: 'Votre réponse est envoyée et lue sous le signalement, dans son application.', action: 'litige' });
       return choix;
     }
+    if (ligne.genre === 'sans_coursier') {
+      const c = ligne.course || {};
+      choix.push({ cle: 'dossier', libelle: '📂 Ouvrir le dossier — attribuer ou annuler', explication: 'Le dossier propose « Attribuer à un coursier » et « Annuler la course » avec un motif.', action: 'course' });
+      if (c.client_telephone) choix.push({ cle: 'appeler', libelle: '📞 Appeler le client', explication: 'Le prévenir qu\'on cherche, ou convenir d\'une autre heure.', action: 'course' });
+      return choix;
+    }
     if (ligne.genre === 'demandes') {
       choix.push({ cle: 'programmer', libelle: '🗓️ Programmer la tournée', explication: 'Ouvre Tournées sur ce jour, cliente, nombre et note déjà remplis : vous choisissez le livreur.', action: 'demande' });
       choix.push({ cle: 'traitee', libelle: '✅ Traitée autrement', explication: 'Vous avez répondu par téléphone ou hors tournée ; la cliente voit « vue par CLT ».', action: 'demande' });
@@ -159,5 +185,5 @@
     return choix;
   }
 
-  window.CLTATraiter = { GENRES, AIDE, lignesATraiter, choixQueFaire, compterParGenre, joursEntre };
+  window.CLTATraiter = { GENRES, AIDE, lignesATraiter, choixQueFaire, compterParGenre, joursEntre, courseSansCoursier: courseSansCoursier };
 })();

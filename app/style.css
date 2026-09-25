@@ -4825,3 +4825,11 @@ html[data-theme="dark"] .express-coursier-etat{ background:#243247; color:#C5CFD
 html[data-theme="dark"] .express-coursier-etat--vert{ background:#1f3a2a; color:#8fe3b0; }
 html[data-theme="dark"] .express-coursier-etat--ambre{ background:#3a3320; color:#f2c98a; }
 html[data-theme="dark"] .express-coursier-etat--rouge{ background:#3a1a1a; color:#F5A3A3; }
+
+/* LE DISPATCH (25/09/2026, chantier P, lot P-4). */
+.express-dossier__diffusion{ margin-top:6px; padding:6px 10px; border-radius:10px; background:#EEF0F3; font-size:13px; }
+.express-dossier__diffusion--alerte{ background:#FDF3D6; }
+.course-proche--inconnue{ color:#8a4b00; }
+html[data-theme="dark"] .express-dossier__diffusion{ background:#243247; }
+html[data-theme="dark"] .express-dossier__diffusion--alerte{ background:#3a3320; }
+html[data-theme="dark"] .course-proche--inconnue{ color:#f2c98a; }

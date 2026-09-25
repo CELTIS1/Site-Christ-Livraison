@@ -35,6 +35,24 @@
     return { cle: 'ancienne', texte: 'Sans preuve (course d\'avant le code)', aSurveiller: false };
   }
 
+  /* diffusion(course, diffusions) → { texte, alerte, vagues } : à qui la course a été proposée (lot P-4). */
+  function diffusion(c, diffusions) {
+    const d = diffusions || [];
+    const vague = Number(c && c.dispatch_vague) || 0;
+    if (!vague && !d.length) return { texte: c && c.status === 'en_attente' ? 'Diffusion non tracée (SQL du 25/09 à jouer)' : '', alerte: false, vagues: [] };
+    const vagues = [];
+    for (let v = 1; v <= Math.max(vague, ...d.map(x => Number(x.vague) || 0)); v++) {
+      const l = d.filter(x => Number(x.vague) === v);
+      vagues.push({ vague: v, coursiers: l.length, rayon: l.length ? l[0].rayon_km : null });
+    }
+    const km = (r) => r != null ? String(r).replace('.', ',') + ' km' : '—';
+    const mots = vagues.map(v => 'vague ' + v.vague + ' : ' + v.coursiers + ' coursier' + (v.coursiers > 1 ? 's' : '') + ' (rayon ' + km(v.rayon != null ? v.rayon : (c.dispatch_rayon_km != null && v.vague === vague ? c.dispatch_rayon_km : null)) + ')');
+    const sansEpingle = c && c.latitude_recuperation == null;
+    let texte = 'Proposée — ' + mots.join(' · ') + (sansEpingle ? ' · sans épingle : à tous les disponibles' : '');
+    if (c && c.bureau_alerte_at) texte += ' · personne après trois vagues : bureau alerté';
+    return { texte, alerte: !!(c && c.bureau_alerte_at), vagues };
+  }
+
   /* chronologie(course, { noms: { [id]: 'Nom' } }) → [{ quand, quoi, qui }] du plus ancien au plus récent. */
   function chronologie(c, o) {
     const noms = (o && o.noms) || {};
@@ -92,5 +110,5 @@
     return n;
   }
 
-  window.CLTExpressDossier = { STATUTS, chronologie, argent, attente, gestesDuBureau, compterParStatut, preuve };
+  window.CLTExpressDossier = { STATUTS, chronologie, argent, attente, gestesDuBureau, compterParStatut, preuve, diffusion };
 })();

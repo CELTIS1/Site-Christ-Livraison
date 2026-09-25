@@ -90,7 +90,7 @@ export function nouveauMonde() {
     /* CLT Express (18/09/2026, point 5.5). Le tarif est celui relevé en production le 18/09 :
        500 F de base, 150 F du kilomètre. Un tarif inventé ici ferait un banc qui ne mesure rien. */
     express_config: [{ id: 1, tarif_base: 500, tarif_par_km: 150, commission_pct: 0.2, vitesse_moy_kmh: 18, delai_prise_en_charge_min: 10 }],
-    express_courses: [], express_messages: [], express_course_positions: [], express_reclamations: [], express_codes_livraison: [], acceptations: [],
+    express_courses: [], express_messages: [], express_course_positions: [], express_reclamations: [], express_codes_livraison: [], acceptations: [], express_diffusions: [],
     /* UN REÇU DE REVERSEMENT DÉJÀ ÉCRIT (18/09/2026, point 10.3), avec son numéro : la cliente
        Mariam a été payée pour son colis n°2, livré. C'est la pièce que les deux écrans impriment. */
     reversements_clientes: [{
@@ -291,6 +291,8 @@ export function nouveauMonde() {
         if (r.status === undefined) r.status = 'en_attente';
         if (r.commission_reglee === undefined) r.commission_reglee = false;
         if (r.paiement_mode === undefined) r.paiement_mode = 'especes';
+        // express_dispatch_au_depart (AFTER INSERT, lot P-4) : la course est proposée aux coursiers disponibles dans le rayon (vague 1).
+        if (r.status === 'en_attente' && !r.coursier_id) diffuserCourse(r, 1);
         // express_creer_code_livraison (AFTER INSERT, lot P-3) : le code à 4 chiffres naît avec la course.
         (TABLES.express_codes_livraison ||= []).push({ course_id: r.id, code: r.__code || String(Math.floor(Math.random() * 10000)).padStart(4, '0'), created_at: maintenant });
         delete r.__code;
@@ -362,6 +364,35 @@ export function nouveauMonde() {
 
   function haversineKm(a, b, c, d) { const R = 6371, r = (x) => x * Math.PI / 180; const h = Math.sin(r(c - a) / 2) ** 2 + Math.cos(r(a)) * Math.cos(r(c)) * Math.sin(r(d - b) / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); }
   const REPONSES_RPC = {};
+  /* LE DISPATCH (lot P-4, 25/09/2026), comme le SQL : express_diffuser_course (rayon × 2^(vague−1), coursiers
+     valides, disponibles, non suspendus, à portée d'après livreur_positions — ou tous si la course n'a
+     pas d'épingle / le coursier pas de position), express_relancer_dispatch (vague suivante après
+     dispatch_delai_min, puis bureau_alerte_at). Un parcours appelle monde.relancerDispatch(maintenant). */
+  function diffuserCourse(c, vague) {
+    const cfg = (TABLES.express_config || [])[0] || {};
+    const rayon = (cfg.rayon_dispatch_km ?? 3) * Math.pow(2, Math.max(vague, 1) - 1);
+    const fraiche = (cfg.position_fraiche_min ?? 15) * 60000;
+    TABLES.express_diffusions = (TABLES.express_diffusions || []).filter(d => !(d.course_id === c.id && d.vague === vague));
+    PROFILS.filter(p => p.role === 'coursier_express' && p.status === 'valide' && p.disponible_express && !p.express_suspendu_at).forEach(p => {
+      const pos = (TABLES.livreur_positions || []).find(x => x.livreur_id === p.id && Date.now() - new Date(x.updated_at).getTime() < fraiche);
+      const sansEpingle = c.latitude_recuperation == null || c.longitude_recuperation == null;
+      const dist = (sansEpingle || !pos) ? null : Math.round(haversineKm(pos.latitude, pos.longitude, c.latitude_recuperation, c.longitude_recuperation) * 100) / 100;
+      if (sansEpingle || !pos || dist <= rayon) TABLES.express_diffusions.push({ id: 'dif-' + c.id + '-' + vague + '-' + p.id.slice(-2), course_id: c.id, coursier_id: p.id, vague, rayon_km: rayon, distance_km: dist, envoyee_at: new Date().toISOString() });
+    });
+    Object.assign(c, { dispatch_vague: vague, dispatch_rayon_km: rayon, dispatch_relance_at: new Date().toISOString() });
+    journal.push({ op: 'dispatch', course: c.id, vague, coursiers: TABLES.express_diffusions.filter(d => d.course_id === c.id && d.vague === vague).length });
+  }
+  function relancerDispatch(maintenant) {
+    const cfg = (TABLES.express_config || [])[0] || {};
+    const delai = (cfg.dispatch_delai_min ?? 3) * 60000, t = maintenant ? new Date(maintenant).getTime() : Date.now();
+    let n = 0;
+    (TABLES.express_courses || []).filter(c => c.status === 'en_attente' && !c.coursier_id && t - new Date(c.dispatch_relance_at || c.created_at).getTime() >= delai).forEach(c => {
+      if ((c.dispatch_vague || 0) < 3) { diffuserCourse(c, (c.dispatch_vague || 0) + 1); n++; }
+      else if (!c.bureau_alerte_at) { c.bureau_alerte_at = new Date(t).toISOString(); c.dispatch_relance_at = c.bureau_alerte_at; n++; }
+    });
+    return n;
+  }
+
   /* La notation qui compte (lot P-3) : les N dernières notes d'un coursier, et la suspension automatique. */
   function seuilsNotation() { const c = (TABLES.express_config || [])[0] || {}; return { note_surveillance: c.note_surveillance ?? 3.5, note_suspension: c.note_suspension ?? 3, notes_minimum: c.notes_minimum ?? 10 }; }
   function notationDe(coursierId) {
@@ -392,6 +423,7 @@ export function nouveauMonde() {
       }
       if (!c || c.status !== 'acceptee' || c.coursier_id !== user) return { data: null, error: { message: 'pas_rendable' } };
       Object.assign(c, { status: 'en_attente', coursier_id: null, accepted_at: null });
+      diffuserCourse(c, 1);   // express_dispatch_au_depart : une course rendue repart en vague 1 (lot P-4)
       return { data: c, error: null };
     }
     /* express_livrer_course / express_confirmer_reception (lot P-3, 25/09/2026), comme le SQL. */
@@ -423,11 +455,14 @@ export function nouveauMonde() {
     if (nom === 'express_courses_proximite') {
       const lecteur = PROFILS.find(p => p.id === user);
       if (!lecteur || lecteur.role !== 'coursier_express' || lecteur.status !== 'valide') return { data: [], error: null };
-      const rayon = ((TABLES.express_config || [])[0] || {}).rayon_dispatch_km || 3;
+      if (lecteur.express_suspendu_at) return { data: [], error: null };
+      const rayonBase = ((TABLES.express_config || [])[0] || {}).rayon_dispatch_km || 3;
       const lat = args && args.p_lat, lng = args && args.p_lng;
       const d = (TABLES.express_courses || []).filter(c => c.status === 'en_attente' && !c.coursier_id)
         .map(c => Object.assign({}, c, { destinataire_nom: null, destinataire_telephone: null, distance_pickup_km: (lat == null || c.latitude_recuperation == null) ? null : Math.round(haversineKm(lat, lng, c.latitude_recuperation, c.longitude_recuperation) * 100) / 100 }))
-        .filter(c => lat == null || (c.distance_pickup_km != null && c.distance_pickup_km <= rayon));
+        // Lot P-4 : le rayon de la course (élargi vague après vague) ; une course sans épingle est rendue, distance inconnue.
+        .filter(c => lat == null || c.distance_pickup_km == null || c.distance_pickup_km <= (c.dispatch_rayon_km ?? rayonBase))
+        .sort((a, b) => (a.distance_pickup_km ?? 1e9) - (b.distance_pickup_km ?? 1e9) || String(a.created_at).localeCompare(String(b.created_at)));
       return { data: d, error: null };
     }
     if (nom === 'express_noter_coursier' || nom === 'express_noter_client') {
@@ -834,5 +869,5 @@ export function nouveauMonde() {
     return { user: { id: compte.user_id, phone: compte.phone, user_metadata: { full_name: profil.full_name } }, error: null };
   }
 
-  return { TABLES, journal, REFUS, DRAPEAUX, REPONSES_RPC, executer, rpc, connexion, COMPTES, PROFILS };
+  return { TABLES, journal, REFUS, DRAPEAUX, REPONSES_RPC, executer, rpc, connexion, COMPTES, PROFILS, relancerDispatch, diffuserCourse };
 }

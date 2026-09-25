@@ -1455,10 +1455,11 @@ v236 — 23 septembre 2026 — La barre du bas, fixée en bas
    v262, le 25/09/2026 — CLT Express, les gestes du bureau (chantier P, lot P-1, seconde moitié) : attribuer, confier à un autre, marquer récupérée / livrée à sa place, annuler avec motif, tracés (SQL 2026-09-25-express-les-gestes-du-bureau.sql, repli sans les colonnes) ; fenêtre du dossier réutilisée ; parcours de bout en bout 27. Étiquette 20260925gestes.
    v263, le 25/09/2026 — CLT Express, litiges et support (chantier P, lot P-2) : express-litige.js (client et coursier), motifs dans lib/reclamations.js, vue « Litiges Express » dans À traiter (a-traiter.js, 12-les-retours.js), temps réel, dix chiffres ; SQL 2026-09-25-express-les-litiges.sql ; parcours les-litiges-express. Étiquette 20260925litiges.
    v264, le 25/09/2026 — CLT Express, la preuve de livraison (chantier P, lot P-3, 1/2) : express-preuve.js (code à 4 chiffres lu par le client, tapé par le coursier, express_livrer_course ; sans code, le client confirme), preuve dans le dossier ; SQL 2026-09-25-express-la-preuve-de-livraison.sql ; parcours la-preuve-de-livraison. Étiquette 20260925preuve.
-   v265, le 25/09/2026 — CLT Express, la notation qui compte, les conditions, la valeur (chantier P, lot P-3, 2/2) : express-notation.js (seuils, état d'un coursier), express-conditions-texte.js (CGU, charte, objets, plafond), express-conditions.js (feuille, champs, note, bandeau), carte « Coursiers » au bureau ; SQL 2026-09-25-express-notation-conditions-valeur.sql ; parcours la-notation-et-les-conditions-express. Étiquette 20260925conditions. */
+   v265, le 25/09/2026 — CLT Express, la notation qui compte, les conditions, la valeur (chantier P, lot P-3, 2/2) : express-notation.js (seuils, état d'un coursier), express-conditions-texte.js (CGU, charte, objets, plafond), express-conditions.js (feuille, champs, note, bandeau), carte « Coursiers » au bureau ; SQL 2026-09-25-express-notation-conditions-valeur.sql ; parcours la-notation-et-les-conditions-express. Étiquette 20260925conditions.
+   v266, le 25/09/2026 — CLT Express, le dispatch (chantier P, lot P-4) : express_diffusions et trois vagues (SQL 2026-09-25-express-le-dispatch.sql, pg_cron), envoyer-push ne pousse qu'aux coursiers de la vague, alerte bureau, course rendue, recharges notifiées ; « À traiter › Sans coursier » (a-traiter.js, 12-les-retours.js — et la vue Litiges qui retombait sur Tout, corrigée) ; courses sans épingle visibles ; parcours le-dispatch-express. Étiquette 20260925dispatch. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v265'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v266'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

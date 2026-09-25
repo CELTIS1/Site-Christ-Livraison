@@ -104,9 +104,9 @@ await page.locator('#conditions-feuille .conditions-accepter').click();
 await dodo(1000);
 verifier('Bakary : le bandeau « Compte suspendu — Note 2,7… appelez CLT », interrupteur désactivé', /Compte suspendu/.test(await texteDe('.suspendu-bandeau')) && /Note 2,7/.test(await texteDe('.suspendu-bandeau')) && await page.locator('#avail-toggle').isDisabled(), await texteDe('.suspendu-bandeau'));
 verifier('sous l\'interrupteur : « Compte suspendu : appelez CLT »', /Compte suspendu : appelez CLT/.test(await texteDe('#ma-note')));
-await page.evaluate(() => { const c = document.querySelector('#disponibles-list .course-item .btn-accept-course'); if (c) c.click(); });
-await dodo(1200);
-verifier('la base refuse son acceptation (« coursier_suspendu ») : la course reste libre', monde.TABLES.express_courses.find(c => c.id === 'c-libre').status === 'en_attente' && monde.journal.some(j => j.op === 'rpc' && j.nom === 'express_accepter_course'));
+// Lot P-4 : un coursier suspendu ne reçoit plus aucune course (express_courses_proximite) ; et s'il en forçait une, la base refuserait (« coursier_suspendu »).
+verifier('suspendu : aucune course dans « Dispo », la course libre reste libre', (await page.locator('#disponibles-list .course-item').count()) === 0 && monde.TABLES.express_courses.find(c => c.id === 'c-libre').status === 'en_attente');
+verifier('… et la base refuse une acceptation forcée (« coursier_suspendu »)', /coursier_suspendu/.test((monde.rpc('express_accepter_course', { p_course: 'c-libre' }, MAUVAIS).error || {}).message || ''));
 await N.ouvrirConnecte('equipe.html', ADMIN);
 await dodo(2200);
 await page.evaluate(() => showEquipeTab('express'));

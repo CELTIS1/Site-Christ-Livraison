@@ -63,8 +63,9 @@
     },
     "envoyer-push": {
       "etat": "deployee",
-      "empreinte": "2747d06837852c6fd5018b77a74efc72c1bd41f0398227e2b1b9b761c9cd6d26",
-      "le": "2026-09-24"
+      "empreinte": "99454c66d0f6b36906ffe98f88658b9037f614be999e7cca917779c924fbbe60",
+      "le": "2026-09-25",
+      "note": "v266 (lot P-4, dispatch) : à redéployer par Celtis (feuille de route § 2, dispatch-v266) — cette empreinte est celle du dépôt à la livraison."
     },
     "finaliser-reset-password": {
       "etat": "deployee",

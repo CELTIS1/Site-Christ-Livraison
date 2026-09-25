@@ -115,10 +115,11 @@ async function ouvrirDossierExpress(id) {
   const corps = ov.querySelector('.express-dossier__corps');
   if (!corps.children.length) corps.innerHTML = '<div class="empty-state">Chargement…</div>';
   const q = async (p) => { try { const r = await p; return r.error ? null : r.data; } catch (e) { return null; } };
-  const [course, messages, positions] = await Promise.all([
+  const [course, messages, positions, diffusions] = await Promise.all([
     q(supabaseClient.from('express_courses').select('*').eq('id', id).single()),
     q(supabaseClient.from('express_messages').select('id, sender_id, body, created_at').eq('course_id', id).order('created_at', { ascending: true }).limit(200)),
     q(supabaseClient.from('express_course_positions').select('id, created_at').eq('course_id', id).limit(2000)),
+    q(supabaseClient.from('express_diffusions').select('coursier_id, vague, rayon_km, distance_km, envoyee_at').eq('course_id', id).order('vague', { ascending: true }).limit(500)),   // lot P-4
   ]);
   if (!course) { corps.innerHTML = '<div class="empty-state">Course introuvable.</div>'; return; }
   const ids = [course.client_id, course.coursier_id, course.annulation_par].filter(Boolean);
@@ -145,6 +146,7 @@ async function ouvrirDossierExpress(id) {
     <h3 class="panel-subtitle" style="font-size:15px;margin:14px 0 6px;">Argent</h3>
     <div class="express-dossier__argent">${escapeHTML(argent.phrase)} · ${course.distance_km || '?'} km${course.valeur_declaree ? ' · valeur déclarée ' + formatMontant(course.valeur_declaree) : ''}</div>
     ${(() => { const p = D && D.preuve ? D.preuve(course) : null; return p && p.texte ? `<div class="express-dossier__preuve express-dossier__preuve--${p.cle}">${p.aSurveiller ? '⚠️ ' : '🔐 '}${escapeHTML(p.texte)}</div>` : ''; })()}
+    ${(() => { const d = D && D.diffusion ? D.diffusion(course, diffusions || []) : null; return d && d.texte ? `<div class="express-dossier__diffusion${d.alerte ? ' express-dossier__diffusion--alerte' : ''}">📡 ${escapeHTML(d.texte)}</div>` : ''; })()}
     <h3 class="panel-subtitle" style="font-size:15px;margin:14px 0 6px;">Échanges et trajet</h3>
     <div class="meta">${(messages || []).length} message${(messages || []).length > 1 ? 's' : ''} dans le chat · ${(positions || []).length} position${(positions || []).length > 1 ? 's' : ''} enregistrée${(positions || []).length > 1 ? 's' : ''}</div>
     ${(messages || []).length ? `<div class="express-dossier__chat">${messages.slice(-20).map(m => `<div class="express-msg"><span class="meta">${escapeHTML(fmt(m.created_at))} · ${escapeHTML(noms[m.sender_id] || (m.sender_id === course.client_id ? 'client' : 'coursier'))}</span><div>${escapeHTML(m.body || '')}</div></div>`).join('')}</div>` : ''}

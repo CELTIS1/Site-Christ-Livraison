@@ -524,6 +524,17 @@
             "« Suspendre » demande un motif, lu par le coursier sur son écran. « Lever la suspension » après l'appel ; si sa note reste sous 3, la base le suspendra de nouveau à la prochaine note.",
             "La charte : la date d'acceptation, ou « pas encore acceptée » (elle s'impose à sa prochaine ouverture). Les seuils sont dans express_config (SQL du 25/09)."
           ]
+        },
+        {
+          "id": "equipe-sans-coursier",
+          "titre": "Une course Express que personne ne prend",
+          "resume": "La base la propose trois fois (rayon 3, 6, 12 km) puis vous alerte : « À traiter › Sans coursier », le dossier pour attribuer ou annuler.",
+          "etapes": [
+            "Une nouvelle course part aux coursiers disponibles dans le rayon (position récente), pas à tous ; sans preneur en 3 minutes, le rayon double, puis quadruple.",
+            "Après trois vagues, vous recevez « Course Express sans coursier » et la course apparaît dans « À traiter › 📡 Sans coursier », avec à qui elle a été proposée.",
+            "« Ouvrir le dossier » : attribuer à un coursier (il est prévenu) ou annuler avec un motif ; « Appeler le client » pour le prévenir."
+          ],
+          "astuce": "Une course commandée sans épingle est proposée à tous les disponibles et montrée « distance inconnue » : rien n'est plus invisible."
         }
       ]
     },
@@ -717,6 +728,17 @@
             "Sous 3 sur 10 courses, le compte est suspendu automatiquement : un bandeau rouge le dit, vous ne pouvez plus accepter. Appelez CLT : la suspension se lève au téléphone."
           ],
           "astuce": "Une valeur déclarée apparaît sur la course : au-dessus de 50 000 F ou colis interdit, refusez et appelez CLT."
+        },
+        {
+          "id": "coursier-dispo",
+          "titre": "Pourquoi je ne vois pas toutes les courses",
+          "resume": "Une course vous est proposée si vous êtes disponible, à portée (rayon de 3 km, élargi toutes les 3 minutes) ; les courses sans épingle sont montrées à tous.",
+          "etapes": [
+            "Activez « Je suis disponible » et la localisation : la base vous propose les courses proches en premier, et vous prévient.",
+            "Sans preneur en 3 minutes, le rayon s'élargit : une course plus loin peut apparaître d'un coup.",
+            "« distance inconnue (adresse sans épingle) » : le client n'a pas posé de point ; appelez-le avant de partir si l'adresse est floue."
+          ],
+          "astuce": "Une recharge validée ou refusée vous est notifiée ; une course rendue repart tout de suite aux autres."
         }
       ]
     },

@@ -147,6 +147,19 @@
       "aSavoir": "Pas d'assurance au palier 1 : c'est écrit dans les CGU et sous le champ de valeur. Décisions (2) plafond de dette et (3) frais d'annulation : lot P-5."
     },
     {
+      "id": "express-dispatch",
+      "espace": "express",
+      "titre": "Express : le dispatch, la bonne course au bon coursier",
+      "enBref": "Une course part aux disponibles dans le rayon ; sans preneur en 3 min, le rayon double ; après trois vagues, le bureau est alerté.",
+      "ou": "Équipe › À traiter › « 📡 Sans coursier » ; le dossier d'une course dit à qui elle a été proposée",
+      "etapes": [
+        "Trois vagues (rayon × 1, × 2, × 4) écrites par la base (express_diffusions) ; envoyer-push ne pousse qu'à eux. Réglages dans express_config.",
+        "Une course sans épingle est proposée à tous, montrée « distance inconnue » (trou du lot P-1 fermé). Une course rendue repart en vague 1, le client est prévenu.",
+        "Après le SQL du 25/09, REDÉPLOYER envoyer-push (Supabase › Edge Functions, coller index.ts) : sinon les pushs partent à tous, comme avant."
+      ],
+      "aSavoir": "L'estimation du temps d'acceptation côté client et la note du client côté coursier (§ 3.3) ne sont pas faites : petit lot à part si le terrain le demande."
+    },
+    {
       "id": "l-argent",
       "espace": "bureau",
       "titre": "L'argent en deux écrans (et ce qui manque)",

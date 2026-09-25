@@ -602,13 +602,41 @@ async function handleAnnonceRemise(record: any, eventType: string): Promise<Resp
 // ----------------------------------------------------------------------------
 // Notifications EXPRESS (marketplace : coursiers & clients indépendants)
 // ----------------------------------------------------------------------------
+/* LE DISPATCH (25/09/2026, chantier P, lot P-4). La base écrit dans express_diffusions à qui une
+   course est proposée (vague 1 : le rayon ; vague 2 : × 2 ; vague 3 : × 4). Ici on ne pousse
+   « nouvelle course » QU'À EUX ; sans ligne (SQL pas joué, course d'avant), à tous les coursiers,
+   comme avant. */
+async function coursiersDeLaVague(courseId: string, vague: number): Promise<string[]> {
+  try {
+    const { data, error } = await admin.from("express_diffusions").select("coursier_id").eq("course_id", courseId).eq("vague", vague);
+    if (error || !data) return [];
+    return (data as { coursier_id: string }[]).map((d) => d.coursier_id).filter((v) => UUID.test(v));
+  } catch (_e) { return []; }
+}
+
 async function handleExpress(record: any, oldRecord: any, eventType: string): Promise<Response> {
   const newStatut: string = record.status;
+  const idDispatch = uuidOuRien(record.id);
 
-  // Sur UPDATE : ne notifier que si le statut a changé.
+  // Sur UPDATE : ne notifier que si le statut a changé — sauf deux mouvements du dispatch (lot P-4).
   if (eventType === "UPDATE") {
     const oldStatut = oldRecord ? oldRecord.status : null;
-    if (newStatut === oldStatut) return new Response("statut inchangé", { status: 200 });
+    if (newStatut === oldStatut) {
+      if (newStatut !== "en_attente" || !idDispatch) return new Response("statut inchangé", { status: 200 });
+      const vague = Number(record.dispatch_vague ?? 0), vagueAvant = Number(oldRecord?.dispatch_vague ?? 0);
+      const ref = record.description_colis || "Une course";
+      // Le rayon s'est élargi : on prévient les coursiers de la nouvelle vague (la vague 1 part avec l'INSERT).
+      if (vague > 1 && vague !== vagueAvant) {
+        const ids = await coursiersDeLaVague(idDispatch, vague);
+        if (ids.length === 0) return new Response("vague sans coursier", { status: 200 });
+        return await envoyer({ roles: [], userIds: ids }, "📦 Course toujours disponible", `${ref} attend un coursier — rayon élargi`, `course-${idDispatch}`, `course=${encodeURIComponent(idDispatch)}`);
+      }
+      // Personne après trois vagues : le bureau est alerté (À traiter : « course sans coursier »).
+      if (record.bureau_alerte_at && !oldRecord?.bureau_alerte_at) {
+        return await envoyer({ roles: ["equipe", "admin"], userIds: [] }, "⚠️ Course Express sans coursier", `${ref} : personne n'a accepté. À traiter › Sans coursier.`, `course-bureau-${idDispatch}`, `course=${encodeURIComponent(idDispatch)}`);
+      }
+      return new Response("statut inchangé", { status: 200 });
+    }
   }
 
   const info = EXPRESS_INFO[newStatut];
@@ -628,17 +656,47 @@ async function handleExpress(record: any, oldRecord: any, eventType: string): Pr
   const CLIENT_STATUTS = new Set(["acceptee", "recuperee", "livree", "annulee"]);
   const dest: Destinataires = { roles: [], userIds: [] };
 
-  if (newStatut === "en_attente") dest.roles.push("coursier_express");
+  if (newStatut === "en_attente") {
+    // Lot P-4 : aux coursiers de la vague en cours ; à tous si la base n'en a écrit aucun.
+    const vague = Number(record.dispatch_vague ?? 0) || 1;
+    const ids = await coursiersDeLaVague(id, vague);
+    if (ids.length > 0) dest.userIds.push(...ids); else dest.roles.push("coursier_express");
+  }
   const coursier = uuidOuRien(record.coursier_id);
   if (newStatut === "annulee" && coursier) dest.userIds.push(coursier);
   const client = uuidOuRien(record.client_id);
   if (CLIENT_STATUTS.has(newStatut) && client) dest.userIds.push(client);
+
+  // Une course rendue par son coursier (acceptee → en_attente) : le client le sait, et qu'on cherche (lot P-4).
+  if (eventType === "UPDATE" && newStatut === "en_attente" && oldRecord?.status === "acceptee" && client) {
+    await envoyer({ roles: [], userIds: [client] }, "🔎 On cherche un autre coursier", `${ref} : votre coursier n'a pas pu assurer la course. Nous en cherchons un autre, vous serez prévenu.`, `course-client-${id}`, `course=${encodeURIComponent(id)}`);
+  }
 
   if (dest.roles.length === 0 && dest.userIds.length === 0) {
     return new Response("aucun destinataire", { status: 200 });
   }
 
   return await envoyer(dest, info.title, body, tag, `course=${encodeURIComponent(id)}`);
+}
+
+// ----------------------------------------------------------------------------
+// Recharges des coursiers Express (25/09/2026, lot P-4) : validée ou refusée → le coursier
+// ----------------------------------------------------------------------------
+async function handleRecharge(record: any, oldRecord: any, eventType: string): Promise<Response> {
+  if (eventType !== "UPDATE") return new Response("recharge : insertion ignorée", { status: 200 });
+  const statut: string = record.status;   // express_recharges.status (pas « statut »)
+  if (statut === oldRecord?.status) return new Response("statut inchangé", { status: 200 });
+  const coursier = uuidOuRien(record.coursier_id);
+  const id = uuidOuRien(record.id);
+  if (!coursier || !id) return new Response("identifiant invalide", { status: 200 });
+  const montant = Number(record.montant ?? 0).toLocaleString("fr-FR");
+  if (statut === "validee") {
+    return await envoyer({ roles: [], userIds: [coursier] }, "💵 Recharge validée", `+${montant} F sur votre solde. Vous pouvez accepter des courses.`, `recharge-${id}`, "solde=1");
+  }
+  if (statut === "refusee") {
+    return await envoyer({ roles: [], userIds: [coursier] }, "❌ Recharge refusée", `Votre recharge de ${montant} F n'a pas été validée. Appelez CLT.`, `recharge-${id}`, "solde=1");
+  }
+  return new Response("statut non notifiable", { status: 200 });
 }
 
 Deno.serve(async (req) => {
@@ -670,6 +728,7 @@ Deno.serve(async (req) => {
     if (table === "express_courses") {
       return await handleExpress(record, oldRecord, eventType);
     }
+    if (table === "express_recharges") return await handleRecharge(record, oldRecord, eventType);
     if (table === "reclamations_clientes") return await handleReclamation(record, oldRecord, eventType);
     if (table === "demandes_de_passage") return await handleDemandeDePassage(record, oldRecord, eventType);
     if (table === "reversements_clientes") return await handleReversement(record, eventType);
