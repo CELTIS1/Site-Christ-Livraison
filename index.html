@@ -818,6 +818,18 @@
   .partner-pill:hover{transform:translateY(-2px) scale(1.03); box-shadow:0 8px 18px rgba(27,67,116,0.08);}
   .partner-pill i{color:var(--orange);}
 
+  /* ---------- VENDEUSE DE LA SEMAINE (S-5) ---------- */
+  .semaine{background:linear-gradient(135deg,#FFF4EC 0%,#FFFFFF 100%); border-top:1px solid #F3E2D5; border-bottom:1px solid #F3E2D5; padding:34px 0;}
+  .semaine-inner{display:flex; align-items:center; justify-content:space-between; gap:28px; flex-wrap:wrap;}
+  .semaine-etiquette{display:inline-block; background:var(--orange); color:#fff; font-weight:800; font-size:12px; letter-spacing:1px; text-transform:uppercase; padding:6px 12px; border-radius:16px; margin-bottom:10px;}
+  .semaine h3{font-size:26px; color:var(--navy); margin:0 0 6px;}
+  .semaine p{color:#4B5B6C; margin:0 0 14px; max-width:620px;}
+  .semaine-actions{display:flex; gap:10px; flex-wrap:wrap;}
+  .semaine-actions .btn{min-height:46px;}
+  .semaine-note{max-width:300px; color:#5B6B7C; font-size:14px; line-height:1.5;}
+  .semaine-note a{color:var(--orange); font-weight:700;}
+  @media (max-width:860px){ .semaine{padding:26px 0;} .semaine h3{font-size:22px;} .semaine-note{max-width:none;} }
+
   /* ---------- MOBILE STICKY CTA BAR ---------- */
   .mobile-cta-bar{display:none;}
   @media (max-width:680px){
@@ -1123,6 +1135,24 @@
       <div class="preuve-item"><strong id="chiffre-reverse">—</strong><span>reversés aux vendeuses ce mois</span></div>
     </div>
     <p class="preuve-note" id="preuve-note">Chiffres réels, lus dans notre application au moment où vous ouvrez cette page.</p>
+  </div>
+</section>
+
+<!-- S-5 (26/09/2026) : LA VENDEUSE DE LA SEMAINE. Une fiche de « Nos vendeuses » (site_vendeuses : consentie ET
+     validée par le bureau), choisie par le numéro de la semaine — la même pour tout le monde, toute la semaine.
+     Cachée tant qu'il n'y a aucune fiche. -->
+<section class="semaine" id="vendeuse-semaine" hidden aria-label="Vendeuse de la semaine">
+  <div class="container semaine-inner">
+    <div class="semaine-texte">
+      <span class="semaine-etiquette">⭐ Vendeuse de la semaine</span>
+      <h3 id="vs-nom"></h3>
+      <p id="vs-desc"></p>
+      <div class="semaine-actions">
+        <a id="vs-wa" class="btn btn-primary" target="_blank" rel="noopener" href="#" data-site-compteur="vendeuse-semaine"><i class="fa-brands fa-whatsapp"></i> Commander chez elle</a>
+        <a class="btn btn-secondary" href="vendeuses.html#nos-vendeuses">Toutes nos vendeuses</a>
+      </div>
+    </div>
+    <div class="semaine-note">Elle vend, CLT livre et lui reverse son argent. Vous vendez aussi ? <a href="vendeuses.html">Votre boutique peut être ici.</a></div>
   </div>
 </section>
 
@@ -1803,6 +1833,28 @@
       }).catch(function(){ /* sans réseau ou sans la fonction : les tirets restent */ });
   }
   chargerChiffresDuMois();
+  /* S-5 (26/09/2026) : la vendeuse de la semaine — site_vendeuses() (fiches consenties et validées), une par semaine ISO. */
+  (function vendeuseDeLaSemaine(){
+    var URL_BASE = "https://xkfltqjbmolmdwdafzcx.supabase.co", CLE = "sb_publishable_wn9f6Way_wMzCVypmJo5zA_yWYPqJzP";
+    var SECTEURS = { mode: 'Mode et vêtements', beaute: 'Beauté et cosmétiques', alimentation: 'Alimentation et boissons', electromenager: 'Électroménager', telephonie: 'Téléphonie et informatique', maison: 'Maison et décoration', enfants: 'Bébés et enfants', sante: 'Santé et bien-être', documents: 'Documents et courrier', autre: 'Autre' };
+    function semaineISO(d){ var x = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); var j = x.getUTCDay() || 7; x.setUTCDate(x.getUTCDate() + 4 - j); var an = new Date(Date.UTC(x.getUTCFullYear(), 0, 1)); return Math.ceil(((x - an) / 86400000 + 1) / 7); }
+    function choisir(liste, date){ if (!liste || !liste.length) return null; var i = (semaineISO(date || new Date()) + (date || new Date()).getFullYear()) % liste.length; return liste[i]; }
+    window.__cltChoisirVendeuse = choisir;
+    fetch(URL_BASE + '/rest/v1/rpc/site_vendeuses', { method: 'POST', headers: { 'apikey': CLE, 'Authorization': 'Bearer ' + CLE, 'Content-Type': 'application/json' }, body: '{}' })
+      .then(function(r){ return r.ok ? r.json() : Promise.reject(r.status); })
+      .then(function(liste){
+        var v = choisir(Array.isArray(liste) ? liste : []);
+        if (!v || !v.nom) return;
+        var s = document.getElementById('vendeuse-semaine'); if (!s) return;
+        document.getElementById('vs-nom').textContent = v.nom;
+        var desc = [v.secteur ? (SECTEURS[v.secteur] || v.secteur) : '', v.produits || '', v.commune ? 'à ' + v.commune : '', v.colis_livres >= 10 ? 'plus de ' + v.colis_livres + ' colis livrés par CLT' : ''].filter(Boolean).join(' · ');
+        document.getElementById('vs-desc').textContent = desc;
+        var wa = document.getElementById('vs-wa');
+        var tel = String(v.whatsapp || '').replace(/\D/g, ''); if (tel && tel.length === 10) tel = '225' + tel;
+        if (tel) wa.href = 'https://wa.me/' + tel + '?text=' + encodeURIComponent('Bonjour ' + v.nom + ', je vous ai trouvée sur le site de CLT (vendeuse de la semaine). Je voudrais commander.'); else wa.hidden = true;
+        s.removeAttribute('hidden');
+      }).catch(function(){ /* pas de fiche, pas de section */ });
+  })();
   /* Ce qu'on mesure (S-1) : les clics sur « Commencer sur WhatsApp », comptés sans rien d'autre (stats_visites, si présent). */
   document.addEventListener('click', function(e){
     var b = e.target.closest('[data-site-compteur]'); if (!b) return;
@@ -2254,5 +2306,6 @@
 })();
 </script>
 
+<script src="site-assistant.js" defer></script>
 </body>
 </html>

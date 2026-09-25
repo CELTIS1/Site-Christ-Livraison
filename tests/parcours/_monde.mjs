@@ -880,5 +880,5 @@ export function nouveauMonde() {
     return { user: { id: compte.user_id, phone: compte.phone, user_metadata: { full_name: profil.full_name } }, error: null };
   }
 
-  return { TABLES, journal, REFUS, DRAPEAUX, REPONSES_RPC, executer, rpc, connexion, COMPTES, PROFILS, relancerDispatch, diffuserCourse };
+  return { TABLES, journal, REFUS, DRAPEAUX, REPONSES_RPC, executer, rpc, connexion, COMPTES, PROFILS, relancerDispatch, diffuserCourse, fonctions: {} };
 }

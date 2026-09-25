@@ -2,12 +2,21 @@
   "_lisez_moi": "Ce que chaque mise à jour apporte, en clair. LA RÈGLE, posée par Celtis le 18/09/2026 : « pour une question de discrétion et de professionnalisme, des détails courts et concis ; si ça ne concerne pas un espace en particulier, juste une phrase simple, sans entrer dans les détails, pour ne pas divulguer à tout le monde tout ce qui se fait — ils n'en ont pas besoin, sauf quand ça corrige un problème qui les concerne ou que c'est une amélioration pour eux. » Concrètement : un titre court ; UN À TROIS points, une phrase chacun, 160 caractères au plus ; un point qui concerne un espace le nomme (« Équipe : … », « Gestion : … ») ; et un travail qui ne change rien pour celui qui lit tient en UNE phrase neutre, sans détail. Ce panneau s'ouvre depuis le bandeau « Nouvelle version » et depuis la page de connexion, donc AVANT toute identification : ce qu'on y écrit est lu par l'équipe, les livreurs, les clientes et n'importe qui ouvre la page. Écrire pour le lecteur, pas pour l'auteur. DEPUIS LE 21/09/2026 LE PANNEAU TRIE LUI-MÊME (cltNouveautesPour, clt-common.js) : l'équipe (equipe.html, gestion.html) voit tout ; une cliente, un livreur, un coursier ne voient que les phrases qui commencent par leur nom (« Clientes : … », « Livreurs : … », « Coursier : … » / « Express : … ») ou le champ facultatif points_pour:{cliente:[…],livreur:[…],express:[…]} ; tout le reste devient UNE phrase neutre, et la page de connexion ne montre aucun détail. Donc : commencer par « Clientes : » ou « Livreurs : » toute phrase qui doit leur parvenir, et SEULEMENT celles-là. La première entrée est la plus récente, et seules les six premières sont affichées. Une entrée par étiquette publiée ; le contrôle tests/quoi-de-neuf.test.mjs refuse la publication si la règle n'est pas tenue.",
   "entrees": [
     {
+      "version": "20260926comprend",
+      "date": "26 septembre 2026",
+      "titre": "L'assistant comprend vos questions",
+      "points": [
+        "Livreurs, Clientes, Équipe, CLT Express : posez votre question avec vos mots, l'assistant lit votre situation, répond et vous oriente (IA).",
+        "Le site a son assistant pour les visiteurs, et met en avant une vendeuse chaque semaine."
+      ]
+    },
+    {
       "version": "20260926tiroir",
       "date": "26 septembre 2026",
       "titre": "Site : « Se connecter » visible dans le menu du téléphone",
       "points": [
         "Sur le téléphone, le menu ☰ commence par « Demander un devis » et « Se connecter ».",
-        "Équipe › Bureau › « Plein écran » ouvre Gestion sans redemander la connexion."
+        "Équipe : dans le Bureau, « Plein écran » ouvre Gestion sans redemander la connexion."
       ]
     },
     {

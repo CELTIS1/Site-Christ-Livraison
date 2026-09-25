@@ -7,7 +7,10 @@
      étage 2 — ses données : « où est ma course ? », « combien CLT me doit ? », « ma journée ? » —
                des règles écrites, sur ce que la personne a déjà le droit de voir (RLS) ;
      toujours — un humain : « Parler à CLT » ouvre WhatsApp avec le contexte déjà écrit.
-   L'étage 3 (IA) n'est pas ici : il viendra derrière un réglage du gérant, plafonné.
+     étage 3 — l'IA qui comprend (26/09, Celtis : « il doit comprendre, analyser, répondre et orienter ») :
+               quand la question est libre et qu'aucune règle ne la reconnaît, la fonction serveur
+               `assistant-repondre` (Claude Haiku, plafonné, journalisé) répond avec la SITUATION de la
+               personne et les fiches proches ; sans clé ou au-delà du plafond, tout marche comme avant.
    Placement : rond de 56 px, en bas à GAUCHE (le coin droit est celui de « Remonter / Aller en bas »),
    AU-DESSUS de la barre du bas (jamais dessus) et du bandeau de mise à jour. Exposé sur window.CLTAssistant (règles pures testées :
    normaliser, chercherFiches, intention). */
@@ -138,7 +141,7 @@
     'express-client': ['Où est ma course ?', 'Le code de livraison ?', 'Signaler un problème'],
     'express-coursier': ['Mon solde ?', 'Pourquoi je ne vois pas de courses ?', 'Livrer avec le code'],
   };
-  var etat = { ouvert: false, espace: null, moi: null, nom: '' };
+  var etat = { ouvert: false, espace: null, moi: null, nom: '', ia: true, historique: [] };
 
   function contexteWhatsApp(question) {
     var role = { livreur: 'livreur', fournisseur: 'cliente', equipe: 'équipe', 'express-client': 'client Express', 'express-coursier': 'coursier Express' }[etat.espace] || 'utilisateur';
@@ -148,6 +151,45 @@
   function bulle(html, qui) { return '<div class="clt-assistant__bulle clt-assistant__bulle--' + qui + '">' + html + '</div>'; }
   function fichesHTML(ids, articles) {
     return (ids || []).map(function (id) { var a = articles.find(function (x) { return x.id === id; }); return a ? '<button type="button" class="clt-assistant__fiche" data-aide-ouvrir="' + esc(a.id) + '">' + ((a.medias || []).some(function (m) { return m.type === 'video'; }) ? '🎬 ' : '📄 ') + esc(a.titre) + '</button>' : ''; }).join('');
+  }
+  /* Étage 3 — quand demander à l'IA ? Jamais pour « humain » (WhatsApp direct) ni quand une règle de
+     l'étage 2 a répondu ; sinon dès que la question est une phrase (deux mots utiles ou plus) ou qu'aucune
+     fiche ne ressort nettement. Une question d'un mot avec une fiche nette (« relevé ») reste aux fiches. */
+  function decider(question, intentionTrouvee, fiches) {
+    if (intentionTrouvee) return 'regle';
+    var n = mots(question).length;
+    var nette = fiches && fiches.length && fiches[0].score >= 7;
+    if (n >= 2 || !nette) return 'ia';
+    return 'fiches';
+  }
+  function sansBalises(html) { return String(html || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(); }
+  var SITUATION = { livreur: ['journee'], fournisseur: ['releve', 'course'], equipe: ['a_traiter'], 'express-client': ['course'], 'express-coursier': ['solde', 'course'] };
+  async function situationDe() {
+    if (!etat.moi || typeof supabaseClient === 'undefined') return '';
+    var lignes = [];
+    for (var k = 0; k < (SITUATION[etat.espace] || []).length; k++) {
+      try { var r = await REPONSES[SITUATION[etat.espace][k]](etat.espace, etat.moi); if (r && r.texte) lignes.push(sansBalises(r.texte)); } catch (e) { /* une ligne de moins */ }
+    }
+    return lignes.join('\n').slice(0, 1200);
+  }
+  async function demanderIA(question, fiches) {
+    if (!etat.ia || typeof supabaseClient === 'undefined' || typeof SUPABASE_URL === 'undefined') return null;
+    var session = null; try { session = (await supabaseClient.auth.getSession()).data.session; } catch (e) { session = null; }
+    if (!session || !session.access_token) return null;
+    var situation = await situationDe();
+    var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var minuteur = ctrl ? setTimeout(function () { ctrl.abort(); }, 15000) : null;
+    try {
+      var r = await fetch(SUPABASE_URL + '/functions/v1/assistant-repondre', {
+        method: 'POST', signal: ctrl ? ctrl.signal : undefined,
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token, 'apikey': SUPABASE_KEY },
+        body: JSON.stringify({ question: question, espace: etat.espace, situation: situation, fiches: (fiches || []).map(function (f) { return { id: f.id, titre: f.titre, resume: f.resume }; }), historique: etat.historique.slice(-6) }),
+      });
+      if (!r.ok) return null;
+      var j = await r.json();
+      if (!j || j.repli) { if (j && (j.pourquoi === 'sans_cle' || j.pourquoi === 'inactif')) etat.ia = false; return null; }
+      return j;
+    } catch (e) { return null; } finally { if (minuteur) clearTimeout(minuteur); }
   }
   async function repondre(question) {
     var fil = document.getElementById('clt-assistant-fil'); if (!fil) return;
@@ -170,7 +212,14 @@
     }
     if (!html || i === null) {
       var trouvees = chercherFiches(question, articles);
-      if (trouvees.length) html += (html ? '' : 'Voici ce qui répond le mieux :') + '<div class="clt-assistant__fiches">' + fichesHTML(trouvees.map(function (t) { return t.id; }), articles) + '</div>';
+      var ia = null;
+      if (decider(question, i, trouvees) === 'ia') ia = await demanderIA(question, trouvees);
+      if (ia && ia.reponse) {
+        html += esc(ia.reponse);
+        if (ia.fiche) html += '<div class="clt-assistant__fiches">' + fichesHTML([ia.fiche], articles) + '</div>';
+        if (ia.humain) html += '<div class="clt-assistant__actions"><a class="btn clt-assistant__wa" target="_blank" rel="noopener" href="' + contexteWhatsApp(question) + '">💬 Parler à CLT sur WhatsApp</a></div>';
+        etat.historique.push({ qui: 'moi', texte: question }, { qui: 'clt', texte: ia.reponse });
+      } else if (trouvees.length) html += (html ? '' : 'Voici ce qui répond le mieux :') + '<div class="clt-assistant__fiches">' + fichesHTML(trouvees.map(function (t) { return t.id; }), articles) + '</div>';
       else html += (html ? '' : 'Je n\'ai pas trouvé de fiche pour ça. ') + '<div class="clt-assistant__actions"><a class="btn clt-assistant__wa" target="_blank" rel="noopener" href="' + contexteWhatsApp(question) + '">💬 Poser la question à CLT</a></div>';
     }
     attente.innerHTML = html;
@@ -223,5 +272,5 @@
   }
   function personne(id, nom) { etat.moi = id || null; etat.nom = nom || ''; }
   if (typeof document !== 'undefined') { if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', brancher); else brancher(); }
-  window.CLTAssistant = { normaliser: normaliser, chercherFiches: chercherFiches, intention: intention, personne: personne, ouvrir: dessiner, SUGGESTIONS: SUGGESTIONS };
+  window.CLTAssistant = { normaliser: normaliser, chercherFiches: chercherFiches, intention: intention, decider: decider, personne: personne, ouvrir: dessiner, SUGGESTIONS: SUGGESTIONS };
 })();

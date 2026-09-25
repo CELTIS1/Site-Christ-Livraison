@@ -146,6 +146,16 @@ export async function ouvrirNavigateur(options) {
   // Tout autre appel vers l'extérieur (la vraie base, WhatsApp, une carte…) est refusé net.
   // (Enregistré en premier : Playwright consulte les routes de la dernière à la première.)
   await contexte.route(/^https?:\/\/(?!127\.0\.0\.1)/, (route) => route.abort('blockedbyclient'));
+  // Les fonctions serveur (Edge Functions) : le faux monde peut en jouer une (monde.fonctions[nom]) ;
+  // sinon 404, et l'application doit se replier proprement (assistant étage 3, 26/09).
+  await contexte.route(/\/functions\/v1\/([a-z0-9-]+)$/, async (route) => {
+    const nom = route.request().url().split('/functions/v1/')[1];
+    const f = monde.fonctions && monde.fonctions[nom];
+    if (!f) return route.fulfill({ status: 404, contentType: 'application/json', body: '{"error":"fonction absente du faux monde"}' });
+    let corps = {}; try { corps = JSON.parse(route.request().postData() || '{}'); } catch (e) { corps = {}; }
+    const r = await f(corps, route.request().headers());
+    route.fulfill({ status: r && r.status || 200, contentType: 'application/json', body: JSON.stringify(r && r.body !== undefined ? r.body : r) });
+  });
 
   // Les bibliothèques du réseau : remplacées, jamais téléchargées.
   await contexte.route(/^https:\/\/(cdn\.jsdelivr\.net|cdnjs\.cloudflare\.com|fonts\.(googleapis|gstatic)\.com)\//, (route) => {

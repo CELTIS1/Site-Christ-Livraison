@@ -86,6 +86,32 @@ verifier('« Ouvrir À traiter » y va', await page.evaluate(() => !!document.qu
 const bo = await page.evaluate(() => { const r = document.getElementById('clt-assistant-bouton').getBoundingClientRect(); const h = document.querySelector('.clt-haut'); const hr = h ? h.getBoundingClientRect() : null; return { w: Math.round(r.width), bas: Math.round(window.innerHeight - r.bottom), gauche: Math.round(r.left), chevauche: hr ? !(r.right < hr.left || r.left > hr.right || r.bottom < hr.top || r.top > hr.bottom) : false }; });
 verifier('sur ordinateur, le rond est plus petit (52 px), en bas à GAUCHE, sans chevaucher « Remonter »', bo.w === 52 && bo.bas === 22 && bo.gauche === 22 && !bo.chevauche, JSON.stringify(bo));
 
+titre('4 bis. L\'étage 3 : l\'IA qui comprend (fonction serveur simulée)');
+const appels = [];
+monde.fonctions['assistant-repondre'] = async (corps, entetes) => {
+  appels.push({ corps, auth: !!(entetes.authorization || entetes.Authorization) });
+  if (appels.length === 1) return { reponse: 'Votre course est récupérée : le coursier arrive. Donnez-lui le code à 4 chiffres à la remise, et rien avant.', fiche: (corps.fiches[0] || {}).id || null, humain: false };
+  return { reponse: 'Je ne vois pas de remboursement dans votre situation : il vaut mieux en parler à CLT.', fiche: null, humain: true };
+};
+await N.ouvrirConnecte('express-client.html', CLIENT_EXPRESS);
+await dodo(1800);
+await ouvrirAssistant();
+rep = await demander('je dois faire quoi quand le livreur est devant chez moi ?');
+verifier('une phrase libre part à l\'IA : avec le jeton, l\'espace, la SITUATION (la course en cours) et les fiches proches', appels.length === 1 && appels[0].auth && appels[0].corps.espace === 'express-client' && /Riviera 3 est récupérée/.test(appels[0].corps.situation) && Array.isArray(appels[0].corps.fiches), JSON.stringify(appels[0] && { auth: appels[0].auth, espace: appels[0].corps.espace, situation: (appels[0].corps.situation || '').slice(0, 80), fiches: (appels[0].corps.fiches || []).length }));
+verifier('la réponse de l\'IA s\'affiche, avec la fiche qu\'elle recommande', /Donnez-lui le code à 4 chiffres/.test(rep) && (await page.locator('#clt-assistant-fil .clt-assistant__fiche').count()) >= 1, rep);
+rep = await demander('et si le colis est cassé, on me rembourse ?');
+verifier('l\'historique suit ; « [HUMAIN] » → la réponse plus le bouton WhatsApp', appels.length === 2 && appels[1].corps.historique.length === 2 && /en parler à CLT/.test(rep) && (await page.locator('#clt-assistant-fil .clt-assistant__wa').count()) >= 1, rep);
+rep = await demander('Où est ma course ?');
+verifier('une question qu\'une règle reconnaît n\'appelle PAS l\'IA (étage 2 d\'abord)', appels.length === 2 && /Sery Coursier/.test(rep), rep);
+monde.fonctions['assistant-repondre'] = async () => ({ repli: true, pourquoi: 'sans_cle' });
+await N.ouvrirConnecte('express-client.html', CLIENT_EXPRESS);
+await dodo(1800);
+await ouvrirAssistant();
+rep = await demander('comment faire pour annuler ma commande');
+const appelsAvant = appels.length;
+await demander('pourquoi le prix change selon la distance');
+verifier('sans clé (repli) : les fiches comme avant, sans erreur, et l\'IA n\'est plus rappelée de la session', /Annuler une course/.test(rep) && appels.length === appelsAvant, rep);
+
 titre('5. Téléphone, la nuit');
 await page.setViewportSize({ width: 390, height: 844 });
 await N.ouvrirConnecte('express-coursier.html', COURSIER);

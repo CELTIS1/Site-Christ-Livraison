@@ -37,6 +37,10 @@
       "empreinte": "c6e9fa7b282adbb4a4a892d65bb88e60cd751e2b015b3641cc5cee6f15d70f9b",
       "le": "2026-09-22"
     },
+    "assistant-repondre": {
+      "etat": "non-deployee",
+      "pourquoi": "À déployer par Celtis (26/09, étage 3 de l'assistant) : Edge Functions › Deploy a new function › « assistant-repondre » › coller supabase-functions/assistant-repondre/index.ts › Deploy ; puis Secrets › ANTHROPIC_API_KEY (sa clé Anthropic, jamais dans le chat). Sans clé, la fonction rend { repli: true } et l'assistant marche comme avant."
+    },
     "bilan-hebdomadaire": {
       "etat": "non-deployee",
       "pourquoi": "Décision documentée (README, inventaire du 16/09) : elle n'expose des chiffres qu'à un script extérieur, et ce script n'existe pas. L'écran « Le bilan de la semaine » (Gestion › Tableau de bord, depuis le 20/09) rend déjà le service. À déployer le jour où l'on voudra POUSSER le bilan du vendredi vers Celtis."

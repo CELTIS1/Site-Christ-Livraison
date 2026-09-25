@@ -1008,7 +1008,8 @@
           "titre": "L'assistant 💬 : une question, une réponse tout de suite",
           "resume": "Le rond en bas à droite ouvre une conversation : il répond avec l'aide et les vidéos, sur vos propres données (« où est ma course ? », « combien CLT me doit ? »), et passe la main à CLT sur WhatsApp.",
           "etapes": [
-            "Appuyez sur le rond bleu 💬 (la bulle, en bas à gauche), choisissez une question proposée ou écrivez la vôtre, en français de tous les jours.",
+            "Appuyez sur le rond bleu 💬 (en bas à gauche), choisissez une question proposée ou écrivez la vôtre, en français de tous les jours.",
+            "Si aucune fiche ne répond, il réfléchit avec l'IA (quand le bureau l'a activée) : il lit ce que vous voyez à l'écran et vous oriente ; en cas de doute, il vous passe CLT sur WhatsApp.",
             "Il répond avec les fiches et vidéos qui correspondent, ou avec vos chiffres du moment (votre course, votre solde, votre relevé, votre journée).",
             "« Parler à CLT sur WhatsApp » envoie votre question à l'équipe avec votre nom et votre rôle déjà écrits : pas besoin de vous présenter."
           ],
