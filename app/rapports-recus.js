@@ -17,7 +17,27 @@
   const GENRES = {
     bilan_semaine: { icone: '📊', libelle: 'Bilan de la semaine', pour: 'admin' },
     matin: { icone: '☀️', libelle: 'Résumé du matin', pour: 'equipe' },
+    // L'amélioration constante (26/09) : le rappel du lundi et le bilan du mois, rédigés par l'IA sur les mesures d'usage.
+    usage_semaine: { icone: '🔁', libelle: "Rappel d'usage de la semaine", pour: 'admin' },
+    usage_mois: { icone: '📈', libelle: "Bilan d'usage du mois", pour: 'admin' },
   };
+
+  /* Le détail (l'analyse de l'IA) : des titres en majuscules sur leur ligne (EN UN MOT, BIEN UTILISÉ…),
+     des lignes « - » et des paragraphes. On le découpe en blocs pour l'écran. */
+  const TITRES_ANALYSE = ['EN UN MOT', 'BIEN UTILISÉ', 'MAL UTILISÉ', 'JAMAIS UTILISÉ', 'À ÉVITER', 'PROPOSITIONS'];
+  function blocsDuDetail(detail) {
+    const blocs = [];
+    let courant = null;
+    String(detail || '').split(/\r?\n/).forEach((ligne) => {
+      const l = ligne.trim();
+      if (!l) return;
+      const titre = TITRES_ANALYSE.find((t) => l.toUpperCase().replace(/[\s:—-]+$/, '') === t);
+      if (titre) { courant = { titre, lignes: [], puces: [] }; blocs.push(courant); return; }
+      if (!courant) { courant = { titre: '', lignes: [], puces: [] }; blocs.push(courant); }
+      if (/^[-•]\s*/.test(l)) courant.puces.push(l.replace(/^[-•]\s*/, '')); else courant.lignes.push(l);
+    });
+    return blocs;
+  }
 
   function libelle(genre) { return (GENRES[genre] || { libelle: 'Rapport' }).libelle; }
   function icone(genre) { return (GENRES[genre] || { icone: '📄' }).icone; }
@@ -39,6 +59,8 @@
   function lignesDuCorps(corps) {
     const texte = String(corps || '').trim();
     if (!texte) return { lignes: [], note: '' };
+    // Les rapports d'usage (26/09) écrivent une ligne par thème, séparées par des retours à la ligne : on les garde telles quelles.
+    if (/\n/.test(texte)) return { lignes: texte.split(/\r?\n/).map((l) => l.trim()).filter(Boolean), note: '' };
     const parts = texte.split(' · ');
     const dernier = parts.pop() || '';
     // La fin de la dernière ligne peut contenir une phrase de note après un point.
@@ -59,7 +81,7 @@
     return (rapports || []).slice().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
   }
 
-  const api = { GENRES, libelle, icone, quand, lignesDuCorps, nonLus, compter, trier };
+  const api = { GENRES, libelle, icone, quand, lignesDuCorps, nonLus, compter, trier, blocsDuDetail, TITRES_ANALYSE };
   if (typeof window !== 'undefined') window.CLTRapportsRecus = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })();

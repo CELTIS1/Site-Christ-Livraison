@@ -36,6 +36,7 @@
       </div>
       <ul class="rap-corps">${c.lignes.map((l) => `<li>${esc(l)}</li>`).join('')}</ul>
       ${c.note ? `<div class="rap-note">${esc(c.note)}</div>` : ''}
+      ${r.detail ? detailHTML(r) : ''}
       <div class="rap-gestes">
         ${archive
           ? `<button type="button" class="btn btn-outline btn-sm" data-rap-geste="restaurer">↩ Remettre dans la liste</button>`
@@ -45,13 +46,32 @@
     </div>`;
   }
 
+  /* L'analyse de l'IA (rapports d'usage) : repliée sous « Lire l'analyse », ouverte d'office sur le rapport visé par la notification. */
+  function detailHTML(r) {
+    const blocs = R().blocsDuDetail(r.detail);
+    if (!blocs.length) return '';
+    return `<details class="rap-detail"${aVoir === r.id || !r.lu_at ? ' open' : ''}><summary>🧠 Lire l'analyse</summary>
+      ${blocs.map((b) => `<section class="rap-bloc${b.titre === 'PROPOSITIONS' ? ' rap-bloc--propositions' : ''}">${b.titre ? `<h4>${esc(b.titre)}</h4>` : ''}${b.lignes.map((l) => `<p>${esc(l)}</p>`).join('')}${b.puces.length ? `<ul>${b.puces.map((p) => `<li>${esc(p)}</li>`).join('')}</ul>` : ''}</section>`).join('')}
+    </details>`;
+  }
+
+  async function genererMaintenant(genre) {
+    const b = document.querySelector('[data-rap-generer]');
+    if (b) b.disabled = true;
+    const { error } = await supabaseClient.rpc('rapport_usage_creer', { p_genre: genre });
+    if (error) { if (window.cltToast) cltToast("Le rapport n'a pas pu être lancé : " + (error.message || '') + (/rapport_usage_creer/.test(error.message || '') ? ' — jouez le SQL du 26/09 (amélioration constante).' : ''), { type: 'error' }); if (b) b.disabled = false; return; }
+    if (window.cltToast) cltToast("Rapport en rédaction : il arrive ici et dans la cloche dans une minute.", { type: 'success' });
+    setTimeout(async () => { await charger(); if (b) b.disabled = false; }, 45000);
+  }
+
   function dessiner() {
     const carte = document.getElementById('rap-carte');
     if (!carte) return;
     const n = R().compter(rapports);
     let html = `<div class="af-tete"><h2>📬 Rapports reçus${n.nonLus ? `<span class="af-compte">${n.nonLus}</span>` : ''}</h2>
-      <span class="rap-sous">Le bilan du dimanche, le résumé du matin — gardés ici, à relire quand vous voulez.</span></div>`;
-    if (!rapports.length) html += '<div class="af-vide">Aucun rapport pour l’instant. Le premier bilan arrive dimanche à 8 h.</div>';
+      <span class="rap-sous">Le bilan du dimanche, le rappel d'usage du lundi, le bilan d'usage du mois — gardés ici, à relire quand vous voulez.</span>
+      ${(window.ACCES && window.ACCES.isAdmin) ? `<div class="rap-generer"><button type="button" class="btn btn-outline btn-sm" data-rap-generer="usage_semaine">🔁 Rapport d'usage de la semaine, maintenant</button><button type="button" class="btn btn-outline btn-sm" data-rap-generer="usage_mois">📈 Bilan du mois, maintenant</button></div>` : ''}</div>`;
+    if (!rapports.length) html += '<div class="af-vide">Aucun rapport pour l’instant. Le bilan arrive dimanche à 8 h, le rappel d’usage lundi à 6 h.</div>';
     html += R().trier(rapports).map((r) => ligneHTML(r, false)).join('');
     if (archives.length) {
       html += `<details class="af-faits rap-archives"${archivesOuvertes ? ' open' : ''}><summary>🗄️ ${archives.length} archivé${archives.length > 1 ? 's' : ''} — rien n’est supprimé</summary>${R().trier(archives).map((r) => ligneHTML(r, true)).join('')}</details>`;
@@ -60,6 +80,7 @@
     carte.querySelectorAll('[data-rap-geste]').forEach((el) => {
       el.addEventListener(el.tagName === 'INPUT' ? 'change' : 'click', () => marquer(el.closest('.rap-ligne').dataset.rap, el.dataset.rapGeste));
     });
+    carte.querySelectorAll('[data-rap-generer]').forEach((b) => b.addEventListener('click', () => genererMaintenant(b.dataset.rapGenerer)));
     const det = carte.querySelector('.rap-archives');
     if (det) det.addEventListener('toggle', () => { archivesOuvertes = det.open; });
     // Toucher le rapport encadré, c'est l'avoir vu.

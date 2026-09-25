@@ -39,7 +39,7 @@ await aide.locator('[data-aide-vue="videos"]').click();
 await dodo(500);
 const ouvertes = aide.locator('.clt-aide__article');
 const nbOuvertes = await ouvertes.count();
-verifier('seules les fiches qui ont une vidéo restent, toutes dépliées (6 chez le livreur)', nbOuvertes === 6 && (await ouvertes.evaluateAll(l => l.every(d => d.open && d.querySelector('video')))), String(nbOuvertes));
+verifier('seules les fiches qui ont une vidéo restent, toutes dépliées (7 chez le livreur, avec « Où trouver l\'aide » depuis le 26/09)', nbOuvertes === 7 && (await ouvertes.evaluateAll(l => l.every(d => d.open && d.querySelector('video')))), String(nbOuvertes));
 await aide.locator('.clt-aide__recherche input').fill('annoncer ma remise');
 await dodo(400);
 verifier('la recherche marche dans la vue Vidéos, et cherche aussi le titre des vidéos : « annoncer ma remise » → la fiche de l\'argent', (await ouvertes.count()) === 1 && (await ouvertes.first().getAttribute('id')) === 'aide-livreur-argent', String(await ouvertes.count()) + ' ' + await ouvertes.first().getAttribute('id'));

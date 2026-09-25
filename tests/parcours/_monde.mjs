@@ -580,6 +580,17 @@ export function nouveauMonde() {
        à jour ignoré, copie de l'état d'avant, annulation qui restaure. Les vraies fonctions
        sont éprouvées dans un vrai Postgres (dix-huit scénarios, 22/09) ; ici c'est l'ÉCRAN
        qu'on éprouve, et il ne doit rien voir de différent. */
+    /* L'AMÉLIORATION CONSTANTE (26/09/2026) — rapport_usage_creer() : l'administrateur lance un rapport ; ici, le faux
+       monde joue aussi la fonction serveur : le rapport poussé apparaît tout de suite, avec une analyse. */
+    if (nom === 'rapport_usage_creer') {
+      const profil = PROFILS.find(p => p.id === user);
+      if (!profil || profil.role !== 'admin') return { data: null, error: { message: "Réservé à l'administrateur." } };
+      const genre = (args && args.p_genre) === 'usage_mois' ? 'usage_mois' : 'usage_semaine';
+      const id = 'ru-' + (TABLES.rapports_pousses.length + 1);
+      (TABLES.rapports_usage ||= []).push({ id, genre, statut: 'pret' });
+      TABLES.rapports_pousses.push({ id, genre, roles: ['admin'], titre: (genre === 'usage_mois' ? "📈 Bilan d'usage — septembre 2026" : "🔁 Rappel d'usage — semaine du 21 au 27 septembre"), corps: 'Colis : 12 créés (+3) · 9 livrés (+2) · photo 67 % · non livrés avec motif 50 %\nGestes : 4 remises annoncées · 6 journées bouclées · 2 demandes de passage · 3 reversements · notifications lues 40 %\nExpress : 3 courses, 1 sans coursier, 1 litiges · Erreurs d\'écran : 2', detail: "EN UN MOT\nL'activité progresse (12 colis créés contre 9), mais un tiers des livraisons se fait sans photo.\nBIEN UTILISÉ\n- 9 colis livrés, 2 de plus que la semaine d'avant.\n- 6 journées bouclées : le point du soir est devenu un réflexe.\nMAL UTILISÉ\n- 3 livrés sur 9 sans photo (33 %).\n- 1 non livré sur 2 sans motif.\nJAMAIS UTILISÉ\n- 0 programmation de la veille.\nÀ ÉVITER\n- 2 erreurs d'écran sur livreur.html, la même les deux fois.\nPROPOSITIONS\n- Rendre la photo obligatoire pour « Livré » : Claude, cette semaine.\n- Rappeler le motif au livreur avant « Non livré » : Claude, cette semaine.\n- Le bureau programme la veille pour les 3 clientes régulières : équipe, dès lundi.", adresse: '/app/gestion.html?rapport=' + id, created_at: new Date().toISOString() });
+      return { data: id, error: null };
+    }
     /* LES RAPPORTS REÇUS (22/09/2026) — jumeaux de rapports_recus() et rapport_recu_marquer(). */
     if (nom === 'rapports_recus' || nom === 'rapport_recu_marquer') {
       const maintenant = new Date().toISOString();
@@ -591,7 +602,7 @@ export function nouveauMonde() {
         const arch = !!(args && args.p_archives);
         return { data: TABLES.rapports_pousses.filter(r => (r.roles || []).includes(role) && (!!r.archive_at === arch))
           .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
-          .map(r => ({ id: r.id, genre: r.genre, titre: r.titre, corps: r.corps, created_at: r.created_at, lu_at: r.lu_at || null, archive_at: r.archive_at || null })), error: null };
+          .map(r => ({ id: r.id, genre: r.genre, titre: r.titre, corps: r.corps, detail: r.detail || null, created_at: r.created_at, lu_at: r.lu_at || null, archive_at: r.archive_at || null })), error: null };
       }
       const r = TABLES.rapports_pousses.find(x => x.id === (args && args.p_id));
       if (!r) return { data: null, error: { message: 'Rapport introuvable.' } };

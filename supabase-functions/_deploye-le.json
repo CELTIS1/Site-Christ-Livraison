@@ -93,6 +93,10 @@
       "empreinte": "a557c9eb5837dea98edec9bf926b3e296d247467473beadfbf99386f8c414401",
       "le": "2026-09-22"
     },
+    "rapport-usage": {
+      "etat": "non-deployee",
+      "pourquoi": "À déployer par Celtis (26/09, chantier R) : Edge Functions › Deploy a new function › « rapport-usage » › coller supabase-functions/rapport-usage/index.ts › Deploy (Verify JWT activé). Utilise ANTHROPIC_API_KEY déjà posée. Sans déploiement, rapport_usage_creer() écrit la ligne mais rien n'est poussé."
+    },
     "verifier-code-express": {
       "etat": "deployee",
       "empreinte": "9e6176297f9584b1b52c50b1468e30335302a30f78951726cf83122ccafe1f22",

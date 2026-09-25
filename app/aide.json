@@ -5,6 +5,27 @@
       "titre": "Livreurs — ma journée, mes colis, mon argent",
       "articles": [
         {
+                  "id": "livreur-trouver-l-aide",
+                  "titre": "Où trouver l'aide et les vidéos",
+                  "resume": "Menu ☰ en haut → Aide. Tout est là, à tout moment.",
+                  "etapes": [
+                            "En haut à droite, touchez le menu ☰, puis « Aide ».",
+                            "Parcourez les fiches, ou tapez un mot dans la recherche (« photo », « retour », « argent »).",
+                            "« Vidéos » : les tutoriels en images ; touchez une vidéo, elle se lance.",
+                            "Fermez avec la croix : vous revenez où vous étiez."
+                  ],
+                  "astuce": "Le rond bleu 💬 en bas à gauche répond à vos questions avec vos mots.",
+                  "medias": [
+                            {
+                                      "type": "video",
+                                      "url": "aide/videos/livreur-trouver-l-aide.mp4",
+                                      "affiche": "aide/videos/livreur-trouver-l-aide.jpg",
+                                      "label": "Où trouver l'aide et les vidéos",
+                                      "duree": "44 s"
+                            }
+                  ]
+        },
+        {
           "id": "livreur-journee",
           "titre": "Ma journée : ce que je vois en ouvrant l'application",
           "resume": "L'écran s'ouvre sur aujourd'hui, date affichée. Ce qui date d'avant est replié en dessous.",

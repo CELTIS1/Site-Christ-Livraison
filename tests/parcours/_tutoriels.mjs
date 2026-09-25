@@ -62,6 +62,28 @@ function coursierDuMonde(m, extra) {
 
 /* Les scénarios : un identifiant (= le nom du fichier), l'espace, le titre, et les gestes. */
 const SCENARIOS = [
+  /* « Trouver l'aide » (26/09, Celtis : une courte vidéo à envoyer sur WhatsApp aux livreurs pour leur montrer
+     le chemin : le menu ☰ en haut, « Aide », parcourir, toucher un tutoriel, fermer). */
+  { id: 'livreur-trouver-l-aide', espace: 'livreur', titre: 'Où trouver l\'aide et les vidéos', page: 'livreur.html', qui: LIVREUR,
+    monde() {},
+    async jouer(p) {
+      await dire(p, 'Besoin d\'aide ? Tout est dans l\'application', 'En haut à droite : le menu ☰');
+      await toucher(p, p.locator('#settings-menu-btn'), 1500);
+      await dire(p, 'Touchez « Aide »', 'Les fiches et les vidéos de votre espace');
+      await toucher(p, p.locator('#settings-dropdown .sd-raccourcis button:has-text("Aide"), #btn-aide'), 1800);
+      await dire(p, 'Parcourez : chaque geste a sa fiche', 'Faites défiler, ou tapez un mot dans la recherche');
+      await p.evaluate(() => { const c = document.querySelector('#clt-aide .clt-aide__corps, #clt-aide'); if (c) c.scrollBy({ top: 260, behavior: 'smooth' }); }); await dodo(1600);
+      await dire(p, '« Vidéos » : les tutoriels en images', 'Touchez une vidéo, elle se lance');
+      await toucher(p, p.locator('#clt-aide [data-aide-vue="videos"]'), 1500);
+      const video = p.locator('#clt-aide video').first();
+      await video.scrollIntoViewIfNeeded().catch(() => {}); await dodo(500);
+      await toucher(p, video, 600);
+      await p.evaluate(() => { const v = document.querySelector('#clt-aide video'); if (v) { v.muted = true; v.play().catch(() => {}); } }); await dodo(4000);
+      await dire(p, 'Fini ? Fermez avec la croix', 'Vous revenez où vous étiez');
+      await toucher(p, p.locator('#clt-aide .clt-nouveautes__fermer'), 1500);
+      await dire(p, 'L\'aide est toujours là : menu ☰ → Aide', 'Et le rond bleu 💬 répond à vos questions');
+      await dodo(1500);
+    } },
   { id: 'livreur-je-pars-recupere', espace: 'livreur', titre: 'Partir chez la cliente, puis « Récupéré »', page: 'livreur.html', qui: LIVREUR,
     monde(m) { m.TABLES.colis.push(colis(300, { statut: 'en_attente', fournisseur_id: CLIENTE1, livreur_collecte_id: LIVREUR, created_at: iso(0, 7), description: 'Robe bleue' })); },
     async jouer(p) {
@@ -481,6 +503,12 @@ async function enregistrer(sc) {
   const mp4 = path.join(SORTIE, sc.id + '.mp4');
   const jpg = path.join(SORTIE, sc.id + '.jpg');
   // 12 images/s, H.264 très compressé, faststart pour lire avant d'avoir tout reçu ; l'affiche à 3 s.
+  // TUTO_HQ=1 : une copie « à envoyer sur WhatsApp » (720 px de large, 24 images/s, crf 24) dans TUTO_SORTIE, en plus de la vidéo de l'aide.
+  if (process.env.TUTO_HQ === '1' && process.env.TUTO_SORTIE) {
+    const hq = path.join(process.env.TUTO_SORTIE, sc.id + '-whatsapp.mp4');
+    const rh = spawnSync('ffmpeg', ['-y', '-loglevel', 'error', '-ss', coupe.toFixed(2), '-i', webm, '-vf', 'fps=24,scale=720:-2:flags=lanczos,unsharp=3:3:0.6', '-c:v', 'libx264', '-profile:v', 'main', '-level', '4.0', '-preset', 'slow', '-crf', '22', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', '-an', hq]);
+    if (rh.status !== 0) console.error('  ❌ ffmpeg (WhatsApp) : ' + rh.stderr); else console.log('  📱 ' + hq + ' — ' + Math.round(fs.statSync(hq).size / 1024) + ' Ko');
+  }
   let r = spawnSync('ffmpeg', ['-y', '-loglevel', 'error', '-ss', coupe.toFixed(2), '-i', webm, '-vf', 'fps=12,scale=390:-2', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '35', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', '-an', mp4]);
   if (r.status !== 0) { console.error('  ❌ ffmpeg : ' + r.stderr); return false; }
   spawnSync('ffmpeg', ['-y', '-loglevel', 'error', '-ss', '1', '-i', mp4, '-frames:v', '1', '-q:v', '6', jpg]);

@@ -2,6 +2,13 @@
   "_lisez_moi": "Vidéos des tutoriels, fabriquées par tests/parcours/_tutoriels.mjs (Playwright + ffmpeg) : une par geste, 390 × 844, sans voix, sous-titrées dans l'image.",
   "videos": [
     {
+      "id": "livreur-trouver-l-aide",
+      "espace": "livreur",
+      "titre": "Où trouver l'aide et les vidéos",
+      "url": "aide/videos/livreur-trouver-l-aide.mp4",
+      "affiche": "aide/videos/livreur-trouver-l-aide.jpg"
+    },
+    {
       "id": "livreur-je-pars-recupere",
       "espace": "livreur",
       "titre": "Partir chez la cliente, puis « Récupéré »",
