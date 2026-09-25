@@ -273,6 +273,8 @@ export function nouveauMonde() {
       rows.forEach(r => { if ((table === 'reclamations_clientes' || table === 'express_reclamations') && r.statut === undefined) r.statut = 'ouverte'; if (table === 'demandes_de_passage' && r.statut === undefined) r.statut = 'en_attente'; if (table === 'acceptations' && r.accepted_at === undefined) r.accepted_at = maintenant; });
       // L'activité de la cliente (23/09/2026) : une ligne par compte — un upsert remplace la sienne.
       if (table === 'activites_clientes') { const ids = new Set(rows.map(r => r.profile_id)); TABLES[table] = (TABLES[table] || []).filter(l => !ids.has(l.profile_id)); }
+      // Le dossier du livreur (25/09/2026, lot T) : clé (salarie_id, piece) — un upsert remplace la ligne.
+      if (table === 'livreurs_dossier') { const cles = new Set(rows.map(r => r.salarie_id + '|' + r.piece)); TABLES[table] = (TABLES[table] || []).filter(l => !cles.has(l.salarie_id + '|' + l.piece)); }
       /* LES DÉCLENCHEURS DE LA CRÉATION D'UN COLIS (25/09/2026, lot 17), dans l'ordre de la base :
          1. colis_en_main_a_la_creation — créé par l'équipe, sans livreur de collecte, sans jour prévu,
             et (SQL du 25/09) sans tournée programmée chez la cliente ce jour-là → il naît « récupéré » ;
@@ -414,6 +416,11 @@ export function nouveauMonde() {
   }
   function rpc(nom, args, user) {
     journal.push({ op: 'rpc', nom, args });
+    /* mon_dossier_livreur (25/09/2026, lot T) : l'état des pièces du livreur connecté, sans fichier ni note. */
+    if (nom === 'mon_dossier_livreur') {
+      const sal = (TABLES.gestion_salaries || []).filter(x => x.livreur_id === user && x.actif !== false).map(x => x.id);
+      return { data: (TABLES.livreurs_dossier || []).filter(l => sal.includes(l.salarie_id)).map(l => ({ piece: l.piece, fait_le: l.fait_le || null, expire_le: l.expire_le || null, sans_objet: !!l.sans_objet })), error: null };
+    }
     /* CLT EXPRESS (25/09/2026, lot P-1) — les fonctions telles que relues en base le 25/09. */
     if (nom === 'express_accepter_course' || nom === 'express_rendre_course') {
       const lecteur = PROFILS.find(p => p.id === user);

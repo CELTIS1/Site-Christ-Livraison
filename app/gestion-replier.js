@@ -23,7 +23,7 @@
   const CLE_CARTES = 'clt_gestion_cartes_pliees';
   const CLE_BLOCS = 'clt_gestion_blocs_ouverts';
   /* Ouvertes par défaut : ce qui appelle un geste. Tout le reste est replié tant qu'on ne l'ouvre pas. */
-  const OUVERTES_PAR_DEFAUT = ['dix-chiffres', 'rap-carte', 'af-carte'];
+  const OUVERTES_PAR_DEFAUT = ['dix-chiffres', 'rap-carte', 'af-carte', 'dl-carte'];
 
   function lireEtat(cle) { try { return JSON.parse(localStorage.getItem(cle) || '{}') || {}; } catch (e) { return {}; } }
   function ecrireEtat(cle, etat) { try { localStorage.setItem(cle, JSON.stringify(etat)); } catch (e) { /* stockage plein ou privé */ } }

@@ -4878,3 +4878,24 @@ html[data-theme="dark"] .clt-assistant__avatar{ background:#243247; color:#BFD6F
 html[data-theme="dark"] .clt-assistant__humain{ color:#7fe4d6; }
 .clt-assistant.hidden, .clt-assistant[hidden]{ display:none !important; }
 .dix-phrase{ font-size:12px; color:var(--muted, #5b6573); }
+
+/* MON DOSSIER CLT — chez le livreur (25/09/2026, lot T). */
+.mdl-intro { font-size: 14px; line-height: 1.5; margin: 12px 0; }
+.mdl-certifie { margin: 12px 0; padding: 14px 16px; border-radius: 14px; background: #E3F4EC; color: #11663F; font-weight: 800; font-size: 17px; }
+.mdl-certifie small { display: block; font-weight: 500; font-size: 13.5px; margin-top: 3px; }
+.mdl-liste { display: flex; flex-direction: column; }
+.mdl-ligne { display: grid; grid-template-columns: 118px 1fr; gap: 10px; align-items: center; min-height: 48px; padding: 6px 0; border-top: 1px solid #E5E7EB; }
+.mdl-etat { justify-self: start; font-size: 13px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: #EEF1F4; color: #374151; }
+.mdl-ligne--a-jour .mdl-etat { background: #E3F4EC; color: #11663F; }
+.mdl-ligne--bientot .mdl-etat { background: #FBE7D8; color: #8A3A09; }
+.mdl-ligne--perimee .mdl-etat { background: #FDE8E6; color: #9F1F16; }
+.mdl-nom { font-size: 14.5px; font-weight: 600; }
+.mdl-nom small { display: block; font-weight: 400; font-size: 13px; color: #5B6573; }
+.mdl-pied { font-size: 13px; color: #5B6573; margin: 12px 0 0; }
+html[data-theme="dark"] .mdl-certifie { background: #16352A; color: #93E2B8; }
+html[data-theme="dark"] .mdl-ligne { border-color: #2A3849; }
+html[data-theme="dark"] .mdl-etat { background: #223044; color: #D5DEE9; }
+html[data-theme="dark"] .mdl-ligne--a-jour .mdl-etat { background: #16352A; color: #93E2B8; }
+html[data-theme="dark"] .mdl-ligne--bientot .mdl-etat { background: #3A2A18; color: #F5C38E; }
+html[data-theme="dark"] .mdl-ligne--perimee .mdl-etat { background: #3A1D1B; color: #F6B8B1; }
+html[data-theme="dark"] .mdl-nom small, html[data-theme="dark"] .mdl-pied { color: #AEBBCB; }

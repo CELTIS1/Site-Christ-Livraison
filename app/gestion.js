@@ -281,7 +281,7 @@ function showToast(msg, isErr){
 function switchTab(tab){
   document.querySelectorAll('.tabs .tab').forEach(el => el.classList.toggle('active', el.dataset.tab === tab));
   ['dashboard','compta','paie','journal','site'].forEach(s => { const el = document.getElementById('sec-'+s); if (el) el.classList.toggle('active', s === tab); });
-  if (tab === 'dashboard') { renderDashboard(); if (window.CLTDixChiffresEcran) CLTDixChiffresEcran.charger(); if (window.CLTExpressChiffresEcran) CLTExpressChiffresEcran.charger(); }
+  if (tab === 'dashboard') { renderDashboard(); if (window.CLTDixChiffresEcran) CLTDixChiffresEcran.charger(); if (window.CLTExpressChiffresEcran) CLTExpressChiffresEcran.charger(); if (window.CLTDossierLivreurEcran) CLTDossierLivreurEcran.carteTableau(); }
   if (tab === 'journal') { loadJournal(); loadErreursClient(); }
   if (tab === 'site' && window.CLTSiteEditeur) CLTSiteEditeur.init();
   // Les cinq onglets du haut sont notés eux aussi : c'est la seule façon de savoir, en octobre,
@@ -326,6 +326,8 @@ function switchSub(group, sub){
   if (group === 'compta' && sub === 'etats' && !ETATS_FIN)     chargerEtatsFinanciers();
   // Coffres à documents : (re)chargés à l'ouverture de l'onglet.
   if (group === 'paie'   && sub === 'dossiers')  { fillDocSalarieSelect(); loadDocuments('personnel').then(renderDocsPersonnel); }
+  // Le dossier du livreur (25/09/2026, lot T) : la liste des douze pièces, au-dessus du coffre.
+  if (group === 'paie'   && sub === 'dossiers' && window.CLTDossierLivreurEcran) CLTDossierLivreurEcran.liste();
   if (group === 'compta' && sub === 'documents') { loadDocuments('entreprise').then(renderDocsEntreprise); }
   scheduleStickyRefresh();
 }

@@ -1,6 +1,6 @@
 {
   "_lisez_moi": "LE GUIDE DU GÉRANT — une fiche par fonctionnalité livrée, lue par Gestion › Guide (app/guide-du-gerant.js). Écrit pour Celtis : ce que c'est, où c'est, comment s'en servir, en phrases courtes. À CHAQUE NOUVEAU LOT qui change ce qu'on voit ou ce qu'on fait, ajouter ou mettre à jour la fiche ici et la date « maj ». tests/le-guide-du-gerant.test.mjs vérifie la forme : identifiants uniques, espaces connus, longueurs (une fiche se lit en vingt secondes), « Y aller » vers un onglet qui existe. « pourVous » = un geste ou une décision qui revient à Celtis ; le retirer quand c'est fait.",
-  "maj": "25/09/2026",
+  "maj": "26/09/2026",
   "espaces": [
     [
       "gestion",
@@ -40,6 +40,25 @@
     ]
   ],
   "fiches": [
+    {
+      "id": "dossier-du-livreur",
+      "espace": "gestion",
+      "titre": "Le dossier du livreur (certifié CLT)",
+      "enBref": "Douze pièces par livreur, leurs échéances, et le badge « Livreur certifié CLT » quand tout est en règle.",
+      "ou": "Gestion › Paie › Dossiers (en tête) ; la carte « Dossiers des livreurs » du tableau de bord",
+      "etapes": [
+        "Ranger la pièce dans le coffre « Dossiers du personnel », comme avant.",
+        "Toucher le livreur : dater chaque pièce (« Fait le »), relier le fichier ; l'échéance se calcule seule.",
+        "« Sans objet » pour ce qui ne le concerne pas (le permis de celui qui roule à vélo)."
+      ],
+      "aSavoir": "Rouge = périmée, orange = expire dans 30 jours. Le livreur voit son dossier dans ☰ › Mon dossier CLT, sans les fichiers. Tout changement est journalisé.",
+      "version": "v281",
+      "pourVous": "Remplir les dossiers des sept livreurs (pièces du « Dossier confiance CLT », dossier 03).",
+      "aller": {
+        "tab": "dashboard",
+        "ancre": "dl-carte"
+      }
+    },
     {
       "id": "le-bureau",
       "espace": "gestion",

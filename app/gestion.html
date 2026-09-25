@@ -15,14 +15,14 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260926confier">
+<link rel="stylesheet" href="style.css?v=20260926dossier">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
 <script>/* Intégré dans l'application de l'équipe (lot 15) : gestion.html?integre=1 cache sa barre du haut. */if(/[?&]integre=1/.test(location.search)){document.documentElement.classList.add('integre');}</script>
-<script src="theme.js?v=20260926confier"></script>
+<script src="theme.js?v=20260926dossier"></script>
 <!-- La cloche 🔔 des notifications reçues (23/09/2026) : règle + écran, se posent seuls dans la barre du haut. -->
-<script src="notifications-recues.js?v=20260926confier" defer></script>
-<script src="cloche.js?v=20260926confier" defer></script>
-<script src="splash.js?v=20260926confier"></script>
+<script src="notifications-recues.js?v=20260926dossier" defer></script>
+<script src="cloche.js?v=20260926dossier" defer></script>
+<script src="splash.js?v=20260926dossier"></script>
 <style>
   :root{ --clt-teal:#0F766E; --clt-teal-dark:#0b5a54; --clt-teal-light:#e5f4f2; --clt-green:#15803d; --clt-red:#b91c1c; --clt-amber:#b45309; --clt-accent:#0F766E; }   /* vert/rouge/ambre assombris : ≥ 4,5 sur blanc (24/09/2026) */
   body{ background:linear-gradient(180deg,#e9f5f3 0%, #f5f7fa 260px, #f5f7fa 100%) !important; }
@@ -868,10 +868,72 @@
   html[data-theme="dark"] .g-table-wrap, html[data-theme="dark"] .table-wrap{ background:transparent; }
   html[data-theme="dark"] input, html[data-theme="dark"] select, html[data-theme="dark"] textarea{ color-scheme:dark; }
   @media print { html[data-theme="dark"] .bulletin, html[data-theme="dark"] .doc-imprimable{ background:#fff; color:#1f2937; } }
+  /* LE DOSSIER DU LIVREUR (25/09/2026, lot T) — liste, fiche, carte du tableau de bord. */
+  .dl-resume{ font-size:14px; margin:6px 0 10px; line-height:1.7; }
+  #dl-carte .btn{ min-height:44px; }
+  .dl-puce{ display:inline-block; padding:2px 10px; border-radius:999px; background:#EEF1F4; color:#374151; font-size:12.5px; font-weight:600; }
+  .dl-puce--rouge{ background:#FDE8E6; color:#9F1F16; }
+  .dl-puce--orange{ background:#FBE7D8; color:#8A3A09; }
+  .dl-badge{ display:inline-block; padding:3px 10px; border-radius:999px; background:#E3F4EC; color:#11663F; font-size:12.5px; font-weight:700; }
+  .dl-ligne{ display:grid; grid-template-columns:minmax(150px,1.2fr) minmax(120px,.8fr) minmax(0,1.6fr) 20px; align-items:center; gap:12px; width:100%; min-height:56px; padding:10px 12px; margin:0; border:0; border-top:1px solid rgba(15,118,110,0.12); background:none; color:inherit; font:inherit; text-align:left; cursor:pointer; border-radius:10px; }
+  .dl-ligne:hover{ background:#F4F8F7; }
+  .dl-nom{ font-weight:700; display:flex; flex-direction:column; }
+  .dl-nom small{ font-weight:400; color:#5B6573; font-size:12.5px; }
+  .dl-avance{ display:flex; align-items:center; gap:8px; }
+  .dl-barre{ flex:1; height:8px; border-radius:99px; background:#E5E9ED; overflow:hidden; }
+  .dl-barre > span{ display:block; height:100%; background:#1B6E8A; border-radius:99px; }
+  .dl-barre > span.dl-ok{ background:#15803D; } .dl-barre > span.dl-ko{ background:#B42318; }
+  .dl-compte{ font-variant-numeric:tabular-nums; font-weight:600; font-size:13px; min-width:38px; }
+  .dl-afaire{ font-size:13px; color:#374151; }
+  .dl-plus{ color:#5B6573; font-weight:600; }
+  .dl-chev{ color:#5B6573; font-size:20px; }
+  .dl-boite{ width:min(760px,100%); max-height:min(88vh,860px); }
+  .dl-fiche-bilan{ padding:10px 18px; border-bottom:1px solid #E5E7EB; font-size:14px; line-height:1.8; }
+  .dl-note{ background:#FFF7ED; color:#7C2D12; border-radius:10px; padding:10px 12px; margin:10px 0; font-size:13px; }
+  .dl-piece{ border:1px solid #E5E7EB; border-left:4px solid #CBD2D9; border-radius:12px; padding:8px 12px; margin:8px 0; }
+  .dl-piece--a-jour{ border-left-color:#15803D; } .dl-piece--bientot{ border-left-color:#C2560C; }
+  .dl-piece--perimee{ border-left-color:#B42318; } .dl-piece--sans-objet{ border-left-color:#9AA4AF; opacity:.9; }
+  .dl-piece-tete{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .dl-pastille{ font-size:12px; font-weight:700; padding:2px 9px; border-radius:999px; background:#EEF1F4; color:#374151; }
+  .dl-piece--a-jour .dl-pastille{ background:#E3F4EC; color:#11663F; }
+  .dl-piece--bientot .dl-pastille{ background:#FBE7D8; color:#8A3A09; }
+  .dl-piece--perimee .dl-pastille{ background:#FDE8E6; color:#9F1F16; }
+  .dl-piece-aide{ font-size:12.5px; color:#5B6573; margin:2px 0 6px; }
+  .dl-champs{ display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; }
+  .dl-champs label, .dl-fichier{ display:flex; flex-direction:column; gap:3px; font-size:12.5px; font-weight:600; color:#374151; }
+  .dl-champs input[type=date], .dl-fichier select{ min-height:44px; padding:6px 10px; border:1px solid #CBD2D9; border-radius:10px; font:inherit; font-weight:400; background:#fff; color:#1F2937; }
+  .dl-champs .dl-sans{ flex-direction:row; align-items:center; gap:8px; min-height:44px; }
+  .dl-sans input{ width:22px; height:22px; }
+  .dl-fichier{ flex:1 1 200px; min-width:0; } .dl-fichier select{ width:100%; }
+  .dl-proposee{ font-size:12.5px; color:#1B4374; margin-top:4px; }
+  .dl-piece .btn-outline{ min-height:44px; }
+  @media (max-width:760px){
+    .dl-ligne{ grid-template-columns:1fr auto 20px; grid-template-areas:"nom avance chev" "etat etat chev"; }
+    .dl-nom{ grid-area:nom; } .dl-avance{ grid-area:avance; min-width:120px; } .dl-etat{ grid-area:etat; } .dl-chev{ grid-area:chev; }
+    .dl-champs label:not(.dl-sans){ flex:1 1 140px; }
+  }
+  html[data-theme="dark"] .dl-puce{ background:#223044; color:#D5DEE9; }
+  html[data-theme="dark"] .dl-puce--rouge, html[data-theme="dark"] .dl-piece--perimee .dl-pastille{ background:#3A1D1B; color:#F6B8B1; }
+  html[data-theme="dark"] .dl-puce--orange, html[data-theme="dark"] .dl-piece--bientot .dl-pastille{ background:#3A2A18; color:#F5C38E; }
+  html[data-theme="dark"] .dl-badge, html[data-theme="dark"] .dl-piece--a-jour .dl-pastille{ background:#16352A; color:#93E2B8; }
+  html[data-theme="dark"] .dl-pastille{ background:#223044; color:#D5DEE9; }
+  html[data-theme="dark"] .dl-ligne{ border-top-color:#2A3849; }
+  html[data-theme="dark"] .dl-ligne:hover{ background:#182231; }
+  html[data-theme="dark"] .dl-nom small, html[data-theme="dark"] .dl-piece-aide, html[data-theme="dark"] .dl-plus, html[data-theme="dark"] .dl-chev{ color:#AEBBCB; }
+  html[data-theme="dark"] .dl-afaire, html[data-theme="dark"] .dl-champs label, html[data-theme="dark"] .dl-fichier{ color:#D5DEE9; }
+  html[data-theme="dark"] .dl-barre{ background:#2A3849; }
+  html[data-theme="dark"] .dl-barre > span{ background:#5AB4D6; }
+  html[data-theme="dark"] .dl-barre > span.dl-ok{ background:#4ADE80; } html[data-theme="dark"] .dl-barre > span.dl-ko{ background:#F87171; }
+  html[data-theme="dark"] .dl-piece{ border-color:#2A3849; }
+  html[data-theme="dark"] .dl-piece--a-jour{ border-left-color:#4ADE80; } html[data-theme="dark"] .dl-piece--bientot{ border-left-color:#FB923C; } html[data-theme="dark"] .dl-piece--perimee{ border-left-color:#F87171; }
+  html[data-theme="dark"] .dl-fiche-bilan{ border-color:#2A3849; }
+  html[data-theme="dark"] .dl-note{ background:#2B2016; color:#F5D0A9; }
+  html[data-theme="dark"] .dl-proposee{ color:#9CC3F0; }
+  html[data-theme="dark"] .dl-champs input[type=date], html[data-theme="dark"] .dl-fichier select{ background:#0F1722; color:#E6ECF3; border-color:#3A4A5E; }
 </style>
 <!-- La peau v2 (25/09/2026, lot 18) : chargée EN DERNIER, elle recouvre style.css et le style de la page. -->
 <style>:root{ --clt-accent-encre:#0F766E; }</style>
-<link rel="stylesheet" href="peau.css?v=20260926confier">
+<link rel="stylesheet" href="peau.css?v=20260926dossier">
 </head>
 <body>
 <div class="topbar">
@@ -957,6 +1019,9 @@
          Règle : app/rapports-recus.js ; écran : app/rapports-recus-ecran.js. -->
     <div class="card hidden" id="rap-carte"></div>
     <div class="card" id="af-carte"></div>
+    <!-- LES DOSSIERS DES LIVREURS (25/09/2026, lot T — « Dossier confiance CLT ») : n certifiés sur N,
+         ce qui est périmé ou expire dans 30 jours. Règle app/dossier-du-livreur.js, écran app/dossier-du-livreur-ecran.js. -->
+    <div class="card hidden" id="dl-carte"></div>
     <div class="card" id="cdd-console"></div>
     <!-- LE BILAN DE LA SEMAINE (20/09/2026, feuille de route 12.3) — le rapport du vendredi avait
          ses chiffres et pas d'écran. Mêmes définitions que la fonction serveur bilan-hebdomadaire
@@ -1513,6 +1578,13 @@
 
     <!-- Coffre à documents du personnel (CNI, contrats, diplômes…) -->
     <div class="section" id="paie-dossiers">
+      <!-- LE DOSSIER DU LIVREUR (25/09/2026, lot T) : douze pièces par livreur, leurs échéances, le badge
+           « Certifié CLT ». Les fichiers restent dans le coffre ci-dessous ; la fiche les relie. -->
+      <div class="card" id="dl-rh">
+        <h2>🪪 Dossier confiance des livreurs</h2>
+        <div class="hint">Douze pièces par livreur : ce qui prouve qu'il est en règle, formé et suivi. Toucher un livreur ouvre sa fiche.</div>
+        <div id="dl-liste"></div>
+      </div>
       <div class="card">
         <h2>Dossiers du personnel</h2>
         <!-- Une ligne (Celtis) : même raison que « Documents de l'entreprise ». -->
@@ -1916,52 +1988,54 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"
         integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3"
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="clt-common.js?v=20260926confier"></script>
-<script src="assistant.js?v=20260926confier"></script>
-<script src="numero-international.js?v=20260926confier"></script>
-<script src="lib/bibliotheques.js?v=20260926confier"></script>
-<script src="lib/retours.js?v=20260926confier"></script>
-<script src="lib/reclamations.js?v=20260926confier"></script>
-<script src="lib/communes-et-tarifs.js?v=20260926confier"></script>
-<script src="lib/argent.js?v=20260926confier"></script>
-<script src="lib/releve-cliente.js?v=20260926confier"></script>
-<script src="lib/papier-a-en-tete.js?v=20260926confier"></script>
-<script src="lib/briques-argent.js?v=20260926confier"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260926confier"></script>
-<script src="lib/traces-de-report.js?v=20260926confier"></script>
-<script src="lib/annonce-de-remise.js?v=20260926confier"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260926confier"></script>
-<script src="lib/primes.js?v=20260926confier"></script>
-<script src="lib/doublons.js?v=20260926confier"></script>
-<script src="config.js?v=20260926confier"></script>
-<script src="biometric-lock.js?v=20260926confier"></script>
-<script src="clt-select-recherche.js?v=20260926confier"></script>
-<script src="site-editeur.js?v=20260926confier"></script>
+<script src="clt-common.js?v=20260926dossier"></script>
+<script src="assistant.js?v=20260926dossier"></script>
+<script src="numero-international.js?v=20260926dossier"></script>
+<script src="lib/bibliotheques.js?v=20260926dossier"></script>
+<script src="lib/retours.js?v=20260926dossier"></script>
+<script src="lib/reclamations.js?v=20260926dossier"></script>
+<script src="lib/communes-et-tarifs.js?v=20260926dossier"></script>
+<script src="lib/argent.js?v=20260926dossier"></script>
+<script src="lib/releve-cliente.js?v=20260926dossier"></script>
+<script src="lib/papier-a-en-tete.js?v=20260926dossier"></script>
+<script src="lib/briques-argent.js?v=20260926dossier"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260926dossier"></script>
+<script src="lib/traces-de-report.js?v=20260926dossier"></script>
+<script src="lib/annonce-de-remise.js?v=20260926dossier"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260926dossier"></script>
+<script src="lib/primes.js?v=20260926dossier"></script>
+<script src="lib/doublons.js?v=20260926dossier"></script>
+<script src="config.js?v=20260926dossier"></script>
+<script src="biometric-lock.js?v=20260926dossier"></script>
+<script src="clt-select-recherche.js?v=20260926dossier"></script>
+<script src="site-editeur.js?v=20260926dossier"></script>
 <!-- La règle de comparaison, puis l'écran qui s'en sert. Ni l'une ni l'autre n'est dans lib/ :
      elles ne servent qu'à cet écran, et le téléphone du livreur n'a pas à les télécharger. -->
-<script src="bilan-de-la-semaine.js?v=20260926confier"></script>
-<script src="argent-a-suivre.js?v=20260926confier"></script>
-<script src="dix-chiffres.js?v=20260926confier"></script>
-<script src="gestion-dix-chiffres.js?v=20260926confier"></script>
-<script src="express-chiffres.js?v=20260926confier"></script>
-<script src="gestion-express-chiffres.js?v=20260926confier"></script>
-<script src="causes-des-echecs.js?v=20260926confier"></script>
-<script src="activite-de-la-cliente.js?v=20260926confier"></script>
-<script src="qui-vend-quoi.js?v=20260926confier"></script>
-<script src="analyse-profonde.js?v=20260926confier"></script>
-<script src="ce-qui-a-change.js?v=20260926confier"></script>
-<script src="les-questions.js?v=20260926confier"></script>
-<script src="console-du-dirigeant.js?v=20260926confier"></script>
-<script src="rapports-recus.js?v=20260926confier"></script>
-<script src="rapports-recus-ecran.js?v=20260926confier"></script>
-<script src="gestion.js?v=20260926confier"></script>
+<script src="bilan-de-la-semaine.js?v=20260926dossier"></script>
+<script src="argent-a-suivre.js?v=20260926dossier"></script>
+<script src="dix-chiffres.js?v=20260926dossier"></script>
+<script src="gestion-dix-chiffres.js?v=20260926dossier"></script>
+<script src="express-chiffres.js?v=20260926dossier"></script>
+<script src="gestion-express-chiffres.js?v=20260926dossier"></script>
+<script src="causes-des-echecs.js?v=20260926dossier"></script>
+<script src="activite-de-la-cliente.js?v=20260926dossier"></script>
+<script src="qui-vend-quoi.js?v=20260926dossier"></script>
+<script src="analyse-profonde.js?v=20260926dossier"></script>
+<script src="ce-qui-a-change.js?v=20260926dossier"></script>
+<script src="les-questions.js?v=20260926dossier"></script>
+<script src="console-du-dirigeant.js?v=20260926dossier"></script>
+<script src="rapports-recus.js?v=20260926dossier"></script>
+<script src="rapports-recus-ecran.js?v=20260926dossier"></script>
+<script src="dossier-du-livreur.js?v=20260926dossier"></script>
+<script src="dossier-du-livreur-ecran.js?v=20260926dossier"></script>
+<script src="gestion.js?v=20260926dossier"></script>
 <!-- La barre latérale (14.3) se charge APRÈS gestion.js : elle enveloppe switchTab / switchSub. -->
-<script src="guide-du-gerant.js?v=20260926confier"></script>
-<script src="avance-de-travail.js?v=20260926confier"></script>
-<script src="avance-de-travail-ecran.js?v=20260926confier"></script>
-<script src="regulariser.js?v=20260926confier"></script>
-<script src="regulariser-ecran.js?v=20260926confier"></script>
-<script src="gestion-barre-laterale.js?v=20260926confier"></script>
-<script src="gestion-replier.js?v=20260926confier"></script>
+<script src="guide-du-gerant.js?v=20260926dossier"></script>
+<script src="avance-de-travail.js?v=20260926dossier"></script>
+<script src="avance-de-travail-ecran.js?v=20260926dossier"></script>
+<script src="regulariser.js?v=20260926dossier"></script>
+<script src="regulariser-ecran.js?v=20260926dossier"></script>
+<script src="gestion-barre-laterale.js?v=20260926dossier"></script>
+<script src="gestion-replier.js?v=20260926dossier"></script>
 </body>
 </html>
