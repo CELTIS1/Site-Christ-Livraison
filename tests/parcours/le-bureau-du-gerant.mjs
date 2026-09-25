@@ -24,7 +24,7 @@ await N.ouvrirConnecte('equipe.html', ADMIN);
 await dodo(1800);
 await page.setViewportSize({ width: 1440, height: 900 });
 verifier('l\'onglet « 🏛️ Bureau » est visible en haut, et « Bureau » derrière « Plus » en bas', await page.locator('#eqtab-btn-bureau').isVisible() && !(await page.locator('#bottomnav-bureau').evaluate(b => b.classList.contains('hidden'))));
-verifier('le menu ☰ ne propose plus « Gestion » comme une autre application, mais « en plein écran »', /plein écran/.test(await page.locator('#lien-gestion').textContent()) && (await page.locator('#lien-gestion').getAttribute('target')) === '_blank');
+verifier('le menu ☰ ne propose plus « Gestion » comme une autre application, mais « en plein écran », dans le même onglet (26/09 : sur iPhone installé, un nouvel onglet partait dans Safari sans la session)', /plein écran/.test(await page.locator('#lien-gestion').textContent()) && (await page.locator('#lien-gestion').getAttribute('target')) === null);
 verifier('avant l\'ouverture, aucun cadre n\'est chargé (Gestion ne se charge pas pour rien)', (await page.locator('#bureau-cadre-hote iframe').count()) === 0);
 await page.locator('#eqtab-btn-bureau').click();
 await dodo(600);

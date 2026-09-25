@@ -58,7 +58,7 @@ verifier('les vues de « À traiter » sont celles de la règle (GENRES) — la 
 verifier('le dossier lit express_diffusions et affiche la diffusion', /from\('express_diffusions'\)/.test(dossier) && /D\.diffusion\(course, diffusions/.test(dossier));
 verifier('le coursier : une course sans épingle dit « distance inconnue (adresse sans épingle) »', /distance inconnue \(adresse sans épingle\)/.test(coursier));
 const registre = JSON.parse(lire('supabase-functions/_deploye-le.json'));
-verifier('le registre des fonctions porte la nouvelle empreinte d\'envoyer-push et dit qu\'elle est à redéployer par Celtis', registre.fonctions['envoyer-push'].le === '2026-09-25' && /redéployer par Celtis/.test(registre.fonctions['envoyer-push'].note || ''));
+verifier('le registre des fonctions porte l\'empreinte d\'envoyer-push du dispatch (v266), redéployée par Celtis le 26/09', registre.fonctions['envoyer-push'].le >= '2026-09-25' && /dispatch/.test(registre.fonctions['envoyer-push'].note || ''));
 
 console.log('\n' + reussies + ' réussie(s), ' + echouees + ' échouée(s).');
 process.exit(echouees ? 1 : 0);
