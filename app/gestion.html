@@ -15,14 +15,14 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260926dossier">
+<link rel="stylesheet" href="style.css?v=20260926partenaires">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
 <script>/* Intégré dans l'application de l'équipe (lot 15) : gestion.html?integre=1 cache sa barre du haut. */if(/[?&]integre=1/.test(location.search)){document.documentElement.classList.add('integre');}</script>
-<script src="theme.js?v=20260926dossier"></script>
+<script src="theme.js?v=20260926partenaires"></script>
 <!-- La cloche 🔔 des notifications reçues (23/09/2026) : règle + écran, se posent seuls dans la barre du haut. -->
-<script src="notifications-recues.js?v=20260926dossier" defer></script>
-<script src="cloche.js?v=20260926dossier" defer></script>
-<script src="splash.js?v=20260926dossier"></script>
+<script src="notifications-recues.js?v=20260926partenaires" defer></script>
+<script src="cloche.js?v=20260926partenaires" defer></script>
+<script src="splash.js?v=20260926partenaires"></script>
 <style>
   :root{ --clt-teal:#0F766E; --clt-teal-dark:#0b5a54; --clt-teal-light:#e5f4f2; --clt-green:#15803d; --clt-red:#b91c1c; --clt-amber:#b45309; --clt-accent:#0F766E; }   /* vert/rouge/ambre assombris : ≥ 4,5 sur blanc (24/09/2026) */
   body{ background:linear-gradient(180deg,#e9f5f3 0%, #f5f7fa 260px, #f5f7fa 100%) !important; }
@@ -930,10 +930,33 @@
   html[data-theme="dark"] .dl-note{ background:#2B2016; color:#F5D0A9; }
   html[data-theme="dark"] .dl-proposee{ color:#9CC3F0; }
   html[data-theme="dark"] .dl-champs input[type=date], html[data-theme="dark"] .dl-fichier select{ background:#0F1722; color:#E6ECF3; border-color:#3A4A5E; }
+  /* LES PARTENAIRES (25/09/2026, lot U). */
+  .pa-part{ border:1px solid rgba(15,118,110,0.14); border-radius:14px; padding:12px 14px; margin:10px 0; }
+  .pa-tete{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; font-size:15px; }
+  .pa-etat{ font-size:12.5px; font-weight:700; padding:3px 10px; border-radius:999px; background:#FBE7D8; color:#8A3A09; }
+  .pa-etat--pret{ background:#E3F4EC; color:#11663F; } .pa-etat--coupe{ background:#FDE8E6; color:#9F1F16; }
+  .pa-grille{ display:flex; flex-wrap:wrap; gap:14px; margin:10px 0; }
+  .pa-champ{ flex:1 1 260px; display:flex; flex-direction:column; gap:6px; font-size:12.5px; font-weight:600; color:#374151; }
+  .pa-champ select{ min-height:44px; padding:6px 10px; border:1px solid #CBD2D9; border-radius:10px; font:inherit; font-weight:400; background:#fff; color:#1F2937; }
+  .pa-champ .btn{ min-height:44px; align-self:flex-start; }
+  .pa-cle{ font-weight:400; color:#1F2937; }
+  .pa-chiffres{ display:flex; flex-wrap:wrap; gap:16px; font-size:13.5px; margin:4px 0; }
+  .pa-tarif{ font-size:12.5px; color:#5B6573; }
+  .pa-tech{ margin-top:8px; font-size:12.5px; } .pa-tech summary{ cursor:pointer; min-height:44px; display:flex; align-items:center; font-weight:600; }
+  .pa-tech code, .pa-cle code{ word-break:break-all; }
+  .pa-avert{ background:#FFF7ED; color:#7C2D12; border-radius:10px; padding:10px 12px; font-size:13.5px; }
+  .pa-cle-claire{ margin:12px 0; padding:12px; border:1px dashed #9AA4AF; border-radius:10px; font-size:14px; word-break:break-all; user-select:all; }
+  #pa-copier{ min-height:44px; }
+  html[data-theme="dark"] .pa-part{ border-color:#2A3849; }
+  html[data-theme="dark"] .pa-etat{ background:#3A2A18; color:#F5C38E; } html[data-theme="dark"] .pa-etat--pret{ background:#16352A; color:#93E2B8; } html[data-theme="dark"] .pa-etat--coupe{ background:#3A1D1B; color:#F6B8B1; }
+  html[data-theme="dark"] .pa-champ, html[data-theme="dark"] .pa-cle{ color:#D5DEE9; }
+  html[data-theme="dark"] .pa-champ select{ background:#0F1722; color:#E6ECF3; border-color:#3A4A5E; }
+  html[data-theme="dark"] .pa-tarif{ color:#AEBBCB; }
+  html[data-theme="dark"] .pa-avert{ background:#2B2016; color:#F5D0A9; }
 </style>
 <!-- La peau v2 (25/09/2026, lot 18) : chargée EN DERNIER, elle recouvre style.css et le style de la page. -->
 <style>:root{ --clt-accent-encre:#0F766E; }</style>
-<link rel="stylesheet" href="peau.css?v=20260926dossier">
+<link rel="stylesheet" href="peau.css?v=20260926partenaires">
 </head>
 <body>
 <div class="topbar">
@@ -1099,6 +1122,7 @@
           <div class="subtab" data-sub="clients" onclick="switchSub('compta','clients')">Point clients</div>
           <div class="subtab" data-sub="facturation" onclick="switchSub('compta','facturation')">Facturation</div>
           <div class="subtab" data-sub="echeances" onclick="switchSub('compta','echeances')">Échéancier</div>
+          <div class="subtab" data-sub="partenaires" onclick="switchSub('compta','partenaires')">Partenaires</div>
         </div>
       </div>
       <div class="subtabs-groupe">
@@ -1483,6 +1507,16 @@
     </div>
 
     <!-- Échéancier fiscal & social : suivi des déclarations à effectuer -->
+    <!-- LES PARTENAIRES (25/09/2026, lot U — Générale CI) : la porte par laquelle leurs commandes arrivent.
+         Règle app/partenaires.js ; écran app/partenaires-ecran.js ; base : partenaires, partenaire_commandes. -->
+    <div class="section" id="compta-partenaires">
+      <div class="card" id="pa-carte">
+        <h2>🤝 Partenaires</h2>
+        <div class="hint">Les commandes d'un partenaire arrivent seules dans son compte client, marquées « Partenaire » : elles ne se mélangent pas avec vos clientes.</div>
+        <div id="pa-liste"></div>
+      </div>
+    </div>
+
     <div class="section" id="compta-echeances">
       <div class="period-bar">
         <select id="ech-year" onchange="loadEcheances()"></select>
@@ -1988,54 +2022,56 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"
         integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3"
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="clt-common.js?v=20260926dossier"></script>
-<script src="assistant.js?v=20260926dossier"></script>
-<script src="numero-international.js?v=20260926dossier"></script>
-<script src="lib/bibliotheques.js?v=20260926dossier"></script>
-<script src="lib/retours.js?v=20260926dossier"></script>
-<script src="lib/reclamations.js?v=20260926dossier"></script>
-<script src="lib/communes-et-tarifs.js?v=20260926dossier"></script>
-<script src="lib/argent.js?v=20260926dossier"></script>
-<script src="lib/releve-cliente.js?v=20260926dossier"></script>
-<script src="lib/papier-a-en-tete.js?v=20260926dossier"></script>
-<script src="lib/briques-argent.js?v=20260926dossier"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260926dossier"></script>
-<script src="lib/traces-de-report.js?v=20260926dossier"></script>
-<script src="lib/annonce-de-remise.js?v=20260926dossier"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260926dossier"></script>
-<script src="lib/primes.js?v=20260926dossier"></script>
-<script src="lib/doublons.js?v=20260926dossier"></script>
-<script src="config.js?v=20260926dossier"></script>
-<script src="biometric-lock.js?v=20260926dossier"></script>
-<script src="clt-select-recherche.js?v=20260926dossier"></script>
-<script src="site-editeur.js?v=20260926dossier"></script>
+<script src="clt-common.js?v=20260926partenaires"></script>
+<script src="assistant.js?v=20260926partenaires"></script>
+<script src="numero-international.js?v=20260926partenaires"></script>
+<script src="lib/bibliotheques.js?v=20260926partenaires"></script>
+<script src="lib/retours.js?v=20260926partenaires"></script>
+<script src="lib/reclamations.js?v=20260926partenaires"></script>
+<script src="lib/communes-et-tarifs.js?v=20260926partenaires"></script>
+<script src="lib/argent.js?v=20260926partenaires"></script>
+<script src="lib/releve-cliente.js?v=20260926partenaires"></script>
+<script src="lib/papier-a-en-tete.js?v=20260926partenaires"></script>
+<script src="lib/briques-argent.js?v=20260926partenaires"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260926partenaires"></script>
+<script src="lib/traces-de-report.js?v=20260926partenaires"></script>
+<script src="lib/annonce-de-remise.js?v=20260926partenaires"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260926partenaires"></script>
+<script src="lib/primes.js?v=20260926partenaires"></script>
+<script src="lib/doublons.js?v=20260926partenaires"></script>
+<script src="config.js?v=20260926partenaires"></script>
+<script src="biometric-lock.js?v=20260926partenaires"></script>
+<script src="clt-select-recherche.js?v=20260926partenaires"></script>
+<script src="site-editeur.js?v=20260926partenaires"></script>
 <!-- La règle de comparaison, puis l'écran qui s'en sert. Ni l'une ni l'autre n'est dans lib/ :
      elles ne servent qu'à cet écran, et le téléphone du livreur n'a pas à les télécharger. -->
-<script src="bilan-de-la-semaine.js?v=20260926dossier"></script>
-<script src="argent-a-suivre.js?v=20260926dossier"></script>
-<script src="dix-chiffres.js?v=20260926dossier"></script>
-<script src="gestion-dix-chiffres.js?v=20260926dossier"></script>
-<script src="express-chiffres.js?v=20260926dossier"></script>
-<script src="gestion-express-chiffres.js?v=20260926dossier"></script>
-<script src="causes-des-echecs.js?v=20260926dossier"></script>
-<script src="activite-de-la-cliente.js?v=20260926dossier"></script>
-<script src="qui-vend-quoi.js?v=20260926dossier"></script>
-<script src="analyse-profonde.js?v=20260926dossier"></script>
-<script src="ce-qui-a-change.js?v=20260926dossier"></script>
-<script src="les-questions.js?v=20260926dossier"></script>
-<script src="console-du-dirigeant.js?v=20260926dossier"></script>
-<script src="rapports-recus.js?v=20260926dossier"></script>
-<script src="rapports-recus-ecran.js?v=20260926dossier"></script>
-<script src="dossier-du-livreur.js?v=20260926dossier"></script>
-<script src="dossier-du-livreur-ecran.js?v=20260926dossier"></script>
-<script src="gestion.js?v=20260926dossier"></script>
+<script src="bilan-de-la-semaine.js?v=20260926partenaires"></script>
+<script src="argent-a-suivre.js?v=20260926partenaires"></script>
+<script src="dix-chiffres.js?v=20260926partenaires"></script>
+<script src="gestion-dix-chiffres.js?v=20260926partenaires"></script>
+<script src="express-chiffres.js?v=20260926partenaires"></script>
+<script src="gestion-express-chiffres.js?v=20260926partenaires"></script>
+<script src="causes-des-echecs.js?v=20260926partenaires"></script>
+<script src="activite-de-la-cliente.js?v=20260926partenaires"></script>
+<script src="qui-vend-quoi.js?v=20260926partenaires"></script>
+<script src="analyse-profonde.js?v=20260926partenaires"></script>
+<script src="ce-qui-a-change.js?v=20260926partenaires"></script>
+<script src="les-questions.js?v=20260926partenaires"></script>
+<script src="console-du-dirigeant.js?v=20260926partenaires"></script>
+<script src="rapports-recus.js?v=20260926partenaires"></script>
+<script src="rapports-recus-ecran.js?v=20260926partenaires"></script>
+<script src="partenaires.js?v=20260926partenaires"></script>
+<script src="partenaires-ecran.js?v=20260926partenaires"></script>
+<script src="dossier-du-livreur.js?v=20260926partenaires"></script>
+<script src="dossier-du-livreur-ecran.js?v=20260926partenaires"></script>
+<script src="gestion.js?v=20260926partenaires"></script>
 <!-- La barre latérale (14.3) se charge APRÈS gestion.js : elle enveloppe switchTab / switchSub. -->
-<script src="guide-du-gerant.js?v=20260926dossier"></script>
-<script src="avance-de-travail.js?v=20260926dossier"></script>
-<script src="avance-de-travail-ecran.js?v=20260926dossier"></script>
-<script src="regulariser.js?v=20260926dossier"></script>
-<script src="regulariser-ecran.js?v=20260926dossier"></script>
-<script src="gestion-barre-laterale.js?v=20260926dossier"></script>
-<script src="gestion-replier.js?v=20260926dossier"></script>
+<script src="guide-du-gerant.js?v=20260926partenaires"></script>
+<script src="avance-de-travail.js?v=20260926partenaires"></script>
+<script src="avance-de-travail-ecran.js?v=20260926partenaires"></script>
+<script src="regulariser.js?v=20260926partenaires"></script>
+<script src="regulariser-ecran.js?v=20260926partenaires"></script>
+<script src="gestion-barre-laterale.js?v=20260926partenaires"></script>
+<script src="gestion-replier.js?v=20260926partenaires"></script>
 </body>
 </html>

@@ -4899,3 +4899,7 @@ html[data-theme="dark"] .mdl-ligne--a-jour .mdl-etat { background: #16352A; colo
 html[data-theme="dark"] .mdl-ligne--bientot .mdl-etat { background: #3A2A18; color: #F5C38E; }
 html[data-theme="dark"] .mdl-ligne--perimee .mdl-etat { background: #3A1D1B; color: #F6B8B1; }
 html[data-theme="dark"] .mdl-nom small, html[data-theme="dark"] .mdl-pied { color: #AEBBCB; }
+
+/* LA MARQUE DU PARTENAIRE (25/09/2026, lot U) — sur chaque carte d'un colis de Générale CI. */
+.colis-partenaire { display: inline-block; font-size: 13px; font-weight: 700; line-height: 1.5; padding: 0 8px; border-radius: 999px; background: #EDE7FB; color: #4C2A99; margin-right: 6px; vertical-align: middle; }
+html[data-theme="dark"] .colis-partenaire { background: #2C2346; color: #D7C8FF; }

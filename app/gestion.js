@@ -313,6 +313,8 @@ function switchSub(group, sub){
   if (group === 'compta' && sub === 'express') loadExpressCompta();
   if (group === 'compta' && sub === 'livrecaisse') loadLivreCaisse();
   if (group === 'compta' && sub === 'echeances')   loadEcheances();
+  // Les partenaires (25/09/2026, lot U) : relus à chaque ouverture.
+  if (group === 'compta' && sub === 'partenaires' && window.CLTPartenairesEcran) CLTPartenairesEcran.charger();
   if (group === 'compta' && sub === 'clotures')    loadClotures();
   // Facturation clients / Comptabilité générale : chargées à la première ouverture
   // (comme les États financiers) — rarement consultées au quotidien.

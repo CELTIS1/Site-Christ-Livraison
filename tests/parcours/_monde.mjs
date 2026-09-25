@@ -416,6 +416,16 @@ export function nouveauMonde() {
   }
   function rpc(nom, args, user) {
     journal.push({ op: 'rpc', nom, args });
+    /* partenaire_nouvelle_cle (25/09/2026, lot U) : l'administrateur seul ; la clé n'est gardée que par sa fin. */
+    if (nom === 'partenaire_nouvelle_cle') {
+      const lecteur = PROFILS.find(p => p.id === user);
+      if (!lecteur || lecteur.role !== 'admin') return { data: null, error: { message: 'reserve_administrateur' } };
+      const pa = (TABLES.partenaires || []).find(x => x.id === (args && args.p_partenaire));
+      if (!pa) return { data: null, error: { message: 'partenaire_inconnu' } };
+      const cle = 'clt_' + 'e'.repeat(44) + 'f00d';
+      Object.assign(pa, { cle_api_fin: cle.slice(-4), cle_api_creee_le: new Date().toISOString() });
+      return { data: cle, error: null };
+    }
     /* mon_dossier_livreur (25/09/2026, lot T) : l'état des pièces du livreur connecté, sans fichier ni note. */
     if (nom === 'mon_dossier_livreur') {
       const sal = (TABLES.gestion_salaries || []).filter(x => x.livreur_id === user && x.actif !== false).map(x => x.id);

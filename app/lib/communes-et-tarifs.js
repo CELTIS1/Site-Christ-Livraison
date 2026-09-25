@@ -175,8 +175,12 @@ function colisDestinationTexte(c) {
    et non un tiret discret. */
 function colisDestinationHTML(c) {
   const texte = colisDestinationTexte(c);
-  if (!texte) return '<span class="colis-dest-absente">⚠️ Destination à préciser</span>';
-  return escapeHTML(texte);
+  /* LA MARQUE DU PARTENAIRE (25/09/2026, lot U) : un colis arrivé par la porte d'un partenaire
+     (Générale CI) le dit en tête de carte, partout — équipe, livreur, cliente — avec la
+     référence de SA commande. Il ne se confond jamais avec un colis d'une cliente. */
+  const marque = (c && c.partenaire_id) ? '<span class="colis-partenaire">🤝 Partenaire' + (c.reference_partenaire ? ' · réf. ' + escapeHTML(String(c.reference_partenaire).slice(0, 24)) : '') + '</span> ' : '';
+  if (!texte) return marque + '<span class="colis-dest-absente">⚠️ Destination à préciser</span>';
+  return marque + escapeHTML(texte);
 }
 
 /* La description, désormais en seconde ligne. Renvoie "" — et non

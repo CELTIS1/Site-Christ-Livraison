@@ -41,6 +41,25 @@
   ],
   "fiches": [
     {
+      "id": "partenaires",
+      "espace": "gestion",
+      "titre": "Les partenaires (Générale CI)",
+      "enBref": "Les commandes d'un partenaire arrivent seules dans son compte client, marquées « 🤝 Partenaire · réf. », sans se mélanger avec vos clientes.",
+      "ou": "Gestion › Comptabilité › Qui me doit quoi › Partenaires",
+      "etapes": [
+        "Relier le compte client CLT du partenaire (créez-le d'abord comme une cliente).",
+        "« Créer la clé » : copiez-la et envoyez-la à leur développeur en privé ; elle ne sera plus affichée.",
+        "Suivez ce qui arrive : commandes du jour, des 7 jours, la dernière."
+      ],
+      "aSavoir": "Tarif partenaire : même commune 1 000 F, sinon la grille CLT, jamais moins de 1 000 F. Une commande envoyée deux fois ne fait qu'un colis. Remplacer la clé coupe l'ancienne aussitôt.",
+      "version": "v282",
+      "pourVous": "Créer le compte client « Générale CI », le relier ici, créer la clé et l'envoyer à leur développeur avec la fiche technique (Drive › 02).",
+      "aller": {
+        "tab": "compta",
+        "sub": "partenaires"
+      }
+    },
+    {
       "id": "dossier-du-livreur",
       "espace": "gestion",
       "titre": "Le dossier du livreur (certifié CLT)",
