@@ -5,7 +5,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://xkfltqjbmolmdwdafzcx.supabase.co wss://xkfltqjbmolmdwdafzcx.supabase.co; media-src 'self' https://xkfltqjbmolmdwdafzcx.supabase.co; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Christ Livraison & Transport SARL — Livraison à Abidjan</title>
+<title>Christ Livraison & Transport SARL — Site officiel · Livraison à Abidjan</title>
 <link rel="canonical" href="https://christlivraison.ci/">
 <link rel="icon" href="/favicon.ico" sizes="48x48">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 600'%3E%3Crect x='20' y='20' width='560' height='560' rx='88' fill='%231B4374'/%3E%3Ctext x='300' y='358' font-family='Arial' font-weight='700' font-size='235' fill='%23FFFFFF' text-anchor='middle' letter-spacing='2'%3ECLT%3C/text%3E%3Crect x='220' y='398' width='160' height='14' rx='7' fill='%23E26313'/%3E%3C/svg%3E">
@@ -296,13 +296,29 @@
     max-width:1280px; margin:0 auto; padding:14px 16px;
   }
   .logo-svg{width:170px;}
-  @media (min-width:861px){
+  /* Sous 1260 px, la barre passe au menu ☰ (26/09 : avant, dès 861 px, les liens et les boutons se chevauchaient). */
+  @media (min-width:1261px){
     .logo-svg{width:225px;}
     .nav-links .nav-only-mobile{display:none;}
   }
-  .nav-links{display:flex; align-items:center; gap:18px; list-style:none;}
-  .nav-links a{font-weight:600; font-size:13.5px; color:var(--navy); letter-spacing:.2px; white-space:nowrap;}
-  .nav-links a:hover{color:var(--orange);}
+  /* Le logo ne rétrécit jamais (26/09 : la barre trop chargée le réduisait à zéro — « il n'y a plus le logo »). */
+  .nav-logo{flex:none; display:flex; align-items:center; gap:10px;}
+  .nav-officiel{display:none; font-size:11px; font-weight:700; letter-spacing:.4px; color:#1E7A46; background:#E7F6EC; border:1px solid #BFE6CC; border-radius:20px; padding:4px 9px; white-space:nowrap;}
+  @media (min-width:1400px){ .nav-officiel{display:inline-block;} nav{max-width:1400px;} }
+  .nav-links{display:flex; align-items:center; gap:4px; list-style:none; flex:none; margin:0 10px;}
+  .nav-links a, .nav-groupe-btn{font-weight:600; font-size:14px; color:var(--navy); letter-spacing:.1px; white-space:nowrap;}
+  .nav-links > li > a, .nav-groupe-btn{display:inline-flex; align-items:center; gap:6px; min-height:44px; padding:0 11px; border-radius:10px; background:none; border:none; font-family:inherit; cursor:pointer;}
+  .nav-links > li > a:hover, .nav-groupe-btn:hover, .nav-groupe-btn[aria-expanded="true"]{color:var(--orange); background:#FFF4EC;}
+  .nav-chevron{font-size:11px; transition:transform .15s ease;}
+  .nav-groupe-btn[aria-expanded="true"] .nav-chevron{transform:rotate(180deg);}
+  /* Les déroulants (Services, À propos) : sous le bouton, au survol ou au clic, fermés par Échap ou un clic ailleurs. */
+  .nav-groupe{position:relative;}
+  .nav-sous{position:absolute; top:calc(100% + 6px); left:0; min-width:250px; background:var(--white); border:1px solid #E6EBF1; border-radius:14px; box-shadow:0 16px 40px rgba(16,40,70,.16); padding:8px; list-style:none; display:none; z-index:120;}
+  .nav-groupe.open > .nav-sous, .nav-groupe:hover > .nav-sous, .nav-groupe:focus-within > .nav-sous{display:block;}
+  .nav-sous a{display:flex; align-items:center; min-height:44px; padding:0 12px; border-radius:10px; font-size:14px; font-weight:600; white-space:nowrap;}
+  .nav-sous a:hover{background:#F3F6FA; color:var(--orange);}
+  .nav-wa{display:inline-flex; align-items:center; justify-content:center; width:44px; height:44px; border-radius:50%; color:#25D366; font-size:22px; background:#EAF9EF; margin-right:2px;}
+  .nav-wa:hover{background:#D7F3E1;}
   .nav-cta{
     background:var(--orange); color:var(--white); padding:9px 16px; border-radius:24px;
     font-weight:700; font-size:13px; display:inline-flex; align-items:center; gap:8px;
@@ -314,11 +330,10 @@
   .nav-login-mobile{display:none;}
 
   /* ---------- NAV ACTIONS (réseaux + devis + connexion + menu, à droite) ---------- */
-  .nav-actions{display:flex; align-items:center; gap:22px;}
+  .nav-actions{display:flex; align-items:center; gap:14px; flex:none;}
   .nav-social{display:flex; align-items:center; gap:18px;}
   .nav-social a{font-size:18px; transition:transform .15s ease, opacity .2s ease;}
   .nav-social a:hover{transform:translateY(-2px); opacity:.82;}
-  @media (max-width:1080px){ .nav-social{display:none;} }
   .nav-btn-group{display:flex; align-items:center; gap:10px; margin-left:6px;}
   .nav-login{
     background:transparent; color:var(--navy); padding:9px 18px; border-radius:24px;
@@ -326,7 +341,7 @@
     transition:background .2s ease, color .2s ease, transform .15s ease;
   }
   .nav-login:hover{background:var(--navy); color:var(--white);}
-  @media (max-width:860px){ .nav-actions{display:none;} }
+  @media (max-width:1260px){ .nav-actions{display:none;} }
 
   .nav-mobile-actions{display:none; align-items:center; gap:16px;}
   .nav-social-mobile{display:none; align-items:center; gap:16px;}
@@ -342,7 +357,7 @@
     -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:transparent;
   }
 
-  @media (max-width:860px){
+  @media (max-width:1260px){
     .nav-mobile-actions{display:flex; margin-right:6px;}
     .nav-social-mobile{display:flex;}
     .nav-links{
@@ -354,6 +369,14 @@
     .nav-links.open{display:flex;}
     .nav-links li{width:100%; border-bottom:1px solid #eee;}
     .nav-links a{display:block; padding:14px 0;}
+    .nav-links > li > a{display:block; min-height:0; padding:14px 0; border-radius:0; background:none;}
+    .nav-groupe-btn{display:block; width:100%; text-align:left; padding:12px 0 4px; font-size:11.5px; letter-spacing:.8px; text-transform:uppercase; color:#7A8B9C; cursor:default; min-height:0;}
+    .nav-groupe-btn:hover, .nav-groupe-btn[aria-expanded="true"]{background:none; color:#7A8B9C;}
+    .nav-chevron{display:none;}
+    .nav-sous{position:static; display:block; min-width:0; border:none; box-shadow:none; padding:0 0 4px 0; border-radius:0;}
+    .nav-sous li{border-bottom:none;}
+    .nav-sous a{min-height:0; padding:12px 0 12px 14px; border-radius:0; font-weight:600; white-space:normal;}
+    .nav-links{max-height:calc(100vh - 80px); overflow-y:auto;}
     .nav-cta{display:none;}
     .nav-li-cta{border-bottom:none;}
     .nav-li-cta-row{display:flex; align-items:stretch; gap:10px; width:100%; padding:16px 0 6px 0;}
@@ -986,7 +1009,7 @@
 <div class="site-header-fixed" id="siteHeaderFixed">
   <header>
     <nav>
-      <a href="#top">
+      <a href="#top" class="nav-logo" aria-label="Christ Livraison &amp; Transport — accueil">
         <svg class="logo-svg" viewBox="0 0 1400 450" xmlns="http://www.w3.org/2000/svg">
           <rect x="50" y="45" width="360" height="360" rx="56" fill="#1B4374"/>
           <text x="230" y="248" font-family="Poppins, Arial, sans-serif" font-weight="700" font-size="150" fill="#FFFFFF" text-anchor="middle" letter-spacing="2">CLT</text>
@@ -996,20 +1019,34 @@
           <line x1="462" y1="305" x2="700" y2="305" stroke="#C7D1DB" stroke-width="2"/>
           <text x="460" y="335" font-family="Poppins, Arial, sans-serif" font-weight="600" font-size="26" fill="#7A8B9C" letter-spacing="6">SARL</text>
         </svg>
+        <span class="nav-officiel" title="christlivraison.ci est le site officiel de Christ Livraison &amp; Transport SARL">✓ Site officiel</span>
       </a>
       <ul class="nav-links" id="navLinks">
-        <li><a href="#services" onclick="closeMenu()">Services</a></li>
-        <li><a href="#comment-ca-marche" onclick="closeMenu()">Comment ça marche</a></li>
-        <li class="nav-only-mobile"><a href="#couverture" onclick="closeMenu()">Zone de couverture</a></li>
-        <li><a href="tarifs.html" onclick="closeMenu()">Tarifs</a></li>
+        <!-- Menu allégé (26/09/2026, Celtis : « la barre est trop touffue ») : quatre entrées et deux déroulants,
+             comme les grands sites. Sur téléphone, les groupes s'affichent dépliés, avec leur titre. -->
+        <li class="nav-groupe">
+          <button type="button" class="nav-groupe-btn" aria-haspopup="true" aria-expanded="false" data-nav-groupe>Services <span class="nav-chevron" aria-hidden="true">▾</span></button>
+          <ul class="nav-sous">
+            <li><a href="#services" onclick="closeMenu()">Nos services</a></li>
+            <li><a href="#comment-ca-marche" onclick="closeMenu()">Comment ça marche</a></li>
+            <li><a href="tarifs.html" onclick="closeMenu()">Tarifs</a></li>
+            <li><a href="#couverture" onclick="closeMenu()">Zone de couverture</a></li>
+            <li><a href="express.html" onclick="closeMenu()">CLT Express — à la demande</a></li>
+          </ul>
+        </li>
         <li><a href="vendeuses.html" onclick="closeMenu()">Vendeuses</a></li>
         <li><a href="livreurs.html" onclick="closeMenu()">Devenir livreur</a></li>
-        <li><a href="#a-propos" onclick="closeMenu()">À propos</a></li>
         <li><a href="suivi.html" onclick="closeMenu()">Suivre un colis</a></li>
-        <li><a href="installer.html" onclick="closeMenu()">Installer l'application</a></li>
-        <li class="nav-only-mobile"><a href="#temoignages" onclick="closeMenu()">Témoignages</a></li>
-        <li class="nav-only-mobile"><a href="#faq" onclick="closeMenu()">FAQ</a></li>
-        <li class="nav-only-mobile"><a href="#contact" onclick="closeMenu()">Contact</a></li>
+        <li class="nav-groupe">
+          <button type="button" class="nav-groupe-btn" aria-haspopup="true" aria-expanded="false" data-nav-groupe>À propos <span class="nav-chevron" aria-hidden="true">▾</span></button>
+          <ul class="nav-sous">
+            <li><a href="#a-propos" onclick="closeMenu()">Qui sommes-nous</a></li>
+            <li><a href="#temoignages" onclick="closeMenu()">Témoignages</a></li>
+            <li><a href="#faq" onclick="closeMenu()">Questions fréquentes</a></li>
+            <li><a href="#contact" onclick="closeMenu()">Contact</a></li>
+            <li><a href="installer.html" onclick="closeMenu()">Installer l'application</a></li>
+          </ul>
+        </li>
         <li class="nav-li-cta">
           <div class="nav-li-cta-row">
             <a href="#devis" onclick="closeMenu()" class="nav-cta nav-cta-mobile">Demander un devis</a>
@@ -1018,12 +1055,7 @@
         </li>
       </ul>
       <div class="nav-actions">
-        <div class="nav-social">
-          <a href="https://wa.me/2250546818640" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
-          <a href="https://www.facebook.com/ChristLivraison/" target="_blank" rel="noopener" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
-          <a href="https://www.instagram.com/christ_livraison" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
-          <a href="https://www.tiktok.com/@christ_livraison_trans" target="_blank" rel="noopener" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
-        </div>
+        <a class="nav-wa" href="https://wa.me/2250546818640" target="_blank" rel="noopener" aria-label="Nous écrire sur WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
         <div class="nav-btn-group">
           <a class="nav-cta" href="#devis">Demander un devis</a>
           <a class="nav-login" href="app/login.html">Se connecter</a>
@@ -1474,7 +1506,21 @@
   }
   function closeMenu(){
     document.getElementById('navLinks').classList.remove('open');
+    fermerGroupes();
   }
+  // Les déroulants du menu (26/09) : au clic (téléphone, clavier) comme au survol ; Échap ou un clic ailleurs ferme.
+  function fermerGroupes(sauf){
+    document.querySelectorAll('.nav-groupe').forEach(function(g){ if (g !== sauf){ g.classList.remove('open'); var b = g.querySelector('[data-nav-groupe]'); if (b) b.setAttribute('aria-expanded', 'false'); } });
+  }
+  document.querySelectorAll('[data-nav-groupe]').forEach(function(btn){
+    btn.addEventListener('click', function(e){
+      e.stopPropagation();
+      var g = btn.closest('.nav-groupe'); var ouvert = g.classList.toggle('open');
+      btn.setAttribute('aria-expanded', ouvert ? 'true' : 'false'); fermerGroupes(g);
+    });
+  });
+  document.addEventListener('click', function(e){ if (!e.target.closest('.nav-groupe')) fermerGroupes(); });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') fermerGroupes(); });
   // Header fixe (position:fixed) : #headerSpacer réserve, dans le flux normal de la page,
   // la place occupée par le header afin que le contenu ne soit pas masqué derrière lui.
   // Sa hauteur est resynchronisée à chaque changement (chargement, redimensionnement, police).

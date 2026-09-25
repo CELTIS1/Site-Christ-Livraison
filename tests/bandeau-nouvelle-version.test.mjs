@@ -1464,10 +1464,11 @@ v236 — 23 septembre 2026 — La barre du bas, fixée en bas
    v271, le 25/09/2026 — Le site (chantier Q, lots S-2 et S-4) : vendeuses.html (ce que vous gagnez, trois écrans, vidéos, prix, « Nos vendeuses » lu par site_vendeuses), publication depuis Qui vend quoi (vitrine_valider, SQL 2026-09-25-le-site-nos-vendeuses.sql), express.html montre le produit (quatre vidéos, objections). Étiquette 20260925vendeuses.
    v272, le 26/09/2026 — Correctif du site : les chiffres du mois de l'accueil lisent site_chiffres_mois() (nouvelle fonction) — site_chiffres() du 16/09 (ordres de grandeur des textes) reste intacte, le SQL 2026-09-25-le-site-les-chiffres-en-direct.sql ne l'écrase plus ; l'accueil n'a plus deux chargerChiffres (les tuiles restaient à « — »). Étiquette 20260926chiffres.
    v273, le 26/09/2026 — L'assistant prend l'icône universelle (la bulle de conversation à trois points, SVG, comme Messenger / Intercom ; plus de casque) ; la vidéo « Mon relevé » n'est plus figée (le scénario cherchait un onglet « Relevé » absent : le relevé est sous « Récap ») ; les 29 vidéos refaites avec la nouvelle icône ; _tutoriels.mjs : un scénario interrompu n'écrit plus de vidéo, clic DOM de secours quand une couche intercepte. Étiquette 20260926icone.
-   v274, le 26/09/2026 — Équipe : la feuille « Plus » de la barre du bas efface les ronds flottants (l'assistant cachait « Bureau ») ; le panneau des notifications s'arrête au-dessus de la barre du bas (--clt-barre-h publiée par clt-common.js, 100dvh) — les dernières et « déjà lues » se lisent. Étiquette 20260926equipe. */
+   v274, le 26/09/2026 — Équipe : la feuille « Plus » de la barre du bas efface les ronds flottants (l'assistant cachait « Bureau ») ; le panneau des notifications s'arrête au-dessus de la barre du bas (--clt-barre-h publiée par clt-common.js, 100dvh) — les dernières et « déjà lues » se lisent. Étiquette 20260926equipe.
+   v275, le 26/09/2026 — Le site : le logo ne rétrécit plus (la barre trop chargée le réduisait à zéro), « Site officiel » à côté du logo et dans le titre, menu allégé (Services ▾ et À propos ▾ en déroulants, Vendeuses, Devenir livreur, Suivre un colis), réseaux sociaux retirés de la barre (WhatsApp seul, le reste au pied de page), menu ☰ sous 1260 px ; SQL 2026-09-26-express-noter-une-ancienne-course.sql (contrainte telephone_requis assouplie pour les anciennes courses). Étiquette 20260926site. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v274'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v275'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 
