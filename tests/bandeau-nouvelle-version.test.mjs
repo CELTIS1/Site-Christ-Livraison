@@ -1451,10 +1451,11 @@ v236 — 23 septembre 2026 — La barre du bas, fixée en bas
    v258, le 25/09/2026 — La peau v2 (chantier N, lot 18, C21) : app/peau.css chargée en dernier par les huit pages, deux jetons par espace (--clt-accent, --clt-accent-encre) ; fond uni, barre unie, cartes sans bordure, boutons en aplat, onglets d'une règle avec icônes en trait ; lampes de contraste et d'audit repassées. Étiquette 20260925peau.
    v259, le 25/09/2026 — CLT Express, le dossier d'une course (chantier P, lot P-1, première moitié) : règle app/express-dossier.js, fiche dans Équipe › Express, statut « récupérée » retrouvé, attente par course ; premier parcours de bout en bout commander → accepter → récupérer → livrer → noter ; croix des fenêtres à 44 px. Étiquette 20260925express.
    v260, le 25/09/2026 — Mise en ligne plus rapide : parcours en trois tranches parallèles sur GitHub (TRANCHE=i/n dans lancer.mjs), publication qui attend 60 min au lieu de 20, limites de durée sur les jobs ; corrige les mises en ligne échouées de v258. Étiquette 20260925enligne.
-   v261, le 25/09/2026 — Les contrôles GitHub repassent au vert : le banc a-confier lisait _sql-prive (absent sur GitHub) → garde existsSync ; nouveau banc les-bancs-tiennent-sans-le-dossier-prive ; bancs, lint et 47 parcours rejoués dans un dépôt vierge. Étiquette 20260925vert. */
+   v261, le 25/09/2026 — Les contrôles GitHub repassent au vert : le banc a-confier lisait _sql-prive (absent sur GitHub) → garde existsSync ; nouveau banc les-bancs-tiennent-sans-le-dossier-prive ; bancs, lint et 47 parcours rejoués dans un dépôt vierge. Étiquette 20260925vert.
+   v262, le 25/09/2026 — CLT Express, les gestes du bureau (chantier P, lot P-1, seconde moitié) : attribuer, confier à un autre, marquer récupérée / livrée à sa place, annuler avec motif, tracés (SQL 2026-09-25-express-les-gestes-du-bureau.sql, repli sans les colonnes) ; fenêtre du dossier réutilisée ; parcours de bout en bout 27. Étiquette 20260925gestes. */
 verifier(
   'la version du cache a été incrémentée avec ce changement',
-  /CACHE_VERSION = 'clt-shell-v261'/.test(sw),
+  /CACHE_VERSION = 'clt-shell-v262'/.test(sw),
   'sw.js a changé : sa version de cache doit changer aussi'
 );
 

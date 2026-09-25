@@ -4738,3 +4738,9 @@ html[data-theme="dark"] .confier-etat--recuperer{ background:#3a2a1a; color:#F0C
 .express-attente--urgent{ color:#BF5210; font-weight:700; }
 html[data-theme="dark"] .express-dossier__personnes > div, html[data-theme="dark"] .express-dossier__argent, html[data-theme="dark"] .express-msg{ background:#243247; }
 html[data-theme="dark"] .express-attente--urgent{ color:#F58A45; }
+.express-gestes{ display:flex; flex-direction:column; gap:8px; }
+.express-geste{ display:grid; grid-template-columns:1fr auto auto; gap:10px; align-items:center; background:var(--grey-bg); border-radius:12px; padding:10px 12px; }
+.express-geste .btn{ min-height:44px; }
+.express-geste__coursier{ min-width:180px; }
+@media(max-width:640px){ .express-geste{ grid-template-columns:1fr; } }
+html[data-theme="dark"] .express-geste{ background:#243247; }

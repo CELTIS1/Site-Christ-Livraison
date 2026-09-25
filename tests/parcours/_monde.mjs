@@ -222,7 +222,8 @@ export function nouveauMonde() {
       /* CLT EXPRESS — express_figer_course + express_regler_commission_solde (BEFORE UPDATE), contrat
          connu par les bancs Postgres : acceptee → livree sans récupération est refusée ; à la livraison
          en espèces, la commission est débitée du solde du coursier (dette possible). */
-      if (table === 'express_courses' && q.valeurs && q.valeurs.status === 'livree' && lignes.some(l => l.status === 'acceptee')) {
+      const roleQuiEcrit = (PROFILS.find(p => p.id === q.user) || {}).role;
+      if (table === 'express_courses' && !['equipe', 'admin'].includes(roleQuiEcrit) && q.valeurs && q.valeurs.status === 'livree' && lignes.some(l => l.status === 'acceptee')) {
         journal.push({ table, op: 'update-refuse', ids: lignes.map(l => l.id) });
         return { data: null, error: { message: 'transition_interdite: acceptee → livree', code: 'P0001' }, count: null };
       }

@@ -103,7 +103,7 @@
       "etapes": [
         "Une course « sans coursier depuis 10 min » ou « acceptée depuis 45 min » passe en orange : c'est un appel à passer.",
         "Le dossier dit qui a fait quoi et quand ; en cas de litige, c'est la pièce de base.",
-        "Les gestes du bureau (attribuer, marquer à sa place, annuler) viennent après la relecture des déclencheurs de la base (`express-relire`)."
+        "Sous le dossier, les gestes du bureau : attribuer, confier à un autre, marquer récupérée ou livrée à sa place, annuler avec motif — tracés (SQL du 25/09 à jouer)."
       ],
       "aSavoir": "Trouvé en écrivant le parcours de bout en bout : une course commandée SANS épingle est invisible pour un coursier géolocalisé (la fonction de proximité exige des coordonnées). Corrigé au lot P-4."
     },

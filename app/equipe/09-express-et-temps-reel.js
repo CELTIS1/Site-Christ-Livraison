@@ -95,18 +95,25 @@ ${(() => { const a = window.CLTExpressDossier ? CLTExpressDossier.attente(course
    l'argent — dans une fenêtre par-dessus la liste (une couche : Échap et le retour la ferment).
    Les gestes du bureau (attribuer, marquer à sa place, annuler) viennent avec la seconde moitié
    du lot, après relecture des déclencheurs de la base. */
+let expressCoursiersValides = [];
 async function ouvrirDossierExpress(id) {
-  const ancien = document.getElementById('express-dossier'); if (ancien) ancien.remove();
-  const ov = document.createElement('div');
-  ov.id = 'express-dossier'; ov.className = 'clt-nouveautes clt-aide';
-  ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', 'Dossier de la course');
-  ov.setAttribute('data-clt-couche', 'express-dossier');
-  ov.innerHTML = `<div class="clt-nouveautes__boite clt-aide__boite"><div class="clt-nouveautes__tete"><h2>📂 Dossier de la course</h2><button type="button" class="clt-nouveautes__fermer" data-clt-fermer aria-label="Fermer">×</button></div><div class="clt-nouveautes__corps express-dossier__corps"><div class="empty-state">Chargement…</div></div></div>`;
-  const clore = () => ov.remove();
-  ov.querySelector('.clt-nouveautes__fermer').addEventListener('click', clore);
-  ov.addEventListener('click', (e) => { if (e.target === ov) clore(); });
-  document.body.appendChild(ov);
+  /* Une seule fenêtre, réutilisée quand le dossier se rafraîchit après un geste : la retirer et
+     la recréer dans la foulée d'une confirmation qui se ferme faisait reculer l'historique de deux
+     crans (le gestionnaire des couches compte les entrées et sorties par lot) — la page sortait. */
+  let ov = document.getElementById('express-dossier');
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.id = 'express-dossier'; ov.className = 'clt-nouveautes clt-aide';
+    ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', 'Dossier de la course');
+    ov.setAttribute('data-clt-couche', 'express-dossier');
+    ov.innerHTML = `<div class="clt-nouveautes__boite clt-aide__boite"><div class="clt-nouveautes__tete"><h2>📂 Dossier de la course</h2><button type="button" class="clt-nouveautes__fermer" data-clt-fermer aria-label="Fermer">×</button></div><div class="clt-nouveautes__corps express-dossier__corps"></div></div>`;
+    const clore = () => ov.remove();
+    ov.querySelector('.clt-nouveautes__fermer').addEventListener('click', clore);
+    ov.addEventListener('click', (e) => { if (e.target === ov) clore(); });
+    document.body.appendChild(ov);
+  }
   const corps = ov.querySelector('.express-dossier__corps');
+  if (!corps.children.length) corps.innerHTML = '<div class="empty-state">Chargement…</div>';
   const q = async (p) => { try { const r = await p; return r.error ? null : r.data; } catch (e) { return null; } };
   const [course, messages, positions] = await Promise.all([
     q(supabaseClient.from('express_courses').select('*').eq('id', id).single()),
@@ -116,6 +123,8 @@ async function ouvrirDossierExpress(id) {
   if (!course) { corps.innerHTML = '<div class="empty-state">Course introuvable.</div>'; return; }
   const ids = [course.client_id, course.coursier_id, course.annulation_par].filter(Boolean);
   const profils = ids.length ? (await q(supabaseClient.from('profiles').select('id, full_name, phone, role').in('id', ids))) || [] : [];
+  // Les coursiers valides, pour attribuer ou confier à un autre (la liste des comptes n'est pas forcément chargée ici).
+  expressCoursiersValides = (await q(supabaseClient.from('profiles').select('id, full_name, phone, role, status').eq('role', 'coursier_express').eq('status', 'valide').order('full_name'))) || [];
   const noms = Object.fromEntries(profils.map(p => [p.id, p.full_name || p.phone || '?']));
   const lisible = (n) => (typeof CLTNumero !== 'undefined' && CLTNumero.lisible) ? CLTNumero.lisible(n) : n;
   const appel = (n) => (typeof CLTNumero !== 'undefined' && CLTNumero.pourAppel) ? CLTNumero.pourAppel(n) : 'tel:' + n;
@@ -138,8 +147,68 @@ async function ouvrirDossierExpress(id) {
     <h3 class="panel-subtitle" style="font-size:15px;margin:14px 0 6px;">Échanges et trajet</h3>
     <div class="meta">${(messages || []).length} message${(messages || []).length > 1 ? 's' : ''} dans le chat · ${(positions || []).length} position${(positions || []).length > 1 ? 's' : ''} enregistrée${(positions || []).length > 1 ? 's' : ''}</div>
     ${(messages || []).length ? `<div class="express-dossier__chat">${messages.slice(-20).map(m => `<div class="express-msg"><span class="meta">${escapeHTML(fmt(m.created_at))} · ${escapeHTML(noms[m.sender_id] || (m.sender_id === course.client_id ? 'client' : 'coursier'))}</span><div>${escapeHTML(m.body || '')}</div></div>`).join('')}</div>` : ''}
+    ${expressGestesHTML(course)}
   `;
 }
+
+/* LES GESTES DU BUREAU (25/09/2026, lot P-1, seconde moitié). La base laisse l'équipe et l'admin
+   écrire librement sur une course (express_figer_course, relu le 25/09) ; la commission se règle
+   par le déclencheur à « livrée » quelle que soit la main. Chaque geste est tracé (bureau_geste,
+   bureau_geste_par, bureau_geste_at — SQL du 25/09 ; repli sans ces colonnes) et journalisé. */
+function expressGestesHTML(course) {
+  const D = window.CLTExpressDossier;
+  const gestes = D ? D.gestesDuBureau(course) : [];
+  if (!gestes.length) return '';
+  const coursiers = expressCoursiersValides.filter(p => p.id !== course.coursier_id);
+  const options = '<option value="">Choisir le coursier…</option>' + coursiers.map(p => `<option value="${escapeHTML(p.id)}">${escapeHTML(p.full_name || p.phone || p.id)}</option>`).join('');
+  return `<h3 class="panel-subtitle" style="font-size:15px;margin:14px 0 6px;">Gestes du bureau</h3>
+    <div class="express-gestes">${gestes.map(g => `<div class="express-geste"><div><b>${escapeHTML(g.libelle)}</b><div class="meta">${escapeHTML(g.explication)}</div></div>
+      ${/attribuer/.test(g.cle) ? `<select class="express-geste__coursier" data-recherche data-recherche-placeholder="Nom du coursier…">${options}</select>` : ''}
+      <button type="button" class="btn btn-sm${g.cle === 'annuler' ? ' btn-outline' : ''}" data-express-geste="${g.cle}" data-course="${escapeHTML(course.id)}">${g.cle === 'annuler' ? 'Annuler…' : 'Faire'}</button></div>`).join('')}</div>`;
+}
+
+async function expressFaireGeste(bouton) {
+  const geste = bouton.dataset.expressGeste, id = bouton.dataset.course;
+  const bloc = bouton.closest('.express-geste');
+  const maintenant = new Date().toISOString();
+  const moi = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.id : null;
+  const patch = {}; let detail = {};
+  if (geste === 'attribuer' || geste === 'reattribuer') {
+    const sel = bloc.querySelector('.express-geste__coursier');
+    const coursier = sel ? sel.value : '';
+    if (!coursier) { cltToast('Choisissez d\'abord le coursier, juste à côté.', { type: 'warning' }); if (sel) sel.focus(); return; }
+    const nom = (expressCoursiersValides.find(p => p.id === coursier) || {}).full_name || 'ce coursier';
+    if (!(await cltConfirm({ title: (geste === 'attribuer' ? 'Attribuer à ' : 'Confier à ') + nom + ' ?', sub: 'La course passe « acceptée » à son nom ; il la voit dans « Mes courses » et est prévenu.', okLabel: 'Oui' }))) return;
+    Object.assign(patch, { status: 'acceptee', coursier_id: coursier, accepted_at: maintenant, recuperee_at: null });
+    detail = { coursier: nom };
+  } else if (geste === 'marquer_recuperee') {
+    if (!(await cltConfirm({ title: 'Marquer récupérée à sa place ?', sub: 'Le coursier a le colis mais n\'a pas appuyé. Tracé au nom du bureau.', okLabel: 'Oui, récupérée' }))) return;
+    Object.assign(patch, { status: 'recuperee', recuperee_at: maintenant });
+  } else if (geste === 'marquer_livree') {
+    if (!(await cltConfirm({ title: 'Marquer livrée à sa place ?', sub: 'La commission est débitée de son solde comme s\'il avait appuyé. Tracé au nom du bureau.', okLabel: 'Oui, livrée' }))) return;
+    Object.assign(patch, { status: 'livree', delivered_at: maintenant });
+  } else if (geste === 'annuler') {
+    const motif = await cltPrompt({ title: 'Annuler la course', sub: 'Le motif est lu par le client et par le coursier.', placeholder: 'Ex : client injoignable, colis introuvable…', okLabel: 'Annuler la course' });
+    if (!motif || !motif.trim()) return;
+    Object.assign(patch, { status: 'annulee', cancelled_at: maintenant, annulation_motif: motif.trim(), annulation_par: moi });
+    detail = { motif: motif.trim() };
+  } else return;
+  bouton.disabled = true;
+  const complet = Object.assign({ bureau_geste: geste, bureau_geste_par: moi, bureau_geste_at: maintenant }, patch);
+  let { error } = await supabaseClient.from('express_courses').update(complet).eq('id', id);
+  // Repli tant que le SQL du 25/09 n'est pas joué : on écrit sans les colonnes de trace.
+  if (error && /column|colonne|schema cache/i.test(error.message || '')) {
+    const sansTrace = Object.assign({}, patch); delete sansTrace.annulation_motif; delete sansTrace.annulation_par;
+    ({ error } = await supabaseClient.from('express_courses').update(sansTrace).eq('id', id));
+  }
+  bouton.disabled = false;
+  if (error) { cltToast(friendlyErrorMessage(error.message), { type: 'error' }); return; }
+  supabaseClient.from('activity_log').insert([{ action: 'express_bureau_' + geste, target_id: id, target_type: 'express_courses', details: detail }]).then(() => {}, () => {});
+  cltToast({ attribuer: 'Course attribuée.', reattribuer: 'Course confiée à un autre coursier.', marquer_recuperee: 'Marquée récupérée.', marquer_livree: 'Marquée livrée — commission réglée par la base.', annuler: 'Course annulée, motif enregistré.' }[geste], { type: 'success', title: 'C\'est fait' });
+  await loadExpressCourses();
+  ouvrirDossierExpress(id);
+}
+document.addEventListener('click', (e) => { const b = e.target.closest('[data-express-geste]'); if (b) expressFaireGeste(b); });
 document.addEventListener('click', (e) => { const b = e.target.closest('[data-express-dossier]'); if (b) ouvrirDossierExpress(b.dataset.expressDossier); });
 
 async function loadExpressCourses() {

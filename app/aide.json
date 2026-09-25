@@ -489,7 +489,8 @@
           "etapes": [
             "Onglet Express › la liste des courses : le statut (en attente · acceptée · récupérée · livrée · annulée) et, à côté, depuis combien de temps elle attend — en orange quand ça traîne.",
             "« 📂 Dossier » : le client, le coursier et le destinataire (un appui pour appeler), la chronologie complète, l'argent (prix, commission, part du coursier, commission débitée ou non), les messages du chat.",
-            "Les gestes du bureau sur une course (attribuer, marquer à sa place, annuler avec motif) arrivent dans la mise à jour suivante."
+            "Sous le dossier, les gestes du bureau : attribuer (en attente), confier à un autre ou marquer récupérée (acceptée), marquer livrée (récupérée), annuler avec un motif lu par le client et le coursier.",
+            "Chaque geste est tracé au nom du bureau ; « Marquer livrée » règle la commission comme si le coursier avait appuyé."
           ],
           "astuce": "Le filtre « Récupérées » montre les colis en route vers la livraison : c'est là qu'on appelle si le client s'inquiète."
         }
