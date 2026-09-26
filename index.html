@@ -320,6 +320,24 @@
   .nav-sous a:hover{background:#F3F6FA; color:var(--orange);}
   .nav-wa{display:inline-flex; align-items:center; justify-content:center; width:44px; height:44px; border-radius:50%; color:#25D366; font-size:22px; background:#EAF9EF; margin-right:2px;}
   .nav-wa:hover{background:#D7F3E1;}
+  .nav-reseau{display:inline-flex; align-items:center; justify-content:center; width:44px; height:44px; border-radius:50%; font-size:18px; margin-right:2px; transition:transform .15s ease, background .15s ease;}
+  .nav-reseau:hover{transform:translateY(-2px);}
+  .nav-reseau--fb{color:#1877F2; background:#EAF1FE;} .nav-reseau--fb:hover{background:#D6E5FD;}
+  .nav-reseau--ig{color:#D62976; background:#FCEAF2;} .nav-reseau--ig:hover{background:#F8D5E5;}
+  .nav-reseau--tt{color:#111; background:#EEF0F3;} .nav-reseau--tt:hover{background:#DDE1E7;}
+  .nav-reseaux{display:flex; align-items:center; gap:6px;} .nav-reseaux .nav-wa, .nav-reseaux .nav-reseau{margin-right:0;}
+  /* Avec les réseaux, la barre d'ordinateur se resserre pour que « Se connecter » reste à l'écran (26/09). */
+  @media (min-width:1261px){
+    .nav-links{margin:0 4px; gap:0;}
+    .nav-links > li > a, .nav-groupe-btn{padding:0 9px;}
+    .nav-actions{gap:10px;}
+    .nav-reseaux{gap:2px;}
+  }
+  @media (min-width:1261px) and (max-width:1439px){
+    .logo-svg{width:190px !important;}
+    .nav-links > li > a, .nav-groupe-btn{padding:0 7px; font-size:13.5px;}
+    .nav-cta, .nav-login{padding-left:13px !important; padding-right:13px !important;}
+  }
   .nav-cta{
     background:var(--orange); color:var(--white); padding:9px 16px; border-radius:24px;
     font-weight:700; font-size:13px; display:inline-flex; align-items:center; gap:8px;
@@ -1073,6 +1091,42 @@
   @media (hover:none){ .service-learn{ opacity:1; transform:none; } }
   @media (max-width:680px){ .service-learn{ font-size:12px; margin-top:10px; } }
 </style>
+<!-- LE SITE QUI BOUGE (26/09/2026, v288) — Celtis : « je veux du dynamisme, comme github.com ». Les effets : sections
+     qui glissent et se posent en cascade (site-mouvement.js règle les retards), trait sous les titres qui se dessine,
+     images qui s'approchent, chiffres qui comptent (pulsation à la fin), menu déroulant animé qui attend la souris.
+     « Réduire les animations » : tout s'affiche immobile. -->
+<style id="clt-mouvement-2026">
+  .reveal{transform:translateY(34px); transition:opacity .8s cubic-bezier(.2,.7,.2,1), transform .8s cubic-bezier(.2,.7,.2,1);}
+  .reveal.visible{transform:none;}
+  .section-title.reveal::after{transform:scaleX(0); transition:transform .9s cubic-bezier(.2,.7,.2,1) .35s;}
+  .section-title.reveal.visible::after{transform:scaleX(1);}
+  .produit figure.reveal, .vie-card.reveal, .film-cadre.reveal{transform:translateY(24px) scale(.94);}
+  .produit figure.reveal.visible, .vie-card.reveal.visible, .film-cadre.reveal.visible{transform:none;}
+  .rejoindre-carte.reveal:nth-child(odd){transform:translateX(-34px);} .rejoindre-carte.reveal:nth-child(even){transform:translateX(34px);}
+  .rejoindre-carte.reveal.visible{transform:none;}
+  .compte-fini{animation:clt-pulse .5s ease-out;}
+  @keyframes clt-pulse{0%{transform:scale(1);}40%{transform:scale(1.08);}100%{transform:scale(1);}}
+  .preuve-item strong, .about-stat .stat-number{display:inline-block;}
+  .preuve-item strong{display:block;}
+  /* Le menu déroulant façon github.com : panneau large, icône + titre + une ligne, qui glisse et attend la souris. */
+  .nav-sous a{gap:12px;}
+  .nav-ico{flex:none; width:34px; height:34px; border-radius:10px; background:#FFF1E6; color:var(--orange); display:inline-flex; align-items:center; justify-content:center; font-size:15px;}
+  .nav-txt{display:flex; flex-direction:column; line-height:1.25;}
+  .nav-txt small{font-weight:500; font-size:12.5px; color:#6B7A8C; margin-top:2px;}
+  .nav-sous a:hover .nav-ico{background:var(--orange); color:#fff;}
+  @media (min-width:1261px){
+    .nav-sous{display:block; visibility:hidden; opacity:0; transform:translateY(10px) scale(.98); transform-origin:top left; transition:opacity .2s ease, transform .2s ease, visibility 0s linear .2s; top:calc(100% + 10px); min-width:340px; padding:10px;}
+    .nav-sous::before{content:""; position:absolute; left:0; right:0; top:-14px; height:14px;}
+    .nav-sous a{min-height:56px; padding:8px 12px; white-space:normal;}
+    .nav-groupe.open > .nav-sous, .nav-groupe:hover > .nav-sous, .nav-groupe:focus-within > .nav-sous{visibility:visible; opacity:1; transform:none; transition-delay:0s;}
+  }
+  @media (max-width:1260px){ .nav-ico, .nav-txt small{display:none;} }
+  @media (prefers-reduced-motion: reduce){
+    .reveal, .section-title.reveal::after, .produit figure.reveal, .vie-card.reveal, .film-cadre.reveal, .rejoindre-carte.reveal{transform:none !important; transition:none !important;}
+    .compte-fini{animation:none;} .nav-sous{transition:none !important;}
+  }
+</style>
+
 </head>
 <body>
 
@@ -1103,11 +1157,11 @@
         <li class="nav-groupe">
           <button type="button" class="nav-groupe-btn" aria-haspopup="true" aria-expanded="false" data-nav-groupe>Services <span class="nav-chevron" aria-hidden="true">▾</span></button>
           <ul class="nav-sous">
-            <li><a href="#services" onclick="closeMenu()">Nos services</a></li>
-            <li><a href="#comment-ca-marche" onclick="closeMenu()">Comment ça marche</a></li>
-            <li><a href="tarifs.html" onclick="closeMenu()">Tarifs</a></li>
-            <li><a href="#couverture" onclick="closeMenu()">Zone de couverture</a></li>
-            <li><a href="express.html" onclick="closeMenu()">CLT Express — à la demande</a></li>
+            <li><a href="#services" onclick="closeMenu()"><span class="nav-ico" aria-hidden="true"><i class="fa-solid fa-box"></i></span><span class="nav-txt">Nos services<small>Express, programmé, e-commerce, expédition</small></span></a></li>
+            <li><a href="#comment-ca-marche" onclick="closeMenu()"><span class="nav-ico" aria-hidden="true"><i class="fa-solid fa-route"></i></span><span class="nav-txt">Comment ça marche<small>Trois étapes, de la demande à la remise</small></span></a></li>
+            <li><a href="tarifs.html" onclick="closeMenu()"><span class="nav-ico" aria-hidden="true"><i class="fa-solid fa-tags"></i></span><span class="nav-txt">Tarifs<small>Dès 1 000 FCFA, selon la distance</small></span></a></li>
+            <li><a href="#couverture" onclick="closeMenu()"><span class="nav-ico" aria-hidden="true"><i class="fa-solid fa-map-location-dot"></i></span><span class="nav-txt">Zone de couverture<small>Les communes d'Abidjan desservies</small></span></a></li>
+            <li><a href="express.html" onclick="closeMenu()"><span class="nav-ico" aria-hidden="true"><i class="fa-solid fa-motorcycle"></i></span><span class="nav-txt">CLT Express — à la demande<small>Une course immédiate, suivie en direct</small></span></a></li>
           </ul>
         </li>
         <li><a href="vendeuses.html" onclick="closeMenu()">Vendeurs</a></li>
@@ -1116,16 +1170,22 @@
         <li class="nav-groupe">
           <button type="button" class="nav-groupe-btn" aria-haspopup="true" aria-expanded="false" data-nav-groupe>À propos <span class="nav-chevron" aria-hidden="true">▾</span></button>
           <ul class="nav-sous">
-            <li><a href="#a-propos" onclick="closeMenu()">Qui sommes-nous</a></li>
-            <li><a href="#temoignages" onclick="closeMenu()">Témoignages</a></li>
-            <li><a href="#faq" onclick="closeMenu()">Questions fréquentes</a></li>
-            <li><a href="#contact" onclick="closeMenu()">Contact</a></li>
-            <li><a href="installer.html" onclick="closeMenu()">Installer l'application</a></li>
+            <li><a href="#a-propos" onclick="closeMenu()"><span class="nav-ico" aria-hidden="true"><i class="fa-solid fa-circle-info"></i></span><span class="nav-txt">Qui sommes-nous<small>Notre équipe, nos engagements</small></span></a></li>
+            <li><a href="#temoignages" onclick="closeMenu()"><span class="nav-ico" aria-hidden="true"><i class="fa-solid fa-star"></i></span><span class="nav-txt">Témoignages<small>Ce que disent nos clients</small></span></a></li>
+            <li><a href="#faq" onclick="closeMenu()"><span class="nav-ico" aria-hidden="true"><i class="fa-solid fa-circle-question"></i></span><span class="nav-txt">Questions fréquentes<small>Prix, zones, argent, colis perdu</small></span></a></li>
+            <li><a href="#contact" onclick="closeMenu()"><span class="nav-ico" aria-hidden="true"><i class="fa-solid fa-phone"></i></span><span class="nav-txt">Contact<small>WhatsApp, téléphone, adresse</small></span></a></li>
+            <li><a href="installer.html" onclick="closeMenu()"><span class="nav-ico" aria-hidden="true"><i class="fa-solid fa-mobile-screen"></i></span><span class="nav-txt">Installer l'application<small>Sur votre téléphone, en un geste</small></span></a></li>
           </ul>
         </li>
       </ul>
       <div class="nav-actions">
-        <a class="nav-wa" href="https://wa.me/2250546818640" target="_blank" rel="noopener" aria-label="Nous écrire sur WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+        <div class="nav-reseaux">
+          <a class="nav-wa" href="https://wa.me/2250546818640" target="_blank" rel="noopener" aria-label="Nous écrire sur WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+          <!-- Les réseaux à côté de WhatsApp (26/09/2026, Celtis : « Facebook, TikTok, il y avait ça ; ils doivent être à côté »). -->
+          <a class="nav-reseau nav-reseau--fb" href="https://www.facebook.com/ChristLivraison/" target="_blank" rel="noopener" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+          <a class="nav-reseau nav-reseau--ig" href="https://www.instagram.com/christ_livraison" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+          <a class="nav-reseau nav-reseau--tt" href="https://www.tiktok.com/@christ_livraison_trans" target="_blank" rel="noopener" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
+        </div>
         <div class="nav-btn-group">
           <a class="nav-cta" href="#devis">Demander un devis</a>
           <a class="nav-login" href="app/login.html">Se connecter</a>
@@ -1246,15 +1306,15 @@
     <p class="section-sub reveal">Chaque colis a un numéro, chaque livraison une preuve, chaque reversement un reçu. Regardez, c'est plus court qu'un discours.</p>
     <div class="produit-grid">
       <figure class="produit-item reveal">
-        <video controls preload="none" playsinline muted poster="app/aide/videos/cliente-suivre-signaler.jpg" width="390" height="844"><source src="app/aide/videos/cliente-suivre-signaler.mp4" type="video/mp4"></video>
+        <video data-auto controls preload="none" playsinline muted loop poster="app/aide/videos/cliente-suivre-signaler.jpg" width="390" height="844"><source src="app/aide/videos/cliente-suivre-signaler.mp4" type="video/mp4"></video>
         <figcaption><strong>Suivre un colis</strong> — la frise dit où il est, et vous pouvez signaler un problème sous le colis.</figcaption>
       </figure>
       <figure class="produit-item reveal">
-        <video controls preload="none" playsinline muted poster="app/aide/videos/cliente-releve.jpg" width="390" height="844"><source src="app/aide/videos/cliente-releve.mp4" type="video/mp4"></video>
+        <video data-auto controls preload="none" playsinline muted loop poster="app/aide/videos/cliente-releve.jpg" width="390" height="844"><source src="app/aide/videos/cliente-releve.mp4" type="video/mp4"></video>
         <figcaption><strong>Votre relevé</strong> — ce que CLT vous doit, et chaque reversement avec son reçu numéroté.</figcaption>
       </figure>
       <figure class="produit-item reveal">
-        <video controls preload="none" playsinline muted poster="app/aide/videos/cliente-confirmer-retour.jpg" width="390" height="844"><source src="app/aide/videos/cliente-confirmer-retour.mp4" type="video/mp4"></video>
+        <video data-auto controls preload="none" playsinline muted loop poster="app/aide/videos/cliente-confirmer-retour.jpg" width="390" height="844"><source src="app/aide/videos/cliente-confirmer-retour.mp4" type="video/mp4"></video>
         <figcaption><strong>Un colis revient</strong> — vous le savez, et vous confirmez quand il vous est rendu. Rien ne se perd.</figcaption>
       </figure>
     </div>
@@ -1635,6 +1695,7 @@
 
 
 <script src="app/avis.js?v=20260926avis"></script>
+<script src="site-mouvement.js?v=20260926mouvement" defer></script>
 <script>
   function toggleMenu(){
     document.getElementById('navLinks').classList.toggle('open');
