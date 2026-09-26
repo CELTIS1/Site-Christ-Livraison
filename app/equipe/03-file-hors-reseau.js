@@ -603,7 +603,7 @@ ${estValide ? '' : `
      les récapitulatifs suivent — sans supprimer ni recréer. Une confirmation est demandée à
      l'enregistrement, et le transfert est tracé au journal. -->
 <div class="field" style="margin-top:8px;">
-<label style="font-size:11.5px;">Cliente / vendeuse (propriétaire du colis)</label>
+<label style="font-size:11.5px;">Cliente / fournisseur (propriétaire du colis)</label>
 <select class="edit-fournisseur" data-fournisseur-origine="${escapeHTML(c.fournisseur_id || '')}" data-recherche data-recherche-placeholder="Nom de la cliente…" style="padding:7px 10px; font-size:12.5px; border:1.5px solid var(--border); border-radius:7px; width:200px;">${fournisseurEditOptions}</select>
 </div>
 <div class="field" style="margin-top:8px;">

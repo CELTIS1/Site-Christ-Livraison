@@ -149,7 +149,7 @@
             "Onglet « Finance » : « Ce que vous portez » — l'argent encaissé sur vos colis du jour.",
             "Les frais que vous avez payés de votre poche — la gare, le transport, et les frais additionnels — sont déduits : « Avancé de votre poche sur N colis ».",
             "« Annoncer ma remise » envoie le chiffre au bureau avant que vous arriviez. Le bureau compte et confirme.",
-            "Gardez les reçus de la gare : ils sont retenus sur la vendeuse et vous sont remboursés."
+            "Gardez les reçus de la gare : ils sont retenus sur le fournisseur et vous sont remboursés."
           ],
           "medias": [
             {
@@ -376,7 +376,7 @@
           "etapes": [
             "Reporter : sur la carte du colis, ⋮ → ✏️ Modifier → « Jour du colis » : choisissez la nouvelle date → Enregistrer. Le livreur peut aussi le faire depuis son téléphone.",
             "Où il est ensuite : il reste dans sa journée de réception, marqué ⏭️ « Reporté au … — reçu le …, et toujours compté dans cette journée-là » ; ET il apparaît dans la journée de report, pour le livreur.",
-            "Le point de la vendeuse ne bouge pas : le colis reste dans le point du jour où elle l'a remis, « reporté au … », à 0 F. Le jour où il est livré, son montant entre dans CE point-là et vous recevez « la journée a changé ».",
+            "Le point du fournisseur ne bouge pas : le colis reste dans le point du jour où il l'a remis, « reporté au … », à 0 F. Le jour où il est livré, son montant entre dans CE point-là et vous recevez « la journée a changé ».",
             "Annuler un report : sur la carte, « ↩️ Le remettre à sa journée ». Ou ✏️ Modifier → remettez le jour de réception.",
             "Vérifier qu'aucun reporté ne dort : la ligne « ⏭️ N colis de cette journée ont été reportés » en haut de la liste, et « Aller à cette journée ».",
             "Un reporté dont le jour est arrivé et qui attend encore apparaît dans « À traiter › Reportés » : « Que faire ? » → le remettre à sa journée, ou changer le jour."
@@ -443,7 +443,7 @@
           "titre": "Les notifications : ce qu'elles disent, où elles vous emmènent",
           "resume": "Chaque notification du bureau ouvre exactement l'endroit concerné, encadré en orange tant que vous n'y avez pas touché — même s'il y en a plusieurs.",
           "etapes": [
-            "« Journée bouclée » / « la journée a changé » : Suivi → le point de CETTE vendeuse, ce jour-là, déplié et encadré « 🔔 à traiter ».",
+            "« Journée bouclée » / « la journée a changé » : Suivi → le point de CE fournisseur, ce jour-là, déplié et encadré « 🔔 à traiter ».",
             "« [Livreur] a fait son point » : Suivi → sa carte dans le point par livreur, encadrée.",
             "« [Cliente] demande un passage » : Tournées → sa ligne, le bon jour, encadrée.",
             "Le cadre reste après un rechargement et ne tombe qu'au premier toucher de CE point. Plusieurs notifications = plusieurs cadres, chacun tombe seul.",

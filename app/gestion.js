@@ -2955,7 +2955,7 @@ async function loadPointClients(){
     gArt+=jArt; gLiv+=jLiv; gNb+=jNb;
     blocks += `<div class="clt-day-block"><div class="clt-day-head">📅 ${frJour(j)}</div>`
       + `<div class="g-table-wrap"><table class="g-table"><thead><tr>`
-      + `<th>Cliente (vendeuse)</th><th class="ta-d">Colis livrés</th>`
+      + `<th>Cliente (fournisseur)</th><th class="ta-d">Colis livrés</th>`
       + `<th class="ta-d">Total article</th><th class="ta-d">Total livraison</th></tr></thead>`
       + `<tbody>${body}</tbody>`
       + `<tfoot><tr><th>Total du jour</th><th class="ta-d">${jNb}</th>`

@@ -107,7 +107,7 @@ function corpsCourt(m: Record<string, any>, avant: Record<string, any> | null): 
 
 function consigne(genre: string): string {
   return [
-    "Tu es l'analyste d'usage de l'application CLT (Christ Livraison & Transport, Abidjan) : six espaces — clientes vendeuses, livreurs, équipe du bureau, gérant (Gestion), clients et coursiers CLT Express — plus le site public.",
+    "Tu es l'analyste d'usage de l'application CLT (Christ Livraison & Transport, Abidjan) : six espaces — fournisseurs (clients de CLT), livreurs, équipe du bureau, gérant (Gestion), clients et coursiers CLT Express — plus le site public.",
     "On te donne les MESURES de la " + (genre === "usage_mois" ? "période d'un mois" : "semaine") + " et celles de la période d'avant, en JSON. Ce sont les seuls faits : tu n'inventes ni chiffre ni cause ; quand un chiffre manque ou vaut zéro, dis-le tel quel.",
     "Écris en français simple, pour le gérant, qui lit vite. Vouvoiement. Pas d'emoji. Phrases courtes. Chaque affirmation cite le chiffre qui la porte.",
     "Structure EXACTE, avec ces titres en majuscules sur leur ligne :",

@@ -47,9 +47,9 @@
       "enBref": "Quand un montant manque dans le point d'un livreur, la raison est écrite sous le colis : quoi, combien, qui l'a coché et quand.",
       "ou": "Livreur › Finance ; Équipe › Suivi ; relevé de la cliente (écran, PDF, WhatsApp) ; carte du colis chez la cliente",
       "etapes": [
-        "Sous chaque colis concerné : « 🔖 Article soldé chez la vendeuse — coché par Awa (cliente), le 24/09 à 10 h 12 ».",
+        "Sous chaque colis concerné : « 🔖 Article soldé chez le fournisseur — coché par Awa (cliente), le 24/09 à 10 h 12 ».",
         "Sous le TOTAL du point : « Pas encaissé par le livreur : n colis », avec les montants et les numéros.",
-        "Chez la vendeuse (relevé et cartes) : seulement ce qui est soldé, sans qui ni quand."
+        "Chez le fournisseur (relevé et cartes) : seulement ce qui est soldé, sans qui ni quand."
       ],
       "aSavoir": "Trois cases retirent un montant du livreur : article soldé, livraison payée d'avance, livraison non encaissée (manque). La base note l'auteur et l'heure (Abidjan) depuis le 26/09 ; avant, elle dit « auteur non enregistré ». Décocher laisse une trace dans le journal.",
       "version": "v283"
@@ -242,15 +242,15 @@
     {
       "id": "site-qui-vend",
       "espace": "bureau",
-      "titre": "Le site qui vend, et « Nos vendeuses »",
-      "enBref": "Le site montre le produit (vidéos, chiffres en direct) ; « Nos vendeuses » publie les fiches consenties que vous validez.",
+      "titre": "Le site qui vend, et « Nos fournisseurs »",
+      "enBref": "Le site montre le produit (vidéos, chiffres en direct) ; « Nos fournisseurs » publie les fiches consenties que vous validez.",
       "ou": "christlivraison.ci ; Gestion › Tableau de bord › Qui vend quoi › Liste › « Publier sur le site »",
       "etapes": [
         "Une fiche n'est sur le site que si la cliente a coché « présenter mon activité » ET si vous l'avez publiée (Qui vend quoi › Liste). Retirer est immédiat.",
         "Avant de publier : au moins dix colis livrés, aucune réclamation en cours — c'est vous qui jugez. Ce qui est montré : boutique, secteur, ce qu'elle vend, commune, WhatsApp.",
-        "Les chiffres de l'accueil viennent de site_chiffres (totaux du mois) ; les clics « WhatsApp » sont comptés dans site_visits. SQL du 25/09 : chiffres en direct, nos vendeuses."
+        "Les chiffres de l'accueil viennent de site_chiffres (totaux du mois) ; les clics « WhatsApp » sont comptés dans site_visits. SQL du 25/09 : chiffres en direct, nos fournisseurs."
       ],
-      "aSavoir": "Reste (S-5) : l'assistant sur le site, et la vendeuse de la semaine mise en avant sur l'accueil."
+      "aSavoir": "Reste (S-5) : l'assistant sur le site, et le fournisseur de la semaine mise en avant sur l'accueil."
     },
     {
       "id": "l-argent",
@@ -465,7 +465,7 @@
       "id": "regulariser",
       "espace": "gestion",
       "titre": "Régulariser une anomalie",
-      "enBref": "Corriger ce que l'application n'a pas vu passer : retour déjà rendu, remise déjà faite, vendeuse déjà payée.",
+      "enBref": "Corriger ce que l'application n'a pas vu passer : retour déjà rendu, remise déjà faite, fournisseur déjà payé.",
       "ou": "Gestion › Régulariser",
       "etapes": [
         "Choisissez laquelle des trois anomalies : l'écran range les colis par cliente, ou par livreur pour les remises, le plus lourd en premier.",
@@ -1089,7 +1089,7 @@
       "enBref": "Une notification ouvre exactement l'endroit concerné, encadré en orange tant qu'on n'y a pas touché.",
       "ou": "Espace équipe, en touchant une notification",
       "etapes": [
-        "« Journée bouclée » / « la journée a changé » → Suivi, le point de cette vendeuse, ce jour-là, déplié et encadré « 🔔 à traiter ».",
+        "« Journée bouclée » / « la journée a changé » → Suivi, le point de ce fournisseur, ce jour-là, déplié et encadré « 🔔 à traiter ».",
         "« [Livreur] a fait son point » → sa carte dans le point par livreur. « [Cliente] demande un passage » → sa ligne dans Tournées, le bon jour.",
         "Le cadre survit au rechargement et ne tombe qu'au premier toucher de ce point. Plusieurs notifications, plusieurs cadres, chacun tombe seul."
       ],
@@ -1104,10 +1104,10 @@
       "etapes": [
         "Reporter : ⋮ → ✏️ Modifier → « Jour du colis ». Annuler : « ↩️ Le remettre à sa journée » sur la carte.",
         "Le colis reste dans sa journée de réception, marqué ⏭️, et apparaît aussi dans la journée de report (« Ma journée » du livreur, la tournée).",
-        "Le point de la vendeuse ne change pas : le colis y reste, « reporté au … », à 0 F. Livré plus tard, son montant entre dans ce même point et l'alerte « la journée a changé » part.",
+        "Le point du fournisseur ne change pas : le colis y reste, « reporté au … », à 0 F. Livré plus tard, son montant entre dans ce même point et l'alerte « la journée a changé » part.",
         "Un reporté jamais travaillé ressort dans L'essentiel (« dormants ») : à regarder chaque matin."
       ],
-      "aSavoir": "Avant le 22/09, un colis reporté disparaissait du point de sa vendeuse et de celui du livreur : quinze colis en deux semaines, douze points faussés. C'est réparé, et l'aide de l'équipe l'explique (« Le colis reporté »).",
+      "aSavoir": "Avant le 22/09, un colis reporté disparaissait du point de son fournisseur et de celui du livreur : quinze colis en deux semaines, douze points faussés. C'est réparé, et l'aide de l'équipe l'explique (« Le colis reporté »).",
       "version": "v229"
     },
     {

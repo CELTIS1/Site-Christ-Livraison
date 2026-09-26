@@ -32,7 +32,7 @@
   ];
 
   const ROLES = {
-    fournisseur: 'Cliente / vendeuse', livreur: 'Livreur CLT', equipe: 'Équipe', admin: 'Administrateur',
+    fournisseur: 'Cliente / fournisseur', livreur: 'Livreur CLT', equipe: 'Équipe', admin: 'Administrateur',
     client_express: 'Client Express', coursier_express: 'Coursier Express',
   };
 

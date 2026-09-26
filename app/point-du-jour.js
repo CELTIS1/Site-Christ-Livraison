@@ -255,12 +255,12 @@
     <div class="pdj-bloc pdj-clientes">
       <div class="pdj-bloc-titre">L'argent des clientes <span>articles — jamais à CLT</span></div>
       <div class="pdj-tuiles">
-        ${tuile('Devait rentrer', F(a.attendu), { title: 'Articles des colis livrés et non livrés du jour, hors articles soldés chez la vendeuse' })}
+        ${tuile('Devait rentrer', F(a.attendu), { title: 'Articles des colis livrés et non livrés du jour, hors articles soldés chez le fournisseur' })}
         ${tuile('Encaissé', F(a.encaisse), { couleur: VERT, title: 'Colis livrés : un colis livré est un colis dont l’argent est rentré' })}
         ${tuile('Non encaissé', F(a.nonEncaisse), { couleur: a.nonEncaisse ? ROUGE : undefined, sous: a.nonEncaisse ? 'colis non livrés' : '' })}
       </div>
       <div class="pdj-verif ${r.ok1 ? 'ok' : 'ko'}">${F(a.attendu)} = ${F(a.encaisse)} + ${F(a.nonEncaisse)} ${r.ok1 ? '✓' : '✗ vérifier'}</div>
-      ${a.soldes ? `<div class="pdj-note">+ ${F(a.soldes)} d'articles soldés chez la vendeuse (${a.nbSoldes} colis) : pas d'argent à la porte, rien à reverser.</div>` : ''}
+      ${a.soldes ? `<div class="pdj-note">+ ${F(a.soldes)} d'articles soldés chez le fournisseur (${a.nbSoldes} colis) : pas d'argent à la porte, rien à reverser.</div>` : ''}
     </div>
     <div class="pdj-bloc pdj-clt">
       <div class="pdj-bloc-titre">L'argent de CLT <span>frais de livraison — notre recette</span></div>

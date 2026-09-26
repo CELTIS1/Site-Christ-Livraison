@@ -191,7 +191,7 @@
       return `<div class="ld-qual" data-ld-colis="${esc(c.id)}">
         <div class="ld-qual-tete"><b>${esc(c.livreur || nomLivreur(c.livreur_id))}</b><span>${enClair(c.non_livre_at)} · ${esc(c.numero || '')}</span></div>
         <div class="ld-qual-desc">${esc(c.description || '')}${c.observation ? ` <i>— ${esc(c.observation)}</i>` : ''}</div>
-        <div class="ld-qual-motif">${esc(motifTexte(c.motif_non_livraison))} · ${c.vendeuse_prevenue ? '✅ vendeuse prévenue' : '⚠️ vendeuse pas prévenue'} · ${Number(c.tentatives_livraison || 0)} passage${Number(c.tentatives_livraison || 0) > 1 ? 's' : ''}</div>
+        <div class="ld-qual-motif">${esc(motifTexte(c.motif_non_livraison))} · ${c.vendeuse_prevenue ? '✅ fournisseur prévenu' : '⚠️ fournisseur pas prévenu'} · ${Number(c.tentatives_livraison || 0)} passage${Number(c.tentatives_livraison || 0) > 1 ? 's' : ''}</div>
         <div class="ld-qual-gestes">
           <span class="ld-qual-propose">Le règlement propose : <b>${nonImp ? 'non imputable' : 'imputable'}</b></span>
           <button type="button" class="btn btn-sm ${nonImp ? 'btn-primary' : 'btn-outline'}" data-ld-qualifier="${esc(c.id)}" data-imputable="0">✅ Non imputable</button>
@@ -347,7 +347,7 @@
     const echecs = l.courante.filter(estEchec).sort((a, b) => String(b.non_livre_at || '').localeCompare(String(a.non_livre_at || '')));
     const derniers = l.courante.filter((c) => c.statut === 'livre').sort((a, b) => String(b.livre_at || '').localeCompare(String(a.livre_at || ''))).slice(0, 8);
     const recl = l.reclamations;
-    const sourceLib = { cliente: 'cliente', vendeuse: 'vendeuse', equipe: 'équipe', autre: 'autre' };
+    const sourceLib = { cliente: 'cliente', vendeuse: 'fournisseur', equipe: 'équipe', autre: 'autre' };
     return `
       <div class="ld-fiche-tete">
         <div class="cd-carte-identite">
@@ -369,7 +369,7 @@
       <div class="cd-bloc"><h3 class="panel-subtitle">Ses échecs de la période</h3>
         ${echecs.length ? echecs.map((c) => `<div class="ld-echec">
             <span>${enClair(c.non_livre_at || c.retour_at)} · <b>${esc(c.numero || '')}</b> ${esc(c.description || '')}</span>
-            <span class="ld-echec-motif">${esc(motifTexte(c.motif_non_livraison))} · ${c.vendeuse_prevenue ? '✅ prévenue' : '⚠️ pas prévenue'} · ${c.echec_imputable === false ? '<b class="ld-vert">non imputable</b>' : c.echec_imputable === true ? '<b class="ld-rouge">imputable</b>' : `<button type="button" class="btn btn-sm btn-outline" data-ld-qualifier="${esc(c.id)}" data-imputable="0">Non imputable</button> <button type="button" class="btn btn-sm btn-outline" data-ld-qualifier="${esc(c.id)}" data-imputable="1">Imputable</button>`}</span>
+            <span class="ld-echec-motif">${esc(motifTexte(c.motif_non_livraison))} · ${c.vendeuse_prevenue ? '✅ prévenu' : '⚠️ pas prévenu'} · ${c.echec_imputable === false ? '<b class="ld-vert">non imputable</b>' : c.echec_imputable === true ? '<b class="ld-rouge">imputable</b>' : `<button type="button" class="btn btn-sm btn-outline" data-ld-qualifier="${esc(c.id)}" data-imputable="0">Non imputable</button> <button type="button" class="btn btn-sm btn-outline" data-ld-qualifier="${esc(c.id)}" data-imputable="1">Imputable</button>`}</span>
           </div>`).join('') : '<div class="ess-rien">✓ Aucun échec</div>'}
       </div>
       <div class="cd-bloc"><h3 class="panel-subtitle">Réclamations</h3>
@@ -381,7 +381,7 @@
           </div>`).join('') : '<div class="ess-rien">✓ Aucune réclamation sur la période</div>'}
         <details class="ld-recl-ajout"><summary>+ Enregistrer une réclamation</summary>
           <div class="ld-recl-form">
-            <select id="ld-recl-source"><option value="cliente">D’une cliente</option><option value="vendeuse">D’une vendeuse</option><option value="equipe">De l’équipe</option><option value="autre">Autre</option></select>
+            <select id="ld-recl-source"><option value="cliente">D’une cliente</option><option value="vendeuse">D’un fournisseur</option><option value="equipe">De l’équipe</option><option value="autre">Autre</option></select>
             <input type="date" id="ld-recl-date" value="${aujourdhui()}" max="${aujourdhui()}">
             <textarea id="ld-recl-texte" rows="2" placeholder="Ce qui est reproché, tel que la personne l’a écrit"></textarea>
             <button type="button" class="btn btn-sm btn-primary" data-ld-ajouter="${esc(p.id)}">Enregistrer</button>

@@ -1303,8 +1303,8 @@ function soldesDuColis(c) {
     return { par: (t.nom || 'Inconnu') + (role ? ' (' + role + ')' : ''), le: t.le || null, avantSuivi: false, aLaSaisie: !!t.a_la_saisie };
   };
   const out = [];
-  if (c.article_non_encaisse && montantArticleColis(c)) out.push(Object.assign({ cle: 'article', quoi: 'Article', pourquoi: 'soldé chez la vendeuse : le livreur ne l’encaisse pas', montant: montantArticleColis(c) }, qui('article_non_encaisse')));
-  if (c.livraison_payee && montantLivraisonColis(c)) out.push(Object.assign({ cle: 'livraison', quoi: 'Livraison', pourquoi: 'payée d’avance chez la vendeuse : retenue sur son relevé, pas encaissée par le livreur', montant: montantLivraisonColis(c) }, qui('livraison_payee')));
+  if (c.article_non_encaisse && montantArticleColis(c)) out.push(Object.assign({ cle: 'article', quoi: 'Article', pourquoi: 'soldé chez le fournisseur : le livreur ne l’encaisse pas', montant: montantArticleColis(c) }, qui('article_non_encaisse')));
+  if (c.livraison_payee && montantLivraisonColis(c)) out.push(Object.assign({ cle: 'livraison', quoi: 'Livraison', pourquoi: 'payée d’avance chez le fournisseur : retenue sur son relevé, pas encaissée par le livreur', montant: montantLivraisonColis(c) }, qui('livraison_payee')));
   if (c.statut === 'livre' && !c.livraison_payee && c.livraison_non_encaissee && montantLivraisonColis(c)) out.push(Object.assign({ cle: 'manque', quoi: 'Livraison', pourquoi: 'non encaissée à la remise (manque)', montant: montantLivraisonColis(c) }, qui('livraison_non_encaissee')));
   return out;
 }
@@ -1316,7 +1316,7 @@ function soldeQuandTexte(iso) {
   // L'heure d'Abidjan (UTC) : c'est là que le geste a été fait, et c'est l'heure que lit l'équipe.
   return p(d.getUTCDate()) + '/' + p(d.getUTCMonth() + 1) + ' à ' + p(d.getUTCHours()) + ' h ' + p(d.getUTCMinutes());
 }
-/* Chez la vendeuse (Celtis, 25/09 : « chez la vendeuse ce n'est pas nécessaire, il suffit qu'elle
+/* Chez le fournisseur (Celtis, 25/09 : « chez la vendeuse ce n'est pas nécessaire, il suffit qu'elle
    voie ce qui est soldé ») : ce qui est soldé, sans qui ni quand, et sans le « manque » du livreur,
    qui ne regarde que CLT. `pourCliente` le demande. */
 function soldeTexte(s, pourCliente) {
@@ -1350,7 +1350,7 @@ function soldesResumeHTML(colis) {
   if (!r.nb) return '';
   const m = (n) => formatMontant(n) || '0 FCFA';
   const parts = [];
-  if (r.article) parts.push('articles soldés chez la vendeuse ' + m(r.article));
+  if (r.article) parts.push('articles soldés chez le fournisseur ' + m(r.article));
   if (r.livraison) parts.push('livraisons payées d’avance ' + m(r.livraison));
   if (r.manque) parts.push('livraisons non encaissées ' + m(r.manque));
   return `<div class="soldes-resume"><strong>Pas encaissé par le livreur : ${r.nb} colis</strong> — ${escapeHTML(parts.join(' · '))}.

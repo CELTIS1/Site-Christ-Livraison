@@ -566,7 +566,7 @@
     "items": [
       {
         "name": "Djény Jeans",
-        "role": "Vendeuse en ligne",
+        "role": "Fournisseur en ligne",
         "rating": 5,
         "text": "Si la fiabilité avait un visage, ce serait vous. Vous êtes notre livreur favori !"
       },
@@ -578,7 +578,7 @@
       },
       {
         "name": "Nelly",
-        "role": "Vendeuse, Abidjan",
+        "role": "Fournisseur, Abidjan",
         "rating": 5,
         "text": "Très fiable, rapide et efficace ! Tu es le meilleur."
       },
