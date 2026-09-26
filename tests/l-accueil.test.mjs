@@ -48,5 +48,18 @@ verifier('l\'ouverture décide avec la règle, et le retour au premier plan auss
 verifier('sobriété : l\'accueil lit les chiffres de L\'essentiel, sans relire la base', /window\.__accueilChiffres = /.test(ess) && !/supabaseClient/.test(ecr));
 verifier('même dessin que les raccourcis (un seul langage)', /class="rc-case"/.test(ecr) && /rc-grille/.test(ecr));
 
+console.log('\n5. Le livreur (v293)');
+const liv = lire('app/livreur.html'), lecr = lire('app/livreur-accueil.js');
+const lcols = A.colonnes('livreur', {});
+verifier('trois thèmes : Ma journée, Mon argent, Moi et CLT', lcols.map((c) => c.titre).join('|') === 'Ma journée|Mon argent|Moi et CLT');
+verifier('Ma journée : colis du jour, colis d\'avant, récupérations, à rendre', lcols[0].cases.map((c) => c.id).join(',') === 'du-jour,d-avant,recup,a-rendre');
+verifier('chaque bouton visé existe dans la page du livreur', A.ESPACES.livreur.cases.filter((c) => c.bouton).every((c) => new RegExp('id="' + c.bouton + '"').test(liv)));
+verifier('chaque ancre visée existe', A.ESPACES.livreur.cases.filter((c) => c.ancre && c.ancre !== 'restes').every((c) => new RegExp('id="' + c.ancre + '"').test(liv)));
+verifier('« 2 colis à livrer » ; « 1 encore en route » (alerte) ; « 11 500 F en main »', A.etat('aLivrer', 2).texte === '2 colis à livrer' && A.etat('restes', 1).niveau === 'alerte' && A.etat('enMain', 11500).texte === '11 500 F en main');
+verifier('la phrase du livreur', A.phraseLivreur({ aLivrer: 2, livres: 1, aRecuperer: 1, enMain: 11500 }) === 'Aujourd\'hui : 2 colis à livrer · 1 livré · 1 récupération · 11 500 F en main.');
+verifier('onglet et bouton « Accueil » en tête', /data-clttab="accueil">🏠 Accueil/.test(liv) && /data-nav="accueil"/.test(liv) && /const ONGLETS = \['accueil',/.test(liv));
+verifier('même règle d\'ouverture que le Bureau, retour au premier plan compris', /doitOuvrirSurAccueil\(\{ derniere: livDerniere\(\), lien: livLien \}\)/.test(liv) && /clt:livreur:derniere-activite/.test(liv));
+verifier('sans réseau : l\'accueil ne demande rien à la base', !/supabaseClient/.test(lecr) && /allColis/.test(lecr));
+
 console.log('\n' + reussies + ' réussie(s), ' + echouees + ' échouée(s).');
 if (echouees) process.exit(1);

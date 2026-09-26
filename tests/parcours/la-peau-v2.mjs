@@ -44,7 +44,7 @@ let m = await mesurer();
 verifier('le fond de page est uni, la barre du haut est unie : plus aucun dégradé', m.bodyImage === 'none' && m.topImage === 'none', JSON.stringify([m.bodyImage.slice(0, 40), m.topImage.slice(0, 40)]));
 verifier('la barre du haut est l\'encre du livreur (#BF5210 = rgb(191, 82, 16))', m.topBg === 'rgb(191, 82, 16)', m.topBg);
 verifier('la carte n\'a plus de bordure, mais une ombre', /^0px/.test(m.cardBorder) && m.cardShadow, m.cardBorder);
-verifier('les quatre onglets du haut portent une icône en trait et plus aucun émoji', m.tabs === 4 && m.tabsAvecIcone === 4 && m.tabsAvecEmoji === 0, JSON.stringify([m.tabs, m.tabsAvecIcone, m.tabsAvecEmoji]));
+verifier('les cinq onglets du haut (Accueil compris, 26/09) portent une icône en trait et plus aucun émoji', m.tabs === 5 && m.tabsAvecIcone === 5 && m.tabsAvecEmoji === 0, JSON.stringify([m.tabs, m.tabsAvecIcone, m.tabsAvecEmoji]));
 // « Récupérations » en haut, « Récup. » en bas : le même mot, abrégé là où la place manque (règle du 23/09).
 verifier('le même mot en haut et en bas (Mes colis, Récup., Finance, À rendre)', m.motsTabs.every(mot => m.motsBas.some(b => mot.replace(/[^a-zà-ÿ]/g, '').startsWith(b.replace(/[^a-zà-ÿ]/g, '')))), JSON.stringify([m.motsTabs, m.motsBas]));
 verifier('un bouton plein : aplat encre, sans dégradé, blanc dessus, contraste ≥ 4,5, arrondi 12', !!m.btn && m.btn.image === 'none' && m.btn.bg === 'rgb(191, 82, 16)' && contraste(m.btn.color, m.btn.bg) >= 4.5 && m.btn.radius === '12px', JSON.stringify(m.btn));

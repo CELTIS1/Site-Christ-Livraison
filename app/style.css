@@ -4925,3 +4925,50 @@ html[data-theme="dark"] .colis-partenaire { background: #2C2346; color: #D7C8FF;
 .soldes-resume ul { margin: 6px 0 0; padding-left: 18px; } .soldes-resume li { margin: 3px 0; font-size: 13px; }
 html[data-theme="dark"] .finance-colis-solde, html[data-theme="dark"] .soldes-resume { background: #182A42; color: #BCD4F5; }
 html[data-theme="dark"] .finance-colis-solde--manque { background: #3A2A18; color: #F5C38E; }
+
+/* LES CASES ET L'ACCUEIL, communs à tous les espaces (26/09/2026, lot AC) : raccourcis, accueil du Bureau, du livreur,
+   de la cliente, d'Express — un seul dessin (charte : un seul langage). Venus de equipe.html. */
+.rc-grille{ display:grid; grid-template-columns:repeat(auto-fit, minmax(230px, 1fr)); gap:14px; }
+.rc-col{ --rc:#1B4374; --rc-fond:#EEF3F9; border-radius:16px; background:var(--rc-fond); padding:12px; border-top:4px solid var(--rc); }
+.rc-col--aujourdhui{ --rc:#C2410C; --rc-fond:#FFF4EC; } .rc-col--argent{ --rc:#15803D; --rc-fond:#EFF8F2; } .rc-col--equipe{ --rc:#1D4ED8; --rc-fond:#EEF3FE; } .rc-col--site{ --rc:#7C3AED; --rc-fond:#F4EFFE; }
+.rc-col-tete{ display:flex; gap:10px; align-items:center; margin:2px 2px 10px; }
+.rc-col-icone{ font-size:20px; } .rc-col-tete strong{ display:block; color:var(--rc); font-size:15px; } .rc-col-tete span{ font-size:12px; color:#5B6573; }
+.rc-cases{ display:flex; flex-direction:column; gap:8px; }
+.rc-case{ display:flex; gap:10px; align-items:flex-start; text-align:left; width:100%; min-height:56px; padding:10px 12px; border-radius:12px; border:1px solid rgba(0,0,0,.06); background:#fff; cursor:pointer; font:inherit; color:#1F2937; transition:transform .12s ease, box-shadow .12s ease, border-color .12s ease; }
+.rc-case:hover, .rc-case:focus-visible{ transform:translateY(-2px); box-shadow:0 8px 18px rgba(18,48,90,.10); border-color:var(--rc); outline:none; }
+.rc-case-icone{ font-size:20px; line-height:1.2; flex:none; }
+.rc-case-txt{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+.rc-case-txt strong{ font-size:14px; } .rc-case-txt small{ font-size:12px; color:#5B6573; }
+.rc-etat{ align-self:flex-start; margin-top:4px; font-size:12px; font-weight:700; padding:2px 9px; border-radius:999px; }
+.rc-etat--alerte{ background:#FDE8E6; color:#9F1F16; } .rc-etat--info{ background:#FEF3C7; color:#7A4A04; } .rc-etat--ok{ background:#E3F4EC; color:#11663F; } .rc-etat--attente{ background:#EEF1F5; color:#5B6573; }
+.ac-page{ max-width:1180px; margin:0 auto; padding:4px 0 24px; }
+.ac-tete{ margin:4px 2px 14px; }
+.ac-bonjour{ margin:0; font-size:26px; line-height:1.2; color:#123252; }
+.ac-phrase{ margin:6px 0 0; font-size:15px; color:#3F4A59; }
+.ac-chiffres{ display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:10px; margin:0 0 16px; }
+.ac-chiffre{ background:#fff; border:1px solid #E3E8EF; border-radius:14px; padding:12px 14px; display:flex; flex-direction:column; gap:2px; }
+.ac-chiffre-n{ font-size:26px; font-weight:800; color:#123252; line-height:1.1; font-variant-numeric:tabular-nums; }
+.ac-chiffre-l{ font-size:13px; color:#5B6573; }
+.ac-chiffre--vert .ac-chiffre-n{ color:#11663F; } .ac-chiffre--rouge .ac-chiffre-n{ color:#B42318; } .ac-chiffre--ambre .ac-chiffre-n{ color:#9A4A06; }
+.rc-col--colis{ --rc:#C2410C; --rc-fond:#FFF4EC; } .rc-col--points{ --rc:#0F766E; --rc-fond:#ECF7F5; }
+.rc-etat--neutre{ background:#EEF1F5; color:#3F4A59; }
+html[data-theme="dark"] .ac-bonjour, html[data-theme="dark"] .ac-chiffre-n{ color:#E6ECF3; }
+html[data-theme="dark"] .ac-phrase, html[data-theme="dark"] .ac-chiffre-l{ color:#AEBBCB; }
+html[data-theme="dark"] .ac-chiffre{ background:#0F1722; border-color:#2A3849; }
+html[data-theme="dark"] .ac-chiffre--vert .ac-chiffre-n{ color:#93E2B8; } html[data-theme="dark"] .ac-chiffre--rouge .ac-chiffre-n{ color:#F6B8B1; } html[data-theme="dark"] .ac-chiffre--ambre .ac-chiffre-n{ color:#FCD98A; }
+html[data-theme="dark"] .rc-col--colis{ --rc:#FB923C; } html[data-theme="dark"] .rc-col--points{ --rc:#5EEAD4; }
+html[data-theme="dark"] .rc-etat--neutre{ background:#1E2A3A; color:#C9D4E1; }
+html[data-theme="dark"] .rc-col{ --rc-fond:#141F2E; } html[data-theme="dark"] .rc-col--aujourdhui{ --rc:#FB923C; } html[data-theme="dark"] .rc-col--argent{ --rc:#4ADE80; } html[data-theme="dark"] .rc-col--equipe{ --rc:#93C5FD; } html[data-theme="dark"] .rc-col--site{ --rc:#C4B5FD; }
+html[data-theme="dark"] .rc-case{ background:#0F1722; border-color:#2A3849; color:#E6ECF3; }
+html[data-theme="dark"] .rc-etat--alerte{ background:#3A1D1B; color:#F6B8B1; } html[data-theme="dark"] .rc-etat--info{ background:#3A2A10; color:#FCD98A; } html[data-theme="dark"] .rc-etat--ok{ background:#16352A; color:#93E2B8; } html[data-theme="dark"] .rc-etat--attente{ background:#1E2A3A; color:#AEBBCB; }
+@media (max-width:760px){
+  .ac-bonjour{ font-size:22px; } .ac-phrase{ font-size:14px; }
+  .ac-chiffres{ grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px; margin-bottom:12px; }
+  .ac-chiffre{ padding:10px 12px; } .ac-chiffre-n{ font-size:22px; }
+}
+@media (max-width:760px){.rc-grille{ grid-template-columns:1fr; gap:10px; }}
+@media (max-width:760px){.rc-cases{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }}
+@media (max-width:760px){.rc-case{ flex-direction:column; gap:4px; min-height:84px; }}
+html[data-theme="dark"] .rc-col-tete span, html[data-theme="dark"] .rc-case-txt small{ color:#AEBBCB; }
+.ac-chiffre-n--petit{ font-size:20px; }
+@media (prefers-reduced-motion: reduce){ .rc-case{ transition:none; } }

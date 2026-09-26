@@ -69,7 +69,34 @@
       { id: 'bureau', col: 'equipe', icone: '🏛️', titre: 'Tout le Bureau', sous: 'Gestion complète', equipe: 'bureau', bureau: true },
     ],
   };
-  const ESPACES = { bureau: BUREAU };
+  /* ---------------------------------------------------------------------------------------
+     LE LIVREUR (lot AC, v293). Il ouvre l'application vingt fois par jour : l'accueil ne vient
+     qu'au premier lancement du jour ou après une pause (même règle). Tout se lit dans les colis
+     déjà sur le téléphone : l'accueil marche sans réseau.
+     Chaque case : onglet (mes, recup, finance, retours), filtre de « Mes colis », ancre, ou bouton du menu.
+     --------------------------------------------------------------------------------------- */
+  const LIVREUR = {
+    colonnes: [
+      { cle: 'colis', titre: 'Ma journée', icone: '📦', sous: 'Livrer, récupérer, rendre' },
+      { cle: 'argent', titre: 'Mon argent', icone: '💰', sous: 'En main, mon point, mon mois' },
+      { cle: 'equipe', titre: 'Moi et CLT', icone: '🤝', sous: 'Mon dossier, de l\'aide' },
+    ],
+    cases: [
+      { id: 'du-jour', col: 'colis', icone: '🛵', titre: 'Colis du jour', sous: 'Ceux d\'aujourd\'hui seulement', onglet: 'mes', filtre: 'a_faire', compteur: 'aLivrer' },
+      { id: 'd-avant', col: 'colis', icone: '⏳', titre: 'Colis d\'avant', sous: 'Encore en route des jours passés', onglet: 'mes', filtre: 'a_faire', ancre: 'restes', compteur: 'restes' },
+      { id: 'recup', col: 'colis', icone: '🔄', titre: 'Récupérations', sous: 'Chez qui je passe', onglet: 'recup', compteur: 'aRecuperer' },
+      { id: 'a-rendre', col: 'colis', icone: '↩️', titre: 'À rendre', sous: 'Retours encore dans mon sac', onglet: 'retours', compteur: 'aRendre' },
+
+      { id: 'en-main', col: 'argent', icone: '💵', titre: 'Argent en main', sous: 'Ce que je remets à CLT', onglet: 'finance', compteur: 'enMain' },
+      { id: 'mon-point', col: 'argent', icone: '🧾', titre: 'Mon point du jour', sous: 'Le détail, le PDF', onglet: 'finance', ancre: 'btn-point-pdf' },
+      { id: 'mon-mois', col: 'argent', icone: '🏆', titre: 'Mon mois', sous: 'Mes chiffres, mes primes', onglet: 'finance', ancre: 'mon-mois' },
+
+      { id: 'dossier', col: 'equipe', icone: '🪪', titre: 'Mon dossier CLT', sous: 'Mes pièces, mon badge', bouton: 'btn-mon-dossier' },
+      { id: 'signaler', col: 'equipe', icone: '⚠️', titre: 'Signaler un problème', sous: 'Le bureau le lit tout de suite', bouton: 'btn-signaler-livreur' },
+      { id: 'appeler', col: 'equipe', icone: '📞', titre: 'Appeler CLT', sous: 'Le bureau', bouton: 'lien-appeler-clt' },
+    ],
+  };
+  const ESPACES = { bureau: BUREAU, livreur: LIVREUR };
 
   function visibles(espace, droits) {
     const d = droits || {};
@@ -104,6 +131,12 @@
       case 'manque': return n > 0 ? { niveau: 'alerte', texte: pl(n, 'chose à régler', 'choses à régler') } : { niveau: 'ok', texte: 'Rien ne manque' };
       case 'carburant': return n > 0 ? { niveau: 'alerte', texte: pl(n, 'alerte', 'alertes') } : { niveau: 'ok', texte: 'Dans la règle' };
       case 'aFaire': return n > 0 ? { niveau: 'info', texte: pl(n, 'geste en attente', 'gestes en attente') } : { niveau: 'ok', texte: 'Rien à faire' };
+      // Le livreur
+      case 'aLivrer': return n > 0 ? { niveau: 'info', texte: pl(n, 'colis à livrer', 'colis à livrer') } : { niveau: 'ok', texte: 'Rien à livrer' };
+      case 'restes': return n > 0 ? { niveau: 'alerte', texte: pl(n, 'encore en route', 'encore en route') } : { niveau: 'ok', texte: 'Rien d\'avant' };
+      case 'aRecuperer': return n > 0 ? { niveau: 'info', texte: pl(n, 'à récupérer', 'à récupérer') } : { niveau: 'neutre', texte: 'Rien à récupérer' };
+      case 'aRendre': return n > 0 ? { niveau: 'alerte', texte: pl(n, 'retour à rendre', 'retours à rendre') } : { niveau: 'ok', texte: 'Rien à rendre' };
+      case 'enMain': return n > 0 ? { niveau: 'info', texte: F(n) + ' en main' } : { niveau: 'ok', texte: 'Rien en main' };
       default: return null;
     }
   }
@@ -120,10 +153,21 @@
     return 'Aujourd\'hui : ' + morceaux.join(' · ') + '.';
   }
 
+  function phraseLivreur(c) {
+    const x = c || {};
+    const morceaux = [];
+    if (x.aLivrer != null) morceaux.push(Number(x.aLivrer) > 0 ? pl(Number(x.aLivrer), 'colis à livrer', 'colis à livrer') : 'rien à livrer');
+    if (Number(x.livres) > 0) morceaux.push(pl(Number(x.livres), 'livré', 'livrés'));
+    if (Number(x.aRecuperer) > 0) morceaux.push(pl(Number(x.aRecuperer), 'récupération', 'récupérations'));
+    if (Number(x.enMain) > 0) morceaux.push(F(x.enMain) + ' en main');
+    if (!morceaux.length) return 'Voici votre journée.';
+    return 'Aujourd\'hui : ' + morceaux.join(' · ') + '.';
+  }
+
   function salutation(heure) {
     const h = Number(heure);
     return (h >= 18 || h < 4) ? 'Bonsoir' : 'Bonjour';
   }
 
-  racine.CLTAccueil = { PAUSE_MINUTES, ESPACES, doitOuvrirSurAccueil, visibles, colonnes, etat, phraseBureau, salutation, F };
+  racine.CLTAccueil = { PAUSE_MINUTES, ESPACES, doitOuvrirSurAccueil, visibles, colonnes, etat, phraseBureau, phraseLivreur, salutation, F };
 })(typeof window !== 'undefined' ? window : globalThis);

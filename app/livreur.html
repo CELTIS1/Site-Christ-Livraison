@@ -19,13 +19,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260926accueil">
+<link rel="stylesheet" href="style.css?v=20260926livreur">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260926accueil"></script>
+<script src="theme.js?v=20260926livreur"></script>
 <!-- La cloche 🔔 des notifications reçues (23/09/2026) : règle + écran, se posent seuls dans la barre du haut. -->
-<script src="notifications-recues.js?v=20260926accueil" defer></script>
-<script src="cloche.js?v=20260926accueil" defer></script>
-<script src="splash.js?v=20260926accueil"></script>
+<script src="notifications-recues.js?v=20260926livreur" defer></script>
+<script src="cloche.js?v=20260926livreur" defer></script>
+<script src="splash.js?v=20260926livreur"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Livreur (orange) — additif, non destructif
@@ -663,6 +663,9 @@
   html[data-theme="dark"] .mes-vue-btn{ color:#C9D3DF; }
   html[data-theme="dark"] .mes-vue-btn.active{ background:#0F1824; color:#9CC2F5; box-shadow:none; }
   html[data-theme="dark"] .mes-trajet-resume{ background:#16212E; border-color:#2A3849; color:#C9D3DF; }
+  /* L'Accueil (26/09/2026, lot AC) : la page du livreur est étroite ; dès la tablette, « Ma journée » et « Mon argent »
+     côte à côte, et « Moi et CLT » en bandeau dessous, ses trois cases sur une ligne. */
+  @media (min-width:761px){ #panel-accueil .rc-grille{ grid-template-columns:repeat(2, minmax(0, 1fr)); } #panel-accueil .rc-col--equipe{ grid-column:1 / -1; } #panel-accueil .rc-col--equipe .rc-cases{ display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); } }
 </style>
 <!-- Bibliothèque figée le 19 août 2026 : version exacte + empreinte de contrôle (SRI).
      Le navigateur recalcule l'empreinte du fichier reçu et refuse de l'exécuter si elle
@@ -673,7 +676,7 @@
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <!-- La peau v2 (25/09/2026, lot 18) : chargée EN DERNIER, elle recouvre style.css et le style de la page. -->
 <style>:root{ --clt-accent-encre:#BF5210; }</style>
-<link rel="stylesheet" href="peau.css?v=20260926accueil">
+<link rel="stylesheet" href="peau.css?v=20260926livreur">
 </head>
 <body>
 
@@ -940,6 +943,8 @@
 
   <div class="clt-toptabs-wrap">
   <div class="clt-toptabs" role="tablist">
+  <!-- L'ACCUEIL (26/09/2026, lot AC) : la journée en un coup d'œil ; chaque case mène à son écran. -->
+  <button type="button" class="clt-toptab" data-clttab="accueil">🏠 Accueil</button>
   <button type="button" class="clt-toptab active" data-clttab="mes">📦 Mes colis</button>
   <button type="button" class="clt-toptab" data-clttab="recup">🔄 Récupérations <span class="clttab-badge hidden" id="recup-badge-top"></span></button>
   <button type="button" class="clt-toptab" data-clttab="finance">💰 Finance</button>
@@ -955,6 +960,7 @@
          barre segmentée du haut. Retirée le 05/09/2026 : code mort. Sa pastille #recup-badge
          est partie sur le bouton « Récup. » de la barre du bas. -->
 
+    <div id="panel-accueil" class="hidden" aria-live="polite"></div>
     <div id="panel-mes" data-aide-panneau="livreur-livrer">
       <!-- Libellés raccourcis pour que la ligne tienne sur UNE ligne : à quatre éléments et
            390 px de large, « Toutes les dates » et « Sélection multiple » la faisaient se
@@ -1073,32 +1079,33 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260926accueil"></script>
-<script src="assistant.js?v=20260926accueil"></script>
-<script src="numero-international.js?v=20260926accueil"></script>
-<script src="voir-un-compte.js?v=20260926accueil"></script>
-<script src="lib/bibliotheques.js?v=20260926accueil"></script>
-<script src="lib/retours.js?v=20260926accueil"></script>
-<script src="lib/reclamations.js?v=20260926accueil"></script>
-<script src="lib/communes-et-tarifs.js?v=20260926accueil"></script>
-<script src="lib/argent.js?v=20260926accueil"></script>
-<script src="lib/releve-cliente.js?v=20260926accueil"></script>
-<script src="lib/papier-a-en-tete.js?v=20260926accueil"></script>
-<script src="lib/briques-argent.js?v=20260926accueil"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260926accueil"></script>
-<script src="lib/traces-de-report.js?v=20260926accueil"></script>
-<script src="lib/annonce-de-remise.js?v=20260926accueil"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260926accueil"></script>
-<script src="lib/primes.js?v=20260926accueil"></script>
-<script src="lib/doublons.js?v=20260926accueil"></script>
-<script src="config.js?v=20260926accueil"></script>
-<script src="avance-de-travail.js?v=20260926accueil"></script>
-<script src="etiquettes-et-scan.js?v=20260926accueil"></script>
+<script src="clt-common.js?v=20260926livreur"></script>
+<script src="assistant.js?v=20260926livreur"></script>
+<script src="numero-international.js?v=20260926livreur"></script>
+<script src="voir-un-compte.js?v=20260926livreur"></script>
+<script src="lib/bibliotheques.js?v=20260926livreur"></script>
+<script src="lib/retours.js?v=20260926livreur"></script>
+<script src="lib/reclamations.js?v=20260926livreur"></script>
+<script src="lib/communes-et-tarifs.js?v=20260926livreur"></script>
+<script src="lib/argent.js?v=20260926livreur"></script>
+<script src="lib/releve-cliente.js?v=20260926livreur"></script>
+<script src="lib/papier-a-en-tete.js?v=20260926livreur"></script>
+<script src="lib/briques-argent.js?v=20260926livreur"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260926livreur"></script>
+<script src="lib/traces-de-report.js?v=20260926livreur"></script>
+<script src="lib/annonce-de-remise.js?v=20260926livreur"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260926livreur"></script>
+<script src="lib/primes.js?v=20260926livreur"></script>
+<script src="lib/doublons.js?v=20260926livreur"></script>
+<script src="config.js?v=20260926livreur"></script>
+<script src="accueil.js?v=20260926livreur"></script>
+<script src="avance-de-travail.js?v=20260926livreur"></script>
+<script src="etiquettes-et-scan.js?v=20260926livreur"></script>
 <!-- L'ordre de passage des livraisons (20/09/2026) : après config.js, il ne sort pas de lui. -->
-<script src="ordre-de-livraison.js?v=20260926accueil"></script>
-<script src="biometric-lock.js?v=20260926accueil"></script>
-<script src="dossier-du-livreur.js?v=20260926accueil"></script>
-<script src="mon-dossier-livreur.js?v=20260926accueil"></script>
+<script src="ordre-de-livraison.js?v=20260926livreur"></script>
+<script src="biometric-lock.js?v=20260926livreur"></script>
+<script src="dossier-du-livreur.js?v=20260926livreur"></script>
+<script src="mon-dossier-livreur.js?v=20260926livreur"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -1869,7 +1876,7 @@
   // jusqu'au 25 août 2026 : un téléphone qui a gardé l'ancien nom en mémoire est réorienté
   // vers le nouveau, pour ne pas renvoyer sur « Mes colis » quelqu'un qui avait laissé son
   // application sur le troisième onglet.
-  const ONGLETS = ['mes', 'recup', 'finance'];
+  const ONGLETS = ['accueil', 'mes', 'recup', 'finance'];   // accueil : lot AC, 26/09/2026
   function normaliserOnglet(nom){
     if (nom === 'tous') return 'finance';
     return ONGLETS.includes(nom) ? nom : 'mes';
@@ -1880,6 +1887,10 @@
     activePanel = which;
     // L'ancienne barre .tabs interne n'existe plus (05/09/2026) : seuls les panneaux, la barre
     // segmentée du haut et la barre du bas suivent l'onglet.
+    document.getElementById('panel-accueil')?.classList.toggle('hidden', which !== 'accueil');
+    // Sur l'Accueil, « Ma journée » est déjà dite en tête : la carte du haut s'efface (26/09/2026, lot AC).
+    document.getElementById('ma-journee-card')?.classList.toggle('hidden', which === 'accueil');
+    if (which === 'accueil' && window.CLTAccueilLivreur) window.CLTAccueilLivreur.dessiner();
     document.getElementById('panel-mes').classList.toggle('hidden', which !== 'mes');
     document.getElementById('panel-recup').classList.toggle('hidden', which !== 'recup');
     document.getElementById('panel-finance').classList.toggle('hidden', which !== 'finance');
@@ -3940,6 +3951,7 @@
     renderMesColis(options);
     renderRecuperations();
     renderMaTournee();
+    if (window.CLTAccueilLivreur && activePanel === 'accueil') window.CLTAccueilLivreur.dessiner();   // l'accueil suit chaque colis
     if (currentUser && currentProfile) updatePositionSharingFromColis();
   }
 
@@ -5564,12 +5576,17 @@
 
 <!-- Barre de navigation basse (mobile) : raccourcis vers les mêmes sections que les onglets. -->
 <nav class="clt-bottomnav" id="clt-bottomnav" aria-label="Navigation">
-  <button type="button" class="nav active" data-nav="mes">
+  <!-- L'ACCUEIL (26/09/2026, lot AC). « Mes colis » portait déjà l'icône d'une maison : elle revient à l'Accueil, Mes colis prend le colis. -->
+  <button type="button" class="nav" data-nav="accueil">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>
+    Accueil
+  </button>
+  <button type="button" class="nav active" data-nav="mes">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7 12 12l8.7-5"/></svg>
     Mes colis
   </button>
   <button type="button" class="nav" data-nav="recup">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7 12 12l8.7-5"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8"/><path d="M4 3v5h5"/><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16"/><path d="M20 21v-5h-5"/></svg>
     Récup.
     <!-- Pastille orange du nombre de récupérations à faire ; remplie par renderRecuperations().
          L'id recup-badge vient de l'ancienne barre .tabs, retirée le 05/09/2026. -->
@@ -5617,13 +5634,31 @@
         }
       });
     });
-    // Restaure le dernier onglet consulté après un rechargement.
+    // Restaure le dernier onglet consulté après un rechargement — sauf au premier lancement du jour ou
+    // après une pause de plus de 30 minutes : l'Accueil (26/09/2026, lot AC ; règle dans accueil.js).
+    // Une notification (?colis=…) ouvre toujours ce qu'elle annonce.
+    const LIV_CLE_ACTIVITE = 'clt:livreur:derniere-activite';
+    let livDerniereNote = 0;
+    const livNoter = () => { const t = Date.now(); if (t - livDerniereNote < 15000) return; livDerniereNote = t; try { localStorage.setItem(LIV_CLE_ACTIVITE, String(t)); } catch(e){} };
+    const livDerniere = () => { try { return Number(localStorage.getItem(LIV_CLE_ACTIVITE)) || 0; } catch(e){ return 0; } };
+    const livLien = /[?&](colis|voir|onglet)=/.test(location.search);
+    const livAccueil = !!window.CLTAccueil && window.CLTAccueil.doitOuvrirSurAccueil({ derniere: livDerniere(), lien: livLien });
     try {
       const saved = localStorage.getItem('clt_livreur_tab');
-      if (saved && typeof showTab === 'function') {
+      if (livAccueil && typeof showTab === 'function') showTab('accueil');
+      else if (saved && typeof showTab === 'function') {
         showTab(saved); // showTab() traduit lui-même l'ancien nom « tous » en « finance »
       }
     } catch(e){}
+    livNoter();
+    // Revenue au premier plan après une longue pause : l'Accueil, sauf si une fenêtre est ouverte.
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') { livDerniereNote = 0; livNoter(); return; }
+      const fenetre = [...document.querySelectorAll('[data-clt-couche], [aria-modal="true"]')].some(el => { const st = getComputedStyle(el); return st.display !== 'none' && st.visibility !== 'hidden' && !el.hidden; });
+      if (window.CLTAccueil && window.CLTAccueil.doitOuvrirSurAccueil({ derniere: livDerniere() }) && !fenetre) showTab('accueil');
+      else livNoter();
+    });
+    ['pointerdown', 'keydown'].forEach(t => document.addEventListener(t, livNoter, { passive: true }));
 
     // Onglet réellement affiché (hors « Compte », qui est une fenêtre modale et non un panneau).
     function currentContentTab(){
@@ -5670,5 +5705,6 @@
   // Initialise l'état actif de la barre du haut au chargement
   showTab(activePanel || 'mes');
 </script>
+<script src="livreur-accueil.js?v=20260926livreur"></script>
 </body>
 </html>

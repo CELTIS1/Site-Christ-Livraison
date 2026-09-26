@@ -22,13 +22,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260926accueil">
+<link rel="stylesheet" href="style.css?v=20260926livreur">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260926accueil"></script>
+<script src="theme.js?v=20260926livreur"></script>
 <!-- La cloche 🔔 des notifications reçues (23/09/2026) : règle + écran, se posent seuls dans la barre du haut. -->
-<script src="notifications-recues.js?v=20260926accueil" defer></script>
-<script src="cloche.js?v=20260926accueil" defer></script>
-<script src="splash.js?v=20260926accueil"></script>
+<script src="notifications-recues.js?v=20260926livreur" defer></script>
+<script src="cloche.js?v=20260926livreur" defer></script>
+<script src="splash.js?v=20260926livreur"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Équipe (navy) — additif, non destructif
@@ -262,7 +262,7 @@
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <!-- La peau v2 (25/09/2026, lot 18) : chargée EN DERNIER, elle recouvre style.css et le style de la page. -->
 <style>:root{ --clt-accent-encre:#1B4374; }</style>
-<link rel="stylesheet" href="peau.css?v=20260926accueil">
+<link rel="stylesheet" href="peau.css?v=20260926livreur">
 </head>
 <body>
 
@@ -1770,65 +1770,24 @@ html[data-theme="dark"] #section-clients .cd-periodes button.active, html[data-t
 .rc-tete{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:14px; }
 .rc-tete h2{ margin:0; font-size:20px; color:#123252; } .rc-tete p{ margin:2px 0 0; font-size:13px; color:#5B6573; }
 .rc-fermer{ width:44px; height:44px; flex:none; border-radius:50%; border:1px solid #E3E8EF; background:#F6F8FB; font-size:18px; font-weight:700; color:#123252; cursor:pointer; }
-.rc-grille{ display:grid; grid-template-columns:repeat(auto-fit, minmax(230px, 1fr)); gap:14px; }
-.rc-col{ --rc:#1B4374; --rc-fond:#EEF3F9; border-radius:16px; background:var(--rc-fond); padding:12px; border-top:4px solid var(--rc); }
-.rc-col--aujourdhui{ --rc:#C2410C; --rc-fond:#FFF4EC; } .rc-col--argent{ --rc:#15803D; --rc-fond:#EFF8F2; } .rc-col--equipe{ --rc:#1D4ED8; --rc-fond:#EEF3FE; } .rc-col--site{ --rc:#7C3AED; --rc-fond:#F4EFFE; }
-.rc-col-tete{ display:flex; gap:10px; align-items:center; margin:2px 2px 10px; }
-.rc-col-icone{ font-size:20px; } .rc-col-tete strong{ display:block; color:var(--rc); font-size:15px; } .rc-col-tete span{ font-size:12px; color:#5B6573; }
-.rc-cases{ display:flex; flex-direction:column; gap:8px; }
-.rc-case{ display:flex; gap:10px; align-items:flex-start; text-align:left; width:100%; min-height:56px; padding:10px 12px; border-radius:12px; border:1px solid rgba(0,0,0,.06); background:#fff; cursor:pointer; font:inherit; color:#1F2937; transition:transform .12s ease, box-shadow .12s ease, border-color .12s ease; }
-.rc-case:hover, .rc-case:focus-visible{ transform:translateY(-2px); box-shadow:0 8px 18px rgba(18,48,90,.10); border-color:var(--rc); outline:none; }
-.rc-case-icone{ font-size:20px; line-height:1.2; flex:none; }
-.rc-case-txt{ display:flex; flex-direction:column; gap:2px; min-width:0; }
-.rc-case-txt strong{ font-size:14px; } .rc-case-txt small{ font-size:12px; color:#5B6573; }
-.rc-etat{ align-self:flex-start; margin-top:4px; font-size:12px; font-weight:700; padding:2px 9px; border-radius:999px; }
-.rc-etat--alerte{ background:#FDE8E6; color:#9F1F16; } .rc-etat--info{ background:#FEF3C7; color:#7A4A04; } .rc-etat--ok{ background:#E3F4EC; color:#11663F; } .rc-etat--attente{ background:#EEF1F5; color:#5B6573; }
 .rc-plus-badge{ position:absolute; top:4px; right:calc(50% - 22px); min-width:18px; height:18px; padding:0 5px; border-radius:999px; background:#DC2626; color:#fff; font-size:11px; font-weight:800; line-height:18px; text-align:center; }
 #bottomnav-plus, #eqtab-btn-raccourcis{ position:relative; }
 #eqtab-btn-raccourcis .rc-plus-badge{ position:static; margin-left:6px; display:inline-block; }
 .clt-toptab--raccourcis{ margin-left:auto; }
 /* L'ACCUEIL (26/09/2026, lot AC) : même dessin que les raccourcis (.rc-*), posé dans la page. */
-.ac-page{ max-width:1180px; margin:0 auto; padding:4px 0 24px; }
-.ac-tete{ margin:4px 2px 14px; }
-.ac-bonjour{ margin:0; font-size:26px; line-height:1.2; color:#123252; }
-.ac-phrase{ margin:6px 0 0; font-size:15px; color:#3F4A59; }
-.ac-chiffres{ display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:10px; margin:0 0 16px; }
-.ac-chiffre{ background:#fff; border:1px solid #E3E8EF; border-radius:14px; padding:12px 14px; display:flex; flex-direction:column; gap:2px; }
-.ac-chiffre-n{ font-size:26px; font-weight:800; color:#123252; line-height:1.1; font-variant-numeric:tabular-nums; }
-.ac-chiffre-l{ font-size:13px; color:#5B6573; }
-.ac-chiffre--vert .ac-chiffre-n{ color:#11663F; } .ac-chiffre--rouge .ac-chiffre-n{ color:#B42318; } .ac-chiffre--ambre .ac-chiffre-n{ color:#9A4A06; }
 /* Six entrées dans la barre du bas depuis l'Accueil : sous 380 px, les libellés se resserrent pour tenir sur une ligne. */
 @media (max-width:380px){ html .clt-bottomnav .nav{ font-size:10px !important; letter-spacing:-.1px; padding:0 !important; } html .clt-bottomnav .nav svg{ width:22px !important; height:22px !important; } }
-.rc-col--colis{ --rc:#C2410C; --rc-fond:#FFF4EC; } .rc-col--points{ --rc:#0F766E; --rc-fond:#ECF7F5; }
-.rc-etat--neutre{ background:#EEF1F5; color:#3F4A59; }
-html[data-theme="dark"] .ac-bonjour, html[data-theme="dark"] .ac-chiffre-n{ color:#E6ECF3; }
-html[data-theme="dark"] .ac-phrase, html[data-theme="dark"] .ac-chiffre-l{ color:#AEBBCB; }
-html[data-theme="dark"] .ac-chiffre{ background:#0F1722; border-color:#2A3849; }
-html[data-theme="dark"] .ac-chiffre--vert .ac-chiffre-n{ color:#93E2B8; } html[data-theme="dark"] .ac-chiffre--rouge .ac-chiffre-n{ color:#F6B8B1; } html[data-theme="dark"] .ac-chiffre--ambre .ac-chiffre-n{ color:#FCD98A; }
-html[data-theme="dark"] .rc-col--colis{ --rc:#FB923C; } html[data-theme="dark"] .rc-col--points{ --rc:#5EEAD4; }
-html[data-theme="dark"] .rc-etat--neutre{ background:#1E2A3A; color:#C9D4E1; }
-@media (max-width:760px){
-  .ac-bonjour{ font-size:22px; } .ac-phrase{ font-size:14px; }
-  .ac-chiffres{ grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px; margin-bottom:12px; }
-  .ac-chiffre{ padding:10px 12px; } .ac-chiffre-n{ font-size:22px; }
-}
 .eq-observateur-choix{ display:flex; gap:10px; align-items:flex-start; min-height:44px; padding:10px 12px; margin:4px 0 12px; border-radius:12px; background:#FFF4E0; color:#5C3300; border:1.5px solid #F2C27B; font-size:13.5px; line-height:1.4; cursor:pointer; }
 .eq-observateur-choix input{ width:20px; height:20px; margin-top:1px; flex:none; accent-color:#C45A00; }
 html[data-theme="dark"] .eq-observateur-choix{ background:#2A1E0B; color:#FFE1B3; border-color:#7A5520; }
 @media (max-width:760px){
   .rc-panneau{ left:0; right:0; top:auto; bottom:calc(60px + env(safe-area-inset-bottom)); transform:none; width:auto; max-height:calc(100dvh - 130px); border-radius:18px 18px 0 0; padding:14px 12px 16px; animation:rc-monte .22s ease-out; }
   @keyframes rc-monte{ from{ transform:translateY(24px); opacity:0; } to{ transform:none; opacity:1; } }
-  .rc-grille{ grid-template-columns:1fr; gap:10px; }
-  .rc-cases{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-  .rc-case{ flex-direction:column; gap:4px; min-height:84px; }
 }
 @media (prefers-reduced-motion: reduce){ .rc-panneau{ animation:none; } .rc-case{ transition:none; } }
 html[data-theme="dark"] .rc-panneau{ background:#0F1824; box-shadow:0 24px 60px rgba(0,0,0,.6); }
 html[data-theme="dark"] .rc-tete h2{ color:#E6ECF3; } html[data-theme="dark"] .rc-tete p, html[data-theme="dark"] .rc-col-tete span, html[data-theme="dark"] .rc-case-txt small{ color:#AEBBCB; }
 html[data-theme="dark"] .rc-fermer{ background:#141F2E; border-color:#2A3849; color:#E6ECF3; }
-html[data-theme="dark"] .rc-col{ --rc-fond:#141F2E; } html[data-theme="dark"] .rc-col--aujourdhui{ --rc:#FB923C; } html[data-theme="dark"] .rc-col--argent{ --rc:#4ADE80; } html[data-theme="dark"] .rc-col--equipe{ --rc:#93C5FD; } html[data-theme="dark"] .rc-col--site{ --rc:#C4B5FD; }
-html[data-theme="dark"] .rc-case{ background:#0F1722; border-color:#2A3849; color:#E6ECF3; }
-html[data-theme="dark"] .rc-etat--alerte{ background:#3A1D1B; color:#F6B8B1; } html[data-theme="dark"] .rc-etat--info{ background:#3A2A10; color:#FCD98A; } html[data-theme="dark"] .rc-etat--ok{ background:#16352A; color:#93E2B8; } html[data-theme="dark"] .rc-etat--attente{ background:#1E2A3A; color:#AEBBCB; }
 </style>
 <div class="card" id="section-clients">
 <div class="cd-barre">
@@ -1903,54 +1862,54 @@ html[data-theme="dark"] .rc-etat--alerte{ background:#3A1D1B; color:#F6B8B1; } h
   </div>
 </div>
 
-<script src="clt-common.js?v=20260926accueil"></script>
-<script src="assistant.js?v=20260926accueil"></script>
-<script src="observateur.js?v=20260926accueil"></script>
-<script src="numero-international.js?v=20260926accueil"></script>
-<script src="voir-un-compte.js?v=20260926accueil"></script>
-<script src="lib/bibliotheques.js?v=20260926accueil"></script>
-<script src="lib/retours.js?v=20260926accueil"></script>
-<script src="lib/reclamations.js?v=20260926accueil"></script>
-<script src="lib/communes-et-tarifs.js?v=20260926accueil"></script>
-<script src="lib/argent.js?v=20260926accueil"></script>
-<script src="lib/releve-cliente.js?v=20260926accueil"></script>
-<script src="lib/papier-a-en-tete.js?v=20260926accueil"></script>
-<script src="lib/briques-argent.js?v=20260926accueil"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260926accueil"></script>
-<script src="lib/traces-de-report.js?v=20260926accueil"></script>
-<script src="lib/annonce-de-remise.js?v=20260926accueil"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260926accueil"></script>
-<script src="lib/primes.js?v=20260926accueil"></script>
-<script src="lib/doublons.js?v=20260926accueil"></script>
-<script src="config.js?v=20260926accueil"></script>
-<script src="express-notation.js?v=20260926accueil"></script>
-<script src="demande-de-passage.js?v=20260926accueil"></script>
-<script src="dossiers-de-comptes.js?v=20260926accueil"></script>
-<script src="a-traiter.js?v=20260926accueil"></script>
-<script src="argent-a-suivre.js?v=20260926accueil"></script>
-<script src="activite-de-la-cliente.js?v=20260926accueil"></script>
-<script src="activite-ecran.js?v=20260926accueil"></script>
-<script src="delais-et-promesses.js?v=20260926accueil"></script>
-<script src="ordre-de-livraison.js?v=20260926accueil"></script>
-<script src="etiquettes-et-scan.js?v=20260926accueil"></script>
-<script src="clients-dashboard.js?v=20260926accueil"></script>
-<script src="livreurs-dashboard.js?v=20260926accueil"></script>
-<script src="point-du-jour.js?v=20260926accueil"></script>
-<script src="biometric-lock.js?v=20260926accueil"></script>
-<script src="clt-select-recherche.js?v=20260926accueil"></script>
-<script src="equipe/00-etat-et-caisse.js?v=20260926accueil"></script>
-<script src="equipe/01-saisie-en-lot.js?v=20260926accueil"></script>
-<script src="equipe/02-colis-et-comptes.js?v=20260926accueil"></script>
-<script src="equipe/03-file-hors-reseau.js?v=20260926accueil"></script>
-<script src="equipe/04-actions.js?v=20260926accueil"></script>
-<script src="equipe/05-liste-et-comptes.js?v=20260926accueil"></script>
-<script src="equipe/06-corrections-et-tournee.js?v=20260926accueil"></script>
-<script src="point-par-whatsapp.js?v=20260926accueil"></script>
-<script src="equipe/07-rapports.js?v=20260926accueil"></script>
-<script src="equipe/08-son-ecran.js?v=20260926accueil"></script>
-<script src="recharges-express.js?v=20260926accueil"></script>
-<script src="express-dossier.js?v=20260926accueil"></script>
-<script src="equipe/09-express-et-temps-reel.js?v=20260926accueil"></script>
+<script src="clt-common.js?v=20260926livreur"></script>
+<script src="assistant.js?v=20260926livreur"></script>
+<script src="observateur.js?v=20260926livreur"></script>
+<script src="numero-international.js?v=20260926livreur"></script>
+<script src="voir-un-compte.js?v=20260926livreur"></script>
+<script src="lib/bibliotheques.js?v=20260926livreur"></script>
+<script src="lib/retours.js?v=20260926livreur"></script>
+<script src="lib/reclamations.js?v=20260926livreur"></script>
+<script src="lib/communes-et-tarifs.js?v=20260926livreur"></script>
+<script src="lib/argent.js?v=20260926livreur"></script>
+<script src="lib/releve-cliente.js?v=20260926livreur"></script>
+<script src="lib/papier-a-en-tete.js?v=20260926livreur"></script>
+<script src="lib/briques-argent.js?v=20260926livreur"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260926livreur"></script>
+<script src="lib/traces-de-report.js?v=20260926livreur"></script>
+<script src="lib/annonce-de-remise.js?v=20260926livreur"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260926livreur"></script>
+<script src="lib/primes.js?v=20260926livreur"></script>
+<script src="lib/doublons.js?v=20260926livreur"></script>
+<script src="config.js?v=20260926livreur"></script>
+<script src="express-notation.js?v=20260926livreur"></script>
+<script src="demande-de-passage.js?v=20260926livreur"></script>
+<script src="dossiers-de-comptes.js?v=20260926livreur"></script>
+<script src="a-traiter.js?v=20260926livreur"></script>
+<script src="argent-a-suivre.js?v=20260926livreur"></script>
+<script src="activite-de-la-cliente.js?v=20260926livreur"></script>
+<script src="activite-ecran.js?v=20260926livreur"></script>
+<script src="delais-et-promesses.js?v=20260926livreur"></script>
+<script src="ordre-de-livraison.js?v=20260926livreur"></script>
+<script src="etiquettes-et-scan.js?v=20260926livreur"></script>
+<script src="clients-dashboard.js?v=20260926livreur"></script>
+<script src="livreurs-dashboard.js?v=20260926livreur"></script>
+<script src="point-du-jour.js?v=20260926livreur"></script>
+<script src="biometric-lock.js?v=20260926livreur"></script>
+<script src="clt-select-recherche.js?v=20260926livreur"></script>
+<script src="equipe/00-etat-et-caisse.js?v=20260926livreur"></script>
+<script src="equipe/01-saisie-en-lot.js?v=20260926livreur"></script>
+<script src="equipe/02-colis-et-comptes.js?v=20260926livreur"></script>
+<script src="equipe/03-file-hors-reseau.js?v=20260926livreur"></script>
+<script src="equipe/04-actions.js?v=20260926livreur"></script>
+<script src="equipe/05-liste-et-comptes.js?v=20260926livreur"></script>
+<script src="equipe/06-corrections-et-tournee.js?v=20260926livreur"></script>
+<script src="point-par-whatsapp.js?v=20260926livreur"></script>
+<script src="equipe/07-rapports.js?v=20260926livreur"></script>
+<script src="equipe/08-son-ecran.js?v=20260926livreur"></script>
+<script src="recharges-express.js?v=20260926livreur"></script>
+<script src="express-dossier.js?v=20260926livreur"></script>
+<script src="equipe/09-express-et-temps-reel.js?v=20260926livreur"></script>
 
 <!-- Barre de navigation basse (petits écrans — Option C) : les 5 mêmes onglets que la barre du haut. -->
 <nav class="clt-bottomnav" id="clt-bottomnav" aria-label="Navigation">
@@ -2007,29 +1966,29 @@ html[data-theme="dark"] .rc-etat--alerte{ background:#3A1D1B; color:#F6B8B1; } h
     <span id="bottomnav-plus-libelle">Plus</span>
   </button>
 </nav>
-<script src="accueil.js?v=20260926accueil"></script>
-<script src="equipe/10-onglets.js?v=20260926accueil"></script>
-<script src="equipe/11-chercher-partout.js?v=20260926accueil"></script>
-<script src="reprogrammer.js?v=20260926accueil"></script>
-<script src="retours-du-bureau.js?v=20260926accueil"></script>
-<script src="equipe/12-les-retours.js?v=20260926accueil"></script>
-<script src="equipe/13-les-boutiques.js?v=20260926accueil"></script>
+<script src="accueil.js?v=20260926livreur"></script>
+<script src="equipe/10-onglets.js?v=20260926livreur"></script>
+<script src="equipe/11-chercher-partout.js?v=20260926livreur"></script>
+<script src="reprogrammer.js?v=20260926livreur"></script>
+<script src="retours-du-bureau.js?v=20260926livreur"></script>
+<script src="equipe/12-les-retours.js?v=20260926livreur"></script>
+<script src="equipe/13-les-boutiques.js?v=20260926livreur"></script>
 <!-- 9.6 : sur grand écran, la liste à gauche et la fiche à droite. Ne fait rien sous 1 200 px. -->
-<script src="equipe/14-liste-et-fiche.js?v=20260926accueil"></script>
-<script src="chaine-de-l-argent.js?v=20260926accueil"></script>
-<script src="equipe/15-la-chaine-de-l-argent.js?v=20260926accueil"></script>
+<script src="equipe/14-liste-et-fiche.js?v=20260926livreur"></script>
+<script src="chaine-de-l-argent.js?v=20260926livreur"></script>
+<script src="equipe/15-la-chaine-de-l-argent.js?v=20260926livreur"></script>
 <!-- 9.6 : les colis en route sur la carte du Suivi, une pastille par commune. -->
-<script src="colis-sur-la-carte.js?v=20260926accueil"></script>
-<script src="equipe/16-les-colis-sur-la-carte.js?v=20260926accueil"></script>
+<script src="colis-sur-la-carte.js?v=20260926livreur"></script>
+<script src="equipe/16-les-colis-sur-la-carte.js?v=20260926livreur"></script>
 <!-- Le point à voir (22/09/2026) : la notification conduit à la carte, qui reste encadrée tant qu'on ne l'a pas ouverte. -->
-<script src="equipe/17-le-point-a-voir.js?v=20260926accueil"></script>
-<script src="a-confier.js?v=20260926accueil"></script>
-<script src="equipe/18-l-argent.js?v=20260926accueil"></script>
-<script src="equipe/19-a-confier.js?v=20260926accueil"></script>
+<script src="equipe/17-le-point-a-voir.js?v=20260926livreur"></script>
+<script src="a-confier.js?v=20260926livreur"></script>
+<script src="equipe/18-l-argent.js?v=20260926livreur"></script>
+<script src="equipe/19-a-confier.js?v=20260926livreur"></script>
 <!-- LES RACCOURCIS DU GÉRANT (26/09/2026, lot RA) : « Plus » et « ⊞ Raccourcis » ouvrent le tableau en colonnes. -->
-<script src="carburant.js?v=20260926accueil"></script>
-<script src="raccourcis.js?v=20260926accueil"></script>
-<script src="equipe/20-raccourcis.js?v=20260926accueil"></script>
-<script src="equipe/21-accueil.js?v=20260926accueil"></script>
+<script src="carburant.js?v=20260926livreur"></script>
+<script src="raccourcis.js?v=20260926livreur"></script>
+<script src="equipe/20-raccourcis.js?v=20260926livreur"></script>
+<script src="equipe/21-accueil.js?v=20260926livreur"></script>
 </body>
 </html>

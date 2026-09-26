@@ -128,6 +128,20 @@
       "version": "v292"
     },
     {
+      "id": "accueil-livreur",
+      "espace": "livreur",
+      "titre": "L'Accueil du livreur : sa journée d'un coup d'œil",
+      "enBref": "Le matin, le livreur voit ses colis du jour, ceux d'avant, ses récupérations, ses retours et l'argent qu'il porte.",
+      "ou": "Application du livreur › « 🏠 Accueil » (premier bouton en bas)",
+      "etapes": [
+        "En tête : « Bonjour », la phrase du jour et quatre chiffres (à livrer, livrés, non livrés, en main).",
+        "Ma journée : colis du jour (seulement ceux d'aujourd'hui), colis d'avant, récupérations, à rendre.",
+        "Mon argent : argent en main, mon point du jour, mon mois. Moi et CLT : mon dossier, signaler, appeler."
+      ],
+      "aSavoir": "Il ouvre l'application vingt fois par jour : l'Accueil ne revient qu'au premier lancement du jour ou après 30 minutes de pause, sinon il retrouve son écran. Tout se lit sur son téléphone, même sans réseau.",
+      "version": "v293"
+    },
+    {
       "id": "partenaires",
       "espace": "gestion",
       "titre": "Les partenaires (Générale CI)",

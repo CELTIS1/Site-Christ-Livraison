@@ -230,7 +230,7 @@ export async function ouvrirNavigateur(options) {
          qui travaille déjà (on retrouve son écran) ; « test:vieillir » joue le premier lancement du jour. */
       const vieillir = localStorage.getItem('test:vieillir') === '1';
       localStorage.removeItem('test:vieillir');
-      localStorage.setItem('clt:equipe:derniere-activite', String(vieillir ? Date.now() - 26 * 3600000 : Date.now()));
+      ['equipe', 'livreur', 'cliente', 'express-client', 'express-coursier'].forEach((e) => localStorage.setItem('clt:' + e + ':derniere-activite', String(vieillir ? Date.now() - 26 * 3600000 : Date.now())));
     }, { user, persistant });
     /* COURSE AVEC LA REDIRECTION DE login.html. (18/09/2026)
        login.html, quand il trouve une session valide, envoie la personne vers SON espace — c'est
