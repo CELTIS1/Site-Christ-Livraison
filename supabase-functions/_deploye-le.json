@@ -34,8 +34,8 @@
     },
     "approuver-reset-password": {
       "etat": "deployee",
-      "empreinte": "c6e9fa7b282adbb4a4a892d65bb88e60cd751e2b015b3641cc5cee6f15d70f9b",
-      "le": "2026-09-22"
+      "empreinte": "91ab09a22d8b7dfd1488e65f4ef4812aa194d49da23dafd5b8d612bc9271b3f8",
+      "le": "2026-09-26"
     },
     "assistant-repondre": {
       "etat": "deployee",
@@ -49,13 +49,13 @@
     },
     "creer-client": {
       "etat": "deployee",
-      "empreinte": "d06057473e4279fb3158cd91a692a1ac607466d45e608cd5b3bed1360f9933b3",
-      "le": "2026-09-22"
+      "empreinte": "b6bf003005572bcfc891d70914522febac5f7de28a2d45de96035ebb0dd7f876",
+      "le": "2026-09-26"
     },
     "creer-livreur": {
       "etat": "deployee",
-      "empreinte": "5cca34b831799b6d399a1c903a29fc6e3bbab86fd2daadcc4261285f9499e7a6",
-      "le": "2026-09-22"
+      "empreinte": "707d8a124d8e209b418aded973d7ae01094dffd4967a785315803b2356b409af",
+      "le": "2026-09-26"
     },
     "demander-reset-password": {
       "etat": "deployee",

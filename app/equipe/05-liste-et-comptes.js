@@ -921,7 +921,7 @@ return result;
 // script se lance à la main dans le tableau de bord Supabase, l'écran peut être
 // publié avant lui : on prévoit donc une lecture de repli, sinon la liste
 // resterait vide sans que personne comprenne pourquoi.
-const COLONNES_COMPTES_BASE = 'id, role, full_name, company_name, phone, status, created_at, suppression_demandee_at, acces_paie, acces_compta, acces_operations';
+const COLONNES_COMPTES_BASE = 'id, role, full_name, company_name, phone, status, created_at, suppression_demandee_at, acces_paie, acces_compta, acces_operations, observateur, observateur_depuis';
 const COLONNES_COMPTES_SUSPENSION = COLONNES_COMPTES_BASE + ', suspendu_at, suspendu_motif, statut_avant_suspension';
 // Passe à false si la base ne connaît pas encore les colonnes de suspension.
 let suspensionDisponible = true;
@@ -1046,6 +1046,11 @@ const accesBtns = a.role === 'equipe'
 <button type="button" class="btn-toggle-paie">${a.acces_paie ? '✅' : '⬜'} Accès Paie (RH)</button>
 <button type="button" class="btn-toggle-compta">${a.acces_compta ? '✅' : '⬜'} Accès Comptabilité</button>`
 : '';
+// Le compte observateur (26/09/2026, lot OB) : voir sans agir. Seul l'administrateur le pose ou le retire.
+const observateurBtn = (a.role === 'equipe' && isAdmin)
+? `<button type="button" class="btn-toggle-observateur">${a.observateur ? '✋ Donner le droit d’agir' : '👁 Passer en observateur'}</button>`
+: '';
+const observateurBadge = a.observateur ? ' <span class="badge" style="color:#5C3300; background:#FFF4E0;" title="Voit tout, ne modifie rien">👁 Observateur</span>' : '';
 const editBtn = `<button type="button" class="btn-edit-account">✏️ Corriger la fiche</button>`;
 /* LES BOUTIQUES SUPERVISÉES (20/09/2026, point 19.2) : un compte client peut voir les colis
    d'autres comptes clients (un propriétaire et ses gérants). Le geste et la fenêtre sont dans
@@ -1083,7 +1088,7 @@ const suspenduDetail = estSuspendu
 return `
 <div class="colis-item" data-id="${a.id}"${estSuspendu ? ' style="opacity:.72;"' : ''}>
 <div class="info">
-<div class="desc">${onlineDot}${a.full_name ? escapeHTML(a.full_name) : '(sans nom)'}${a.company_name ? ' — ' + escapeHTML(a.company_name) : ''}${isSelf ? ' <span style="color:var(--muted); font-weight:400;">(vous)</span>' : ''}${suspenduBadge}${a.suppression_demandee_at ? ' <span class="badge" style="color:#c0392b; background:#fce4e2;">🗑 Suppression demandée</span>' : ''}</div>
+<div class="desc">${onlineDot}${a.full_name ? escapeHTML(a.full_name) : '(sans nom)'}${a.company_name ? ' — ' + escapeHTML(a.company_name) : ''}${isSelf ? ' <span style="color:var(--muted); font-weight:400;">(vous)</span>' : ''}${observateurBadge}${suspenduBadge}${a.suppression_demandee_at ? ' <span class="badge" style="color:#c0392b; background:#fce4e2;">🗑 Suppression demandée</span>' : ''}</div>
 <div class="meta">Rôle : ${escapeHTML(roleDisplayLabel(a.role))}${a.phone ? ' · Tél : ' + escapeHTML(a.phone) : ''} · Statut : ${escapeHTML(statutCompteLabel(a.status))}${a.suppression_demandee_at ? ' · <span style="color:#c0392b;">Suppression demandée le ' + escapeHTML(formatDate(a.suppression_demandee_at)) + '</span>' : ''}</div>
 ${a.role === 'fournisseur' ? activiteLigneHTML(a.id) : ''}
 ${typeof boutiquesLigneHTML === 'function' ? boutiquesLigneHTML(a.id) : ''}
@@ -1099,6 +1104,7 @@ ${boutiquesBtn}
 ${resetBtn}
 ${promoteBtn}
 ${demoteBtn}
+${observateurBtn}
 ${accesBtns}
 ${suspendBtn}
 ${deleteBtn}
@@ -1357,6 +1363,26 @@ btn.addEventListener('click', (e) => { e.stopPropagation(); toggleAcces(btn, 'ac
 box.querySelectorAll('.btn-toggle-compta').forEach(btn => {
 btn.addEventListener('click', (e) => { e.stopPropagation(); toggleAcces(btn, 'acces_compta', 'Comptabilité'); });
 });
+box.querySelectorAll('.btn-toggle-observateur').forEach(btn => {
+btn.addEventListener('click', async (e) => {
+e.stopPropagation();
+const id = btn.closest('.colis-item').dataset.id;
+const account = allAccounts.find(a => a.id === id);
+if (!account || !window.CLTObservateur) return;
+const c = CLTObservateur.confirmation(!!account.observateur, account.full_name || account.phone || '');
+const ok = await showConfirm({ title: c.titre, detail: c.detail, sub: c.sous, okLabel: c.oui, danger: c.danger });
+if (!ok) return;
+btn.disabled = true;
+const { error } = await supabaseClient.from('profiles').update({ observateur: !account.observateur }).eq('id', id);
+if (error) { cltToast(friendlyErrorMessage(error.message), { type: 'error' }); btn.disabled = false; return; }
+try {
+await supabaseClient.from('activity_log').insert([{ action: account.observateur ? 'observateur_retire' : 'observateur_pose', target_id: id, target_type: 'profiles', details: { full_name: account.full_name, phone: account.phone } }]);
+} catch (err) { /* non bloquant */ }
+cltToast(account.observateur ? 'Droit d’agir donné à ' + (account.full_name || 'ce compte') + '.' : (account.full_name || 'Ce compte') + ' est maintenant observateur.', { type: 'success' });
+await loadAllAccounts();
+if (isAdmin) await loadActivityLog();
+});
+});
 
 box.querySelectorAll('.btn-delete-account').forEach(btn => {
 btn.addEventListener('click', async (e) => {
@@ -1584,10 +1610,13 @@ const { data: created } = await supabaseClient
 if (created && created[0]) newId = created[0].id;
 }
 if (newId) {
-await supabaseClient.from('profiles').update({ acces_operations: true }).eq('id', newId);
+const commeObservateur = !!(document.getElementById('eq-observateur') && document.getElementById('eq-observateur').checked);
+await supabaseClient.from('profiles').update(commeObservateur ? { acces_operations: true, observateur: true } : { acces_operations: true }).eq('id', newId);
 }
 } catch (accesErr) { console.warn('Attribution accès par défaut échouée :', accesErr); }
-addEquipeMsg("Compte équipe créé avec succès. Accès Opérations activé par défaut — vous pouvez l'ajuster dans la liste des comptes.", "success");
+addEquipeMsg(document.getElementById('eq-observateur') && document.getElementById('eq-observateur').checked
+? "Compte équipe créé, en observateur : il voit l'écran Opérations sans rien modifier. Quand il est prêt : ⋮ › « Donner le droit d'agir »."
+: "Compte équipe créé avec succès. Accès Opérations activé par défaut — vous pouvez l'ajuster dans la liste des comptes.", "success");
 e.target.reset();
 await loadAllAccounts();
 } catch (err) {
@@ -1599,6 +1628,8 @@ btn.disabled = false; btn.textContent = 'Créer le compte équipe';
 
 const ACTIVITY_LABELS = {
 creation_compte_equipe: "Création d'un compte équipe",
+observateur_pose: "Compte passé en observateur (lecture seule)",
+observateur_retire: "Droit d'agir donné (fin du mode observateur)",
 creation_compte_livreur: "Création d'un compte livreur",
 inscription_fournisseur: "Inscription d'un client",
 demande_reset_password: "Demande de réinitialisation de mot de passe",

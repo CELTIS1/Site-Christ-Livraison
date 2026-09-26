@@ -167,11 +167,15 @@ Deno.serve(async (req) => {
     }
     const { data: callerProfile } = await supabaseAdmin
       .from("profiles")
-      .select("role")
+      .select("role, observateur")
       .eq("id", caller.user.id)
       .single();
     if (!callerProfile || (callerProfile.role !== "equipe" && callerProfile.role !== "admin")) {
       return json({ error: "Seule l'équipe peut créer un compte client." }, 403);
+    }
+    // Compte observateur (26/09/2026, lot OB) : il consulte, il n'agit pas.
+    if (callerProfile.observateur === true) {
+      return json({ error: "Mode observateur : vous pouvez tout consulter, mais rien modifier. Demandez au gérant le droit d'agir." }, 403);
     }
 
     // --- Création du compte --------------------------------------------------

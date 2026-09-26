@@ -171,13 +171,17 @@ Deno.serve(async (req) => {
 
     const { data: callerProfile } = await supabaseAdmin
       .from("profiles")
-      .select("role")
+      .select("role, observateur")
       .eq("id", caller.user.id)
       .single();
 
     const callerRole = callerProfile?.role;
     if (callerRole !== "equipe" && callerRole !== "admin") {
       return json({ error: "Accès réservé à l'équipe." }, 403);
+    }
+    // Compte observateur (26/09/2026, lot OB) : il consulte, il n'agit pas.
+    if (callerProfile?.observateur === true) {
+      return json({ error: "Mode observateur : vous pouvez tout consulter, mais rien modifier. Demandez au gérant le droit d'agir." }, 403);
     }
 
     // --- Chargement de la demande -------------------------------------------

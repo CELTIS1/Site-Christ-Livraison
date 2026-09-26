@@ -100,6 +100,20 @@
       "version": "v290"
     },
     {
+      "id": "observateur",
+      "espace": "bureau",
+      "titre": "Le compte observateur : voir sans agir",
+      "enBref": "Un nouveau du bureau voit tout ce que ses accès permettent, mais ne peut rien ajouter, modifier ni supprimer.",
+      "ou": "Équipe › Comptes › ⋮ › « 👁 Passer en observateur » / « ✋ Donner le droit d'agir »",
+      "etapes": [
+        "À la création d'un compte équipe, « Commencer en observateur » est coché : il arrive en observateur.",
+        "Il consulte tout ; un bandeau lui rappelle qu'il est observateur. Tout geste est refusé, avec un message clair.",
+        "Quand il est prêt : ⋮ › « ✋ Donner le droit d'agir ». Il agit alors selon ses accès (Opérations, Paie, Comptabilité)."
+      ],
+      "aSavoir": "Le blocage est dans la base, pas seulement à l'écran : même en cherchant, un observateur ne peut rien écrire. Chaque passage est noté dans le journal. Seul l'administrateur peut poser ou retirer ce mode.",
+      "version": "v291"
+    },
+    {
       "id": "partenaires",
       "espace": "gestion",
       "titre": "Les partenaires (Générale CI)",

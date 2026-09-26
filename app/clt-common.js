@@ -2556,6 +2556,80 @@ async function cltOuvrirVueCompte(profilDuLecteur) {
   return { compte: compte };
 }
 
+/* LE COMPTE OBSERVATEUR (26/09/2026, lot OB, v291). Les règles : observateur.js ; le verrou vrai est dans
+   la base. Ici, en un seul endroit : les écritures refusées avant de partir (un avis clair, tout de suite),
+   et un bandeau qui le dit. Appelé par config.js dès que le profil est lu (Équipe et Gestion). */
+let cltObservateurPose = false;
+function cltModeObservateur(profil) {
+  const R = window.CLTObservateur;
+  if (!R || !R.estObservateur(profil) || cltObservateurPose || typeof supabaseClient === 'undefined') return false;
+  cltObservateurPose = true;
+  window.cltObservateur = true;
+  let dernierAvis = 0;
+  const erreur = function () {
+    const t = Date.now();
+    if (t - dernierAvis > 2500 && window.cltToast) { dernierAvis = t; cltToast(R.MESSAGE, { type: 'info', title: '👁 Mode observateur', duration: 7000 }); }
+    return { message: R.MESSAGE, code: 'CLT_OBSERVATEUR' };
+  };
+  // Une « requête » qui accepte tous les enchaînements et ne part jamais (même forme que la vue d'un compte).
+  const reponse = function (err) {
+    const resultat = { data: null, error: err, count: null, status: err ? 403 : 200 };
+    const cible = function () {};
+    const m = new Proxy(cible, {
+      get: function (_, cle) {
+        if (cle === 'then') return function (ok, ko) { return Promise.resolve(resultat).then(ok, ko); };
+        if (cle === 'catch') return function (ko) { return Promise.resolve(resultat).catch(ko); };
+        if (cle === 'finally') return function (f) { return Promise.resolve(resultat).finally(f); };
+        return function () { return m; };
+      },
+      apply: function () { return m; },
+    });
+    return m;
+  };
+  const vraiFrom = supabaseClient.from.bind(supabaseClient);
+  supabaseClient.from = function (table) {
+    const q = vraiFrom(table);
+    ['insert', 'update', 'upsert', 'delete'].forEach(function (op) {
+      const vrai = q[op].bind(q);
+      q[op] = function (valeurs) { return R.sortDeLOperation(op, table, valeurs) === 'laisser' ? vrai.apply(null, arguments) : reponse(erreur()); };
+    });
+    return q;
+  };
+  const vraiRpc = supabaseClient.rpc.bind(supabaseClient);
+  supabaseClient.rpc = function (nom) { return R.sortDeLOperation('rpc', nom) === 'vide' ? reponse(null) : vraiRpc.apply(null, arguments); };
+  try {
+    const vraiInvoke = supabaseClient.functions.invoke.bind(supabaseClient.functions);
+    supabaseClient.functions.invoke = function (nom) { return R.sortDeLOperation('fonction', nom) === 'laisser' ? vraiInvoke.apply(null, arguments) : Promise.resolve({ data: null, error: erreur() }); };
+  } catch (e) { /* client sans fonctions */ }
+  try {
+    const vraiStockage = supabaseClient.storage.from.bind(supabaseClient.storage);
+    supabaseClient.storage.from = function (seau) {
+      const b = vraiStockage(seau);
+      ['upload', 'update', 'remove', 'move', 'copy', 'createSignedUploadUrl', 'uploadToSignedUrl'].forEach(function (op) {
+        if (b[op]) b[op] = function () { return Promise.resolve({ data: null, error: erreur() }); };
+      });
+      return b;
+    };
+  } catch (e) { /* client sans stockage */ }
+  cltPoserBandeauObservateur(profil);
+  return true;
+}
+function cltPoserBandeauObservateur(profil) {
+  document.documentElement.classList.add('clt-observateur');
+  // Dans Gestion ouverte depuis l'onglet Bureau, le bandeau est déjà en haut de l'application.
+  if (document.documentElement.classList.contains('integre') || document.getElementById('clt-observateur')) return;
+  const t = window.CLTObservateur.bandeau(profil);
+  const b = document.createElement('div');
+  b.id = 'clt-observateur'; b.className = 'clt-observateur'; b.setAttribute('role', 'status');
+  b.innerHTML = '<span class="clt-observateur__oeil" aria-hidden="true">👁</span><span class="clt-observateur__texte"><strong>'
+    + escapeHTML(t.titre) + '</strong> <span>' + escapeHTML(t.texte) + '</span> <span class="clt-observateur__aide">' + escapeHTML(t.aide) + '</span></span>';
+  const poser = function () {
+    const barre = document.querySelector('.topbar');
+    if (barre) barre.insertBefore(b, barre.firstChild); else document.body.insertBefore(b, document.body.firstChild);
+  };
+  if (document.body) poser(); else document.addEventListener('DOMContentLoaded', poser);
+}
+
 function cltPoserBandeauVueCompte(compte) {
   const R = window.CLTVoirUnCompte;
   let b = document.getElementById('clt-vue-compte');

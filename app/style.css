@@ -4230,6 +4230,20 @@ html[data-theme="dark"] .releve-repli__resume{ color:#ffb27a; }
 }
 .clt-vue-compte__quitter:hover{background:#E8EEF5;}
 html[data-theme="dark"] .clt-vue-compte{background:#0B1622; border-color:#5B7390;}
+/* Le compte observateur (26/09/2026, lot OB) : un bandeau calme, qui dit la règle sans alarmer. */
+.clt-observateur{
+  display:flex; align-items:center; gap:10px; padding:8px 12px; margin:0 0 10px; order:-1;
+  flex-basis:100%; width:100%; box-sizing:border-box; border-radius:12px; font-size:13px; line-height:1.35;
+  background:#FFF4E0; color:#5C3300; border:1.5px solid #F2C27B;
+}
+.clt-observateur__oeil{font-size:18px; flex:none;}
+.clt-observateur__texte{display:block; min-width:0;}
+.clt-observateur__texte strong{font-weight:800;}
+.clt-observateur__texte strong::after{content:' ·';}
+/* Téléphone : une seule ligne utile, la place reste au travail. */
+@media (max-width:600px){ .clt-observateur{padding:6px 10px; font-size:12.5px; margin-bottom:8px;} .clt-observateur__aide{display:none;} }
+html[data-theme="dark"] .clt-observateur{background:#2A1E0B; color:#FFE1B3; border-color:#7A5520;}
+html.clt-observateur .topbar{flex-wrap:wrap;}
 /* Ce qui n'a pas de sens quand on regarde : se déconnecter « à la place » de la personne, changer sa photo. */
 html.clt-regarde-un-compte [data-cache-si-regarde]{display:none !important;}
 /* Sur grand écran la barre du haut tient sur une ligne : le bandeau prend la sienne, au-dessus, sans rien écraser. */

@@ -142,11 +142,12 @@ Deno.serve(async (req) => {
     // Opérations — c'est l'onglet d'où l'on crée les livreurs. Un admin passe toujours.
     const { data: callerProfile } = await supabaseAdmin
       .from("profiles")
-      .select("role, status, acces_operations")
+      .select("role, status, acces_operations, observateur")
       .eq("id", caller.user.id)
       .single();
     const estAdmin = !!callerProfile && callerProfile.role === "admin";
-    const estEquipeOperations = !!callerProfile && callerProfile.role === "equipe" && callerProfile.acces_operations === true;
+    // Compte observateur (26/09/2026, lot OB) : il consulte, il n'agit pas.
+    const estEquipeOperations = !!callerProfile && callerProfile.role === "equipe" && callerProfile.acces_operations === true && callerProfile.observateur !== true;
     if (!callerProfile || callerProfile.status !== "valide" || !(estAdmin || estEquipeOperations)) {
       return new Response(JSON.stringify({ error: "Seule l'équipe (accès Opérations) ou l'administrateur peut créer un compte livreur." }), {
         status: 403,

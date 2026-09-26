@@ -82,14 +82,14 @@ async function getProfile(userId) {
     // 28 août au soir sa dernière position remontait à 84 heures et le bureau le cherchait sur
     // la carte sans l'y trouver. Toute colonne qu'un écran DÉCIDE de lire doit figurer ici,
     // sans quoi la décision se prend sur une valeur qui n'a jamais été chargée.
-    .select("id, role, full_name, company_name, phone, status, created_at, avatar_url, commune_recuperation, adresse_recuperation, acces_paie, acces_compta, acces_operations, geoloc_consent_at, suppression_demandee_at")
+    .select("id, role, full_name, company_name, phone, status, created_at, avatar_url, commune_recuperation, adresse_recuperation, acces_paie, acces_compta, acces_operations, observateur, observateur_depuis, geoloc_consent_at, suppression_demandee_at")
     .eq("id", userId)
     .single();
   if (error) {
     console.error("Erreur chargement profil:", error);
     return null;
   }
-  return data;
+  if (typeof cltModeObservateur === "function") cltModeObservateur(data); return data;   // compte observateur (26/09, lot OB)
 }
 
 /* LE PROFIL, MÊME SANS RÉSEAU. (07/09/2026, feuille de route 1.6)
@@ -133,7 +133,7 @@ async function chargerProfil(userId) {
   try {
     reponse = await supabaseClient
       .from("profiles")
-      .select("id, role, full_name, company_name, phone, status, created_at, avatar_url, commune_recuperation, adresse_recuperation, acces_paie, acces_compta, acces_operations, geoloc_consent_at, suppression_demandee_at")
+      .select("id, role, full_name, company_name, phone, status, created_at, avatar_url, commune_recuperation, adresse_recuperation, acces_paie, acces_compta, acces_operations, observateur, observateur_depuis, geoloc_consent_at, suppression_demandee_at")
       .eq("id", userId)
       .single();
   } catch (e) {
@@ -144,12 +144,12 @@ async function chargerProfil(userId) {
     if (estErreurDeReseau(error)) {
       const memo = profilEnCache(userId);
       console.warn("Profil : pas de réseau" + (memo ? ", lecture de la copie du " + memo.at : ", aucune copie sur l'appareil"));
-      return { profil: memo ? memo.profil : null, horsLigne: true, memoriseLe: memo ? memo.at : null };
+      if (memo && typeof cltModeObservateur === "function") cltModeObservateur(memo.profil); return { profil: memo ? memo.profil : null, horsLigne: true, memoriseLe: memo ? memo.at : null };
     }
     console.error("Erreur chargement profil:", error);
     return { profil: null, horsLigne: false, memoriseLe: null };
   }
-  memoriserProfil(data);
+  memoriserProfil(data); if (typeof cltModeObservateur === "function") cltModeObservateur(data);   // compte observateur : lecture seule (26/09, lot OB)
   return { profil: data, horsLigne: false, memoriseLe: null };
 }
 
