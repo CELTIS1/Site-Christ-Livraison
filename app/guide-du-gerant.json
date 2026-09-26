@@ -70,6 +70,21 @@
       "version": "v284"
     },
     {
+      "id": "carburant",
+      "espace": "gestion",
+      "titre": "Le carburant des livreurs : un plein par jour",
+      "enBref": "Un plafond par livreur (KTM X1 : 3 000 F ; moto plus grosse : 4 000 F), un seul plein par jour, relevé depuis la carte carburant.",
+      "ou": "Gestion › 👥 Paie › « ⛽ Carburant »",
+      "etapes": [
+        "Pour chaque livreur, choisissez son plafond : KTM X1 (3 000 F), moto plus grosse (4 000 F) ou « Autre montant ».",
+        "Chaque jour, depuis le relevé de la carte, « + Plein » : montant, heure, station.",
+        "L'écran signale un 2ᵉ plein, un plein au-dessus du plafond, ou un plein un jour sans colis livré.",
+        "« Le mois » : carburant, dépassements et coût par colis livré, livreur par livreur."
+      ],
+      "aSavoir": "Rien ne s'efface : un plein saisi par erreur s'annule avec son motif et reste rayé. Côté livreur, rien ne change pour l'instant. Demandez aussi à votre gestionnaire de cartes s'il peut bloquer chaque carte à un plein par jour et à son plafond.",
+      "version": "v289"
+    },
+    {
       "id": "partenaires",
       "espace": "gestion",
       "titre": "Les partenaires (Générale CI)",

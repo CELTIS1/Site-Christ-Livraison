@@ -473,6 +473,18 @@ export function nouveauMonde() {
         avis: l.filter(a => a.publie && a.accord_publication && (a.commentaire_clt || a.commentaire_livreur)).sort((x, y) => String(y.publie_le || y.cree_le).localeCompare(String(x.publie_le || x.cree_le))).slice(0, 24)
           .map(a => ({ note: a.note_clt != null ? a.note_clt : a.note_livreur, texte: a.commentaire_clt || a.commentaire_livreur, prenom: a.prenom || '', commune: a.commune || '', mois: String(a.publie_le || a.cree_le).slice(0, 7) })) }, error: null };
     }
+    /* LE CARBURANT (26/09/2026, lot CA) : colis livrés par livreur et par jour, pour la paie. */
+    if (nom === 'carburant_colis_livres') {
+      const lecteur = PROFILS.find(p => p.id === user);
+      if (!lecteur || lecteur.role !== 'admin') return { data: null, error: { message: 'reserve_paie' } };
+      const m = new Map();
+      TABLES.colis.filter(c => c.statut === 'livre' && c.livreur_id).forEach(c => {
+        const j = String(c.livre_at || c.updated_at || '').slice(0, 10);
+        if (j < args.p_debut || j > args.p_fin) return;
+        const k = c.livreur_id + '|' + j; m.set(k, (m.get(k) || 0) + 1);
+      });
+      return { data: [...m.entries()].map(([k, n]) => ({ livreur_id: k.split('|')[0], jour: k.split('|')[1], colis: n })), error: null };
+    }
     /* mon_dossier_livreur (25/09/2026, lot T) : l'état des pièces du livreur connecté, sans fichier ni note. */
     if (nom === 'mon_dossier_livreur') {
       const sal = (TABLES.gestion_salaries || []).filter(x => x.livreur_id === user && x.actif !== false).map(x => x.id);

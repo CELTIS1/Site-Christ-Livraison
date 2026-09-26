@@ -331,6 +331,7 @@ function switchSub(group, sub){
   if (group === 'paie'   && sub === 'dossiers')  { fillDocSalarieSelect(); loadDocuments('personnel').then(renderDocsPersonnel); }
   // Le dossier du livreur (25/09/2026, lot T) : la liste des douze pièces, au-dessus du coffre.
   if (group === 'paie'   && sub === 'dossiers' && window.CLTDossierLivreurEcran) CLTDossierLivreurEcran.liste();
+  if (group === 'paie'   && sub === 'carburant' && window.CLTCarburantEcran) CLTCarburantEcran.charger(); // le carburant (26/09/2026, lot CA)
   if (group === 'compta' && sub === 'documents') { loadDocuments('entreprise').then(renderDocsEntreprise); }
   scheduleStickyRefresh();
 }

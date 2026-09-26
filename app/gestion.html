@@ -15,14 +15,14 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260926mouvement">
+<link rel="stylesheet" href="style.css?v=20260926carburant">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
 <script>/* Intégré dans l'application de l'équipe (lot 15) : gestion.html?integre=1 cache sa barre du haut. */if(/[?&]integre=1/.test(location.search)){document.documentElement.classList.add('integre');}</script>
-<script src="theme.js?v=20260926mouvement"></script>
+<script src="theme.js?v=20260926carburant"></script>
 <!-- La cloche 🔔 des notifications reçues (23/09/2026) : règle + écran, se posent seuls dans la barre du haut. -->
-<script src="notifications-recues.js?v=20260926mouvement" defer></script>
-<script src="cloche.js?v=20260926mouvement" defer></script>
-<script src="splash.js?v=20260926mouvement"></script>
+<script src="notifications-recues.js?v=20260926carburant" defer></script>
+<script src="cloche.js?v=20260926carburant" defer></script>
+<script src="splash.js?v=20260926carburant"></script>
 <style>
   :root{ --clt-teal:#0F766E; --clt-teal-dark:#0b5a54; --clt-teal-light:#e5f4f2; --clt-green:#15803d; --clt-red:#b91c1c; --clt-amber:#b45309; --clt-accent:#0F766E; }   /* vert/rouge/ambre assombris : ≥ 4,5 sur blanc (24/09/2026) */
   body{ background:linear-gradient(180deg,#e9f5f3 0%, #f5f7fa 260px, #f5f7fa 100%) !important; }
@@ -992,10 +992,52 @@
   html[data-theme="dark"] .av-avis{ border-color:#2A3849; border-left-color:#F5C04A; } html[data-theme="dark"] .av-avis--bas{ border-left-color:#F87171; }
   html[data-theme="dark"] .av-com{ color:#E6ECF3; }
   html[data-theme="dark"] .av-etat{ background:#1E2A3A; color:#D5DEE9; } html[data-theme="dark"] .av-etat--publie{ background:#16352A; color:#93E2B8; } html[data-theme="dark"] .av-etat--pret{ background:#3A2A18; color:#F5C38E; } html[data-theme="dark"] .av-etat--bas{ background:#3A1D1B; color:#F6B8B1; }
+  /* LE CARBURANT (26/09/2026, lot CA). */
+  .ca-barre{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:12px 0 6px; }
+  .ca-barre .btn, .ca-barre input{ min-height:44px; }
+  .ca-barre input[type=date]{ padding:6px 10px; border:1px solid #CBD2D9; border-radius:10px; font:inherit; }
+  .ca-titre-jour{ font-weight:700; margin:6px 0; } .ca-titre-jour::first-letter{ text-transform:uppercase; }
+  .ca-resume{ display:flex; flex-wrap:wrap; gap:8px 18px; font-size:14px; margin:4px 0 10px; }
+  .ca-resume-alerte strong{ color:#B42318; }
+  .ca-ligne{ display:grid; grid-template-columns:minmax(150px,1.1fr) minmax(200px,1.2fr) minmax(200px,1.6fr) minmax(170px,1fr) auto; gap:10px 14px; align-items:center; padding:12px; border:1px solid #E3E8EF; border-left:4px solid #CBD2D9; border-radius:12px; margin:8px 0; }
+  .ca--ok{ border-left-color:#16A34A; } .ca--double, .ca--depasse{ border-left-color:#DC2626; } .ca--sans-colis, .ca--sans-plafond{ border-left-color:#F59E0B; }
+  .ca-qui{ display:flex; flex-direction:column; } .ca-qui span{ font-size:12.5px; color:#5B6573; }
+  .ca-plafond{ display:flex; flex-direction:column; gap:4px; font-size:12px; color:#5B6573; font-weight:600; }
+  .ca-plafond select, .ca-form input, .ca-autre input{ min-height:44px; padding:6px 10px; border:1px solid #CBD2D9; border-radius:10px; font:inherit; font-size:14px; background:#fff; color:#1F2937; }
+  .ca-autre{ display:flex; gap:6px; } .ca-autre[hidden]{ display:none; } .ca-autre input{ width:120px; } .ca-autre .btn{ min-height:44px; }
+  .ca-pleins{ font-size:13.5px; display:flex; flex-direction:column; gap:4px; }
+  .ca-plein{ display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px; }
+  .ca-plein--annule span{ text-decoration:line-through; color:#8A94A3; }
+  .ca-vide{ color:#8A94A3; }
+  .ca-lien{ background:none; border:none; color:#B42318; font:inherit; font-size:13px; font-weight:600; cursor:pointer; min-height:44px; padding:0 6px; }
+  .ca-badge{ display:inline-block; font-size:12.5px; font-weight:700; padding:4px 10px; border-radius:999px; background:#EEF1F5; color:#374151; }
+  .ca-badge--ok{ background:#E3F4EC; color:#11663F; } .ca-badge--double, .ca-badge--depasse{ background:#FDE8E6; color:#9F1F16; } .ca-badge--sans-colis, .ca-badge--sans-plafond{ background:#FEF3C7; color:#7A4A04; }
+  .ca-actions .btn{ min-height:44px; white-space:nowrap; }
+  .ca-form{ grid-column:1 / -1; display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; background:#F6F8FB; border-radius:10px; padding:10px; }
+  .ca-form[hidden]{ display:none; }
+  .ca-form label{ display:flex; flex-direction:column; gap:4px; font-size:12.5px; font-weight:600; color:#374151; }
+  .ca-form .ca-large{ flex:1 1 260px; }
+  .ca-form-actions{ display:flex; gap:8px; } .ca-form-actions .btn{ min-height:44px; }
+  .ca-titre-ligne{ display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
+  .ca-titre-ligne input{ min-height:44px; padding:6px 10px; border:1px solid #CBD2D9; border-radius:10px; font:inherit; }
+  .ca-table{ width:100%; border-collapse:collapse; font-size:13.5px; }
+  .ca-table th{ text-align:left; font-size:12px; color:#5B6573; padding:6px 8px; border-bottom:1px solid #E3E8EF; }
+  .ca-table td{ padding:7px 8px; border-bottom:1px solid #EEF1F5; } .ca-table .ta-d{ text-align:right; }
+  .ca-table tfoot td{ font-weight:700; border-top:2px solid #E3E8EF; }
+  .ca-tr-alerte td{ background:#FFF6F4; }
+  @media (max-width:900px){ .ca-ligne{ grid-template-columns:1fr 1fr; } .ca-pleins, .ca-etat{ grid-column:1 / -1; } }
+  @media (max-width:520px){ .ca-ligne{ grid-template-columns:1fr; } .ca-actions .btn{ width:100%; } }
+  html[data-theme="dark"] .ca-ligne{ border-color:#2A3849; } html[data-theme="dark"] .ca--ok{ border-left-color:#4ADE80; } html[data-theme="dark"] .ca--double, html[data-theme="dark"] .ca--depasse{ border-left-color:#F87171; } html[data-theme="dark"] .ca--sans-colis, html[data-theme="dark"] .ca--sans-plafond{ border-left-color:#FBBF24; }
+  html[data-theme="dark"] .ca-qui span, html[data-theme="dark"] .ca-plafond, html[data-theme="dark"] .ca-table th, html[data-theme="dark"] .ca-vide{ color:#AEBBCB; }
+  html[data-theme="dark"] .ca-plafond select, html[data-theme="dark"] .ca-form input, html[data-theme="dark"] .ca-autre input, html[data-theme="dark"] .ca-barre input, html[data-theme="dark"] .ca-titre-ligne input{ background:#0F1722; color:#E6ECF3; border-color:#3A4A5E; }
+  html[data-theme="dark"] .ca-form{ background:#141F2E; } html[data-theme="dark"] .ca-form label{ color:#D5DEE9; }
+  html[data-theme="dark"] .ca-badge{ background:#1E2A3A; color:#D5DEE9; } html[data-theme="dark"] .ca-badge--ok{ background:#16352A; color:#93E2B8; } html[data-theme="dark"] .ca-badge--double, html[data-theme="dark"] .ca-badge--depasse{ background:#3A1D1B; color:#F6B8B1; } html[data-theme="dark"] .ca-badge--sans-colis, html[data-theme="dark"] .ca-badge--sans-plafond{ background:#3A2A10; color:#FCD98A; }
+  html[data-theme="dark"] .ca-table td, html[data-theme="dark"] .ca-table th{ border-color:#2A3849; } html[data-theme="dark"] .ca-tr-alerte td{ background:#2A1A1A; }
+  html[data-theme="dark"] .ca-lien{ color:#F6B8B1; } html[data-theme="dark"] .ca-resume-alerte strong{ color:#F6B8B1; }
 </style>
 <!-- La peau v2 (25/09/2026, lot 18) : chargée EN DERNIER, elle recouvre style.css et le style de la page. -->
 <style>:root{ --clt-accent-encre:#0F766E; }</style>
-<link rel="stylesheet" href="peau.css?v=20260926mouvement">
+<link rel="stylesheet" href="peau.css?v=20260926carburant">
 </head>
 <body>
 <div class="topbar">
@@ -1623,6 +1665,7 @@
           <div class="subtab" data-sub="saisie" onclick="switchSub('paie','saisie')">Saisie du mois</div>
           <div class="subtab" data-sub="primes" onclick="switchSub('paie','primes')">Primes livreurs</div>
           <div class="subtab" data-sub="bulletins" onclick="switchSub('paie','bulletins')">Bulletins</div>
+          <div class="subtab" data-sub="carburant" onclick="switchSub('paie','carburant')">⛽ Carburant</div>
         </div>
       </div>
       <div class="subtabs-groupe">
@@ -1650,6 +1693,28 @@
     </div>
 
     <!-- Coffre à documents du personnel (CNI, contrats, diplômes…) -->
+    <!-- LE CARBURANT DES LIVREURS (26/09/2026, lot CA) : un plein par jour, un plafond par livreur, le coût par colis. -->
+    <div class="section" id="paie-carburant">
+      <div class="card">
+        <h2>⛽ Carburant des livreurs</h2>
+        <div class="hint">La règle : <strong>un seul plein par jour</strong>, jamais au-dessus du plafond du livreur (KTM X1 : 3 000 F ; moto plus grosse : 4 000 F ; ou un autre montant). Relevez chaque plein depuis le relevé de la carte carburant : l'écran signale un 2ᵉ plein, un dépassement, ou un plein un jour sans colis livré.</div>
+        <div class="ca-barre">
+          <button type="button" class="btn btn-outline btn-sm" data-ca-nav="prec" aria-label="Jour précédent">◀</button>
+          <input type="date" id="ca-jour" aria-label="Jour">
+          <button type="button" class="btn btn-outline btn-sm" data-ca-nav="suiv" aria-label="Jour suivant">▶</button>
+          <button type="button" class="btn btn-outline btn-sm" data-ca-nav="auj">Aujourd'hui</button>
+        </div>
+        <div class="ca-titre-jour" id="ca-jour-titre"></div>
+        <div class="ca-resume" id="ca-resume"></div>
+        <div id="ca-jour-liste"></div>
+      </div>
+      <div class="card">
+        <div class="ca-titre-ligne"><h2>Le mois</h2><input type="month" id="ca-mois" aria-label="Mois"></div>
+        <div class="hint">Par livreur : ce qu'il a pris, ses dépassements, et ce que le carburant coûte par colis livré.</div>
+        <div id="ca-mois-liste"></div>
+      </div>
+    </div>
+
     <div class="section" id="paie-dossiers">
       <!-- LE DOSSIER DU LIVREUR (25/09/2026, lot T) : douze pièces par livreur, leurs échéances, le badge
            « Certifié CLT ». Les fichiers restent dans le coffre ci-dessous ; la fiche les relie. -->
@@ -2067,58 +2132,60 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"
         integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3"
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="clt-common.js?v=20260926mouvement"></script>
-<script src="assistant.js?v=20260926mouvement"></script>
-<script src="numero-international.js?v=20260926mouvement"></script>
-<script src="lib/bibliotheques.js?v=20260926mouvement"></script>
-<script src="lib/retours.js?v=20260926mouvement"></script>
-<script src="lib/reclamations.js?v=20260926mouvement"></script>
-<script src="lib/communes-et-tarifs.js?v=20260926mouvement"></script>
-<script src="lib/argent.js?v=20260926mouvement"></script>
-<script src="lib/releve-cliente.js?v=20260926mouvement"></script>
-<script src="lib/papier-a-en-tete.js?v=20260926mouvement"></script>
-<script src="lib/briques-argent.js?v=20260926mouvement"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260926mouvement"></script>
-<script src="lib/traces-de-report.js?v=20260926mouvement"></script>
-<script src="lib/annonce-de-remise.js?v=20260926mouvement"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260926mouvement"></script>
-<script src="lib/primes.js?v=20260926mouvement"></script>
-<script src="lib/doublons.js?v=20260926mouvement"></script>
-<script src="config.js?v=20260926mouvement"></script>
-<script src="biometric-lock.js?v=20260926mouvement"></script>
-<script src="clt-select-recherche.js?v=20260926mouvement"></script>
-<script src="site-editeur.js?v=20260926mouvement"></script>
+<script src="clt-common.js?v=20260926carburant"></script>
+<script src="assistant.js?v=20260926carburant"></script>
+<script src="numero-international.js?v=20260926carburant"></script>
+<script src="lib/bibliotheques.js?v=20260926carburant"></script>
+<script src="lib/retours.js?v=20260926carburant"></script>
+<script src="lib/reclamations.js?v=20260926carburant"></script>
+<script src="lib/communes-et-tarifs.js?v=20260926carburant"></script>
+<script src="lib/argent.js?v=20260926carburant"></script>
+<script src="lib/releve-cliente.js?v=20260926carburant"></script>
+<script src="lib/papier-a-en-tete.js?v=20260926carburant"></script>
+<script src="lib/briques-argent.js?v=20260926carburant"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260926carburant"></script>
+<script src="lib/traces-de-report.js?v=20260926carburant"></script>
+<script src="lib/annonce-de-remise.js?v=20260926carburant"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260926carburant"></script>
+<script src="lib/primes.js?v=20260926carburant"></script>
+<script src="lib/doublons.js?v=20260926carburant"></script>
+<script src="config.js?v=20260926carburant"></script>
+<script src="biometric-lock.js?v=20260926carburant"></script>
+<script src="clt-select-recherche.js?v=20260926carburant"></script>
+<script src="site-editeur.js?v=20260926carburant"></script>
 <!-- La règle de comparaison, puis l'écran qui s'en sert. Ni l'une ni l'autre n'est dans lib/ :
      elles ne servent qu'à cet écran, et le téléphone du livreur n'a pas à les télécharger. -->
-<script src="bilan-de-la-semaine.js?v=20260926mouvement"></script>
-<script src="argent-a-suivre.js?v=20260926mouvement"></script>
-<script src="dix-chiffres.js?v=20260926mouvement"></script>
-<script src="gestion-dix-chiffres.js?v=20260926mouvement"></script>
-<script src="express-chiffres.js?v=20260926mouvement"></script>
-<script src="gestion-express-chiffres.js?v=20260926mouvement"></script>
-<script src="causes-des-echecs.js?v=20260926mouvement"></script>
-<script src="activite-de-la-cliente.js?v=20260926mouvement"></script>
-<script src="qui-vend-quoi.js?v=20260926mouvement"></script>
-<script src="analyse-profonde.js?v=20260926mouvement"></script>
-<script src="ce-qui-a-change.js?v=20260926mouvement"></script>
-<script src="les-questions.js?v=20260926mouvement"></script>
-<script src="console-du-dirigeant.js?v=20260926mouvement"></script>
-<script src="rapports-recus.js?v=20260926mouvement"></script>
-<script src="rapports-recus-ecran.js?v=20260926mouvement"></script>
-<script src="partenaires.js?v=20260926mouvement"></script>
-<script src="partenaires-ecran.js?v=20260926mouvement"></script>
-<script src="dossier-du-livreur.js?v=20260926mouvement"></script>
-<script src="dossier-du-livreur-ecran.js?v=20260926mouvement"></script>
-<script src="avis.js?v=20260926mouvement"></script>
-<script src="avis-ecran.js?v=20260926mouvement"></script>
-<script src="gestion.js?v=20260926mouvement"></script>
+<script src="bilan-de-la-semaine.js?v=20260926carburant"></script>
+<script src="argent-a-suivre.js?v=20260926carburant"></script>
+<script src="dix-chiffres.js?v=20260926carburant"></script>
+<script src="gestion-dix-chiffres.js?v=20260926carburant"></script>
+<script src="express-chiffres.js?v=20260926carburant"></script>
+<script src="gestion-express-chiffres.js?v=20260926carburant"></script>
+<script src="causes-des-echecs.js?v=20260926carburant"></script>
+<script src="activite-de-la-cliente.js?v=20260926carburant"></script>
+<script src="qui-vend-quoi.js?v=20260926carburant"></script>
+<script src="analyse-profonde.js?v=20260926carburant"></script>
+<script src="ce-qui-a-change.js?v=20260926carburant"></script>
+<script src="les-questions.js?v=20260926carburant"></script>
+<script src="console-du-dirigeant.js?v=20260926carburant"></script>
+<script src="rapports-recus.js?v=20260926carburant"></script>
+<script src="rapports-recus-ecran.js?v=20260926carburant"></script>
+<script src="partenaires.js?v=20260926carburant"></script>
+<script src="partenaires-ecran.js?v=20260926carburant"></script>
+<script src="dossier-du-livreur.js?v=20260926carburant"></script>
+<script src="dossier-du-livreur-ecran.js?v=20260926carburant"></script>
+<script src="avis.js?v=20260926carburant"></script>
+<script src="avis-ecran.js?v=20260926carburant"></script>
+<script src="carburant.js?v=20260926carburant"></script>
+<script src="carburant-ecran.js?v=20260926carburant"></script>
+<script src="gestion.js?v=20260926carburant"></script>
 <!-- La barre latérale (14.3) se charge APRÈS gestion.js : elle enveloppe switchTab / switchSub. -->
-<script src="guide-du-gerant.js?v=20260926mouvement"></script>
-<script src="avance-de-travail.js?v=20260926mouvement"></script>
-<script src="avance-de-travail-ecran.js?v=20260926mouvement"></script>
-<script src="regulariser.js?v=20260926mouvement"></script>
-<script src="regulariser-ecran.js?v=20260926mouvement"></script>
-<script src="gestion-barre-laterale.js?v=20260926mouvement"></script>
-<script src="gestion-replier.js?v=20260926mouvement"></script>
+<script src="guide-du-gerant.js?v=20260926carburant"></script>
+<script src="avance-de-travail.js?v=20260926carburant"></script>
+<script src="avance-de-travail-ecran.js?v=20260926carburant"></script>
+<script src="regulariser.js?v=20260926carburant"></script>
+<script src="regulariser-ecran.js?v=20260926carburant"></script>
+<script src="gestion-barre-laterale.js?v=20260926carburant"></script>
+<script src="gestion-replier.js?v=20260926carburant"></script>
 </body>
 </html>
