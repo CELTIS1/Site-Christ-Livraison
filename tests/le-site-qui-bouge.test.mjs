@@ -30,10 +30,10 @@ console.log('\n2. Ce que la page branche');
 verifier('site-mouvement.js chargé par l\'accueil (defer)', /<script src="site-mouvement\.js\?v=[^"]+" defer><\/script>/.test(index));
 verifier('les chiffres suivis : bandeau, « Qui sommes-nous », note des avis, [data-compter]', /\.preuve-item strong, \.about-stat \.stat-number, #avisNoteChiffre, \[data-compter\]/.test(js));
 verifier('la cascade : 90 ms d\'écart, au plus 450 ms', /Math\.min\(i \* 90, 450\)/.test(js));
-verifier('les trois vidéos du produit se jouent seules, sans le son, en boucle', (index.match(/<video data-auto controls preload="none" playsinline muted loop/g) || []).length === 3 && /v\.muted = true; v\.loop = true/.test(js) && /else if \(!v\.paused\) v\.pause\(\)/.test(js));
+verifier('les vidéos (le film) se jouent seules, sans le son, en boucle — le moteur est gardé', /v\.muted = true; v\.loop = true/.test(js) && /else if \(!v\.paused\) v\.pause\(\)/.test(js));
 verifier('économiseur de données / 2G / « réduire les animations » : rien ne part seul', /if \(reduit \|\| donneesLimitees \|\| !IO\) return;/.test(js) && /prefers-reduced-motion: reduce/.test(index));
 verifier('le menu attend 300 ms avant de se fermer, avec un pont de 14 px', /setTimeout\(function \(\) \{ g\.classList\.remove\('open'\)/.test(js) && /, 300\);/.test(js) && /\.nav-sous::before\{content:""; position:absolute; left:0; right:0; top:-14px; height:14px;\}/.test(index));
-verifier('le menu façon github.com : icône + titre + une ligne, sur ordinateur seulement', (index.match(/<span class="nav-ico"/g) || []).length === 10 && /@media \(max-width:1260px\)\{ \.nav-ico, \.nav-txt small\{display:none;\} \}/.test(index));
+verifier('le menu façon github.com : icône + titre + une ligne, sur ordinateur seulement', (index.match(/<span class="nav-ico"/g) || []).length === 13 && /@media \(max-width:1260px\)\{ \.nav-ico, \.nav-txt small\{display:none;\} \}/.test(index));
 verifier('les effets : trait des titres qui se dessine, images qui s\'approchent, pulsation des chiffres', /\.section-title\.reveal::after\{transform:scaleX\(0\)/.test(index) && /\.produit figure\.reveal[^{]*\{transform:translateY\(24px\) scale\(\.94\)/.test(index) && /@keyframes clt-pulse/.test(index));
 
 for (const f of ['vendeuses.html', 'livreurs.html', 'services.html', 'tarifs.html', 'express.html', 'contact.html']) {

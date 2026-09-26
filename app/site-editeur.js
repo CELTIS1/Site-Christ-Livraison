@@ -70,6 +70,22 @@
       LISTE('items', 'Photos', 'photo', [IMAGE('photo', 'Photo', 'Choisissez une photo depuis l\'ordinateur ou le téléphone : elle est réduite puis envoyée dans la base ; le site l\'affiche dès l\'enregistrement.'), T('caption', 'Légende', 'Ex. L\'équipe au départ des tournées'), T('date', 'Quand', 'Ex. Septembre 2026')],
         'La première photo s\'affiche en grand. Renouvelez-les chaque semaine ou chaque mois : ajoutez la nouvelle en tête (↑), retirez la plus ancienne (✕). Six photos, c\'est bien.'),
     ]},
+    // Notre équipe, actualités, partenaires (26/09/2026, sur le modèle de Licy Express). Une section sans fiche se tait.
+    { cle: 'equipe', label: 'Notre équipe', champs: [
+      T('title', 'Titre'), L('subtitle', 'Sous-titre'),
+      LISTE('items', 'Personnes ou équipes', 'fiche', [T('nom', 'Nom', 'Ex. Celtis Adjé, ou « Nos livreurs »'), T('role', 'Rôle', 'Ex. Fondateur et gérant'), L('texte', 'Une phrase'), IMAGE('photo', 'Photo (facultative)', 'Sans photo, les initiales s\'affichent. Une personne nommée : avec son accord.')],
+        'Ne publiez le nom et la photo d\'un membre de l\'équipe qu\'avec son accord.'),
+    ]},
+    { cle: 'actualites', label: 'Actualités et événements', champs: [
+      T('title', 'Titre'), L('subtitle', 'Sous-titre'),
+      LISTE('items', 'Actualités', 'actualité', [T('date', 'Quand', 'Ex. Septembre 2026'), T('titre', 'Titre'), L('texte', 'Texte court'), IMAGE('photo', 'Photo'), T('lien', 'Lien « Lire la suite » (facultatif)', 'Ex. une publication Facebook : https://…')],
+        'La plus récente en tête (↑). Trois ou quatre suffisent.'),
+    ]},
+    { cle: 'partenaires', label: 'Nos partenaires', champs: [
+      T('title', 'Titre'), L('subtitle', 'Sous-titre'),
+      LISTE('items', 'Partenaires', 'partenaire', [T('nom', 'Nom'), IMAGE('logo', 'Logo'), T('lien', 'Site (facultatif)', 'https://…')],
+        'Un partenaire n\'apparaît qu\'une fois l\'accord signé et avec son autorisation. Sans partenaire, seul l\'appel « Devenir partenaire » s\'affiche.'),
+    ]},
     { cle: 'film', label: 'Le film « Une journée avec nos livreurs »', champs: [
       T('title', 'Titre'), L('text', 'Texte à côté du film'), T('note', 'Petite note sous le film', 'Ex. Sans son · 35 secondes · 2,5 Mo'),
       T('video', 'Fichier vidéo (MP4, chemin dans videos/)', 'Ex. videos/film-540.mp4 — vide : la section est masquée. Un nouveau film se monte avec Claude et passe par une mise en ligne.'),

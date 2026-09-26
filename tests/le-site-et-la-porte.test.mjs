@@ -42,7 +42,7 @@ verifier('politique : le mobile money est au conditionnel', /si un jour un\s+pai
 
 console.log('\n5. Tarifs sur téléphone, FAQ au clavier, sitemap, pré-cache');
 const tarifs = lire('tarifs.html');
-verifier('tarifs.html : la colonne « Exemples » ne disparaît plus sur téléphone (cartes)', !/td:nth-child\(2\)\{display:none;\}/.test(tarifs) && /table\.tarifs tr\{display:grid/.test(tarifs));
+verifier('tarifs.html : plus de grille publiée (26/09/2026) ; les principes, et le devis qui donne la grille complète', !/<table class="tarifs"/.test(tarifs) && /<ul class="principes">/.test(tarifs) && /la grille complète/.test(tarifs));
 const express = lire('express.html');
 verifier('express.html : les questions de la FAQ sont des boutons avec aria-expanded', (express.match(/<button type="button" class="faq-q" aria-expanded="false" aria-controls="faq-a-\d+">/g) || []).length === 5 && /q\.setAttribute\('aria-expanded'/.test(express));
 verifier('sitemap.xml : installer.html y est', /installer\.html/.test(lire('sitemap.xml')));

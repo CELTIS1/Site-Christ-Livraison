@@ -57,7 +57,10 @@ function cheminsContenu(o, prefixe = [], out = new Set()) {
 }
 const S = cheminsSchema(), C = cheminsContenu(contenu);
 const manquants = [...C].filter((c) => !S.has(c));
-const superflus = [...S].filter((c) => !C.has(c));
+// Une liste vide (26/09 : « Nos partenaires », en attente d'un accord signé) ne peut pas montrer ses champs :
+// les champs d'une liste présente mais vide ne sont pas « superflus ».
+const sousListeVide = (c) => [...C].some((l) => { if (!l.endsWith('[]')) return false; const pre = l.slice(0, -2) + '.[].'; return c.startsWith(pre) && ![...C].some((x) => x.startsWith(pre)); });
+const superflus = [...S].filter((c) => !C.has(c) && !sousListeVide(c));
 verifier('chaque champ de content.json a sa case dans l\'éditeur', manquants.length === 0, manquants.join(', '));
 verifier('le schéma ne décrit rien qui n\'existe pas dans content.json', superflus.length === 0, superflus.join(', '));
 

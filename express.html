@@ -46,6 +46,7 @@
   .section-sub{text-align:center; color:var(--muted); max-width:600px; margin:0 auto 44px auto; font-size:15px;}
 
   /* S-4 (25/09/2026) : les vidéos et les objections. */
+  .demo-vendeur{ display:flex; flex-wrap:wrap; justify-content:center; gap:10px; }
   .videos-express{ display:grid; grid-template-columns:repeat(4,1fr); gap:18px; margin-bottom:34px; }
   .videos-express figure{ margin:0; text-align:center; }
   .videos-express video{ width:100%; max-width:240px; aspect-ratio:390/844; border-radius:20px; border:5px solid #2a1f4d; background:#0f1e33; }
@@ -294,17 +295,15 @@
 <section id="en-vrai" style="background:var(--bg);">
   <div class="container">
     <h2 class="section-title">En vrai, sur votre téléphone</h2>
-    <p class="section-sub">Vingt secondes chacune, sans son : ce que voit le client, ce que voit le coursier.</p>
-    <div class="videos-express">
-      <figure><video data-auto controls preload="none" playsinline muted loop poster="app/aide/videos/express-commander.jpg"><source src="app/aide/videos/express-commander.mp4" type="video/mp4"></video><figcaption><strong>Commander</strong> — deux adresses, qui reçoit, le prix affiché avant de confirmer.</figcaption></figure>
-      <figure><video data-auto controls preload="none" playsinline muted loop poster="app/aide/videos/express-suivre-code.jpg"><source src="app/aide/videos/express-suivre-code.mp4" type="video/mp4"></video><figcaption><strong>Suivre, et le code</strong> — le coursier sur la carte ; un code à 4 chiffres à donner à qui reçoit : sans code, pas de livraison.</figcaption></figure>
-      <figure><video data-auto controls preload="none" playsinline muted loop poster="app/aide/videos/coursier-accepter.jpg"><source src="app/aide/videos/coursier-accepter.mp4" type="video/mp4"></video><figcaption><strong>Coursier : accepter</strong> — les courses proches, le trajet, votre part, un appui.</figcaption></figure>
-      <figure><video data-auto controls preload="none" playsinline muted loop poster="app/aide/videos/coursier-livrer-code.jpg"><source src="app/aide/videos/coursier-livrer-code.mp4" type="video/mp4"></video><figcaption><strong>Coursier : livrer</strong> — « récupéré », puis le code à la remise ; la commission est débitée, le reste est à vous.</figcaption></figure>
+    <p class="section-sub">Le prix avant de commander, le coursier sur la carte, un code à 4 chiffres à la remise : sans code, pas de livraison.</p>
+    <!-- 26/09/2026 : plus de vidéos de l'application (Celtis : « on ne montre pas tout »). -->
+    <div class="demo-vendeur" style="margin:8px 0 26px;">
+      <a class="btn btn-primary" href="https://wa.me/2250546818640?text=Bonjour%20CLT%2C%20j'aimerais%20essayer%20CLT%20Express." target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i> Nous écrire pour essayer</a>
     </div>
     <div class="objections-express">
       <div><h3>« Et si le coursier ne vient pas ? »</h3><p>Une course est proposée aux coursiers proches ; sans preneur en trois minutes, plus loin ; puis CLT s'en occupe et vous prévient. Vous suivez tout dans « Mes courses ».</p></div>
       <div><h3>« Et si le colis n'arrive pas ? »</h3><p>Le code de livraison est votre preuve : livrée sans code, c'est vous qui confirmez la réception. Un problème ? « Signaler » sous la course, CLT répond en 24 h.</p></div>
-      <div><h3>« Ça coûte combien ? »</h3><p>500 F + 150 F par kilomètre, calculés avant de commander, payés en espèces au coursier. Jusqu'à 50 000 F de valeur déclarée ; au-dessus, appelez-nous.</p></div>
+      <div><h3>« Ça coûte combien ? »</h3><p>Selon la distance, et affiché avant de commander : pas de négociation, pas de surprise. Payé en espèces au coursier. Jusqu'à 50 000 F de valeur déclarée ; au-dessus, appelez-nous.</p></div>
     </div>
   </div>
 </section>
@@ -361,10 +360,10 @@
         <p>Le client paie directement le coursier, en espèces, à la livraison. Le coursier garde sa part sur chaque course.</p>
       </div>
       <div class="pricing-formula">
-        <div class="line"><span>Prix de base</span><span>≈ 500 FCFA</span></div>
-        <div class="line"><span>+ par kilomètre parcouru</span><span>≈ 150 FCFA/km</span></div>
+        <div class="line"><span>Prix</span><span>Selon la distance</span></div>
+        <div class="line"><span>Affiché</span><span>Avant de confirmer</span></div>
         <div class="line"><span>Paiement</span><span>Espèces, à la livraison</span></div>
-        <div class="pricing-note">Tarifs de lancement, pouvant évoluer. Le prix exact est toujours affiché avant l'envoi de la course.</div>
+        <div class="pricing-note">Le prix exact est toujours affiché dans l'application avant l'envoi de la course.</div>
       </div>
     </div>
   </div>
@@ -460,7 +459,7 @@
     </div>
     <div class="footer-bottom">
       CHRIST LIVRAISON &amp; TRANSPORT SARL — Siège social : Abidjan, Cocody Lycée technique — N°RCCM : CI-ABJ-03-2026-B12-00184<br>
-      <a href="conditions-generales.html">Conditions générales</a> · <a href="mentions-legales.html">Mentions légales</a> · <a href="politique-confidentialite.html">Politique de confidentialité</a>
+      <a href="conditions-generales.html">Conditions générales</a> · <a href="mentions-legales.html">Mentions légales</a> · <a href="politique-confidentialite.html">Politique de confidentialité</a> · <span class="clt-credit">Site et application conçus par <a href="mailto:celtisadje@gmail.com">Celtis Labs</a></span>
     </div>
   </div>
 </footer>

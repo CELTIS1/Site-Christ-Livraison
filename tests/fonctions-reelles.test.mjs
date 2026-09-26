@@ -58,8 +58,9 @@ verifier('toute paire de communes a un prix parmi 1 000 / 1 500 / 2 000 / 2 500 
 verifier('une expédition vers l\'intérieur n\'a pas de prix proposé (null)', app.computePrixLivraison('Cocody', EXP) === null && app.computePrixLivraison(EXP, 'Cocody') === null);
 verifier('une commune inconnue ou vide → null', app.computePrixLivraison('Cocody', 'Nulle-part') === null && app.computePrixLivraison('', 'Cocody') === null);
 const tarifs = fs.readFileSync(path.join(RACINE, 'tarifs.html'), 'utf8');
-verifier('la page Tarifs du site dit les mêmes paliers (1 000 / 1 500 / 2 000 / 2 500 / 3 000) et « le même dans les deux sens »', ['1 000 FCFA', '1 500 FCFA', '2 000 FCFA', '2 500 FCFA', '3 000 FCFA'].every(t => tarifs.includes(t)) && /le même dans les deux sens/.test(tarifs));
-verifier('chaque exemple de la page Tarifs correspond à la grille de l\'app', [['Yopougon', 'Cocody', 1500], ['Yopougon', 'Koumassi', 2000], ['Abobo', 'Bingerville', 2000], ['Cocody', 'Port-Bouët', 2000], ['Yopougon', 'Port-Bouët', 2500], ['Bingerville', 'Anyama', 2500], ['Abobo', 'Port-Bouët', 2500], ['Cocody', 'Plateau', 1500], ['Marcory', 'Koumassi', 1500]].every(([a, b, p]) => tarifs.includes(a + ' → ' + b) && app.computePrixLivraison(a, b) === p));
+// 26/09/2026 : la grille complète n'est plus publiée (Celtis : « ne pas tout exposer ») ; la page garde le prix de départ
+// et les principes, et renvoie au devis et à l'espace du client, où la grille (celle-ci) reste.
+verifier('la page Tarifs dit le prix de départ de la grille (1 000 FCFA) et « le même dans les deux sens », sans publier les paliers', tarifs.includes('<strong>1 000 FCFA</strong>') && /le même dans les deux sens/.test(tarifs) && !/<table class="tarifs"/.test(tarifs) && !tarifs.includes('2 500 FCFA'));
 
 console.log('\n3. Une carte = un geste : l\'étape suivante');
 const abidjan = (statut) => ({ statut, commune_destination: 'Cocody' });

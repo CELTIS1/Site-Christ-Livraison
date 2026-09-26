@@ -1,7 +1,7 @@
 /* PARCOURS — LE SITE QUI BOUGE (26 septembre 2026, v288)
      1. les chiffres du bandeau et de « Qui sommes-nous » comptent quand on y arrive, puis s'arrêtent sur le vrai texte ;
      2. le menu déroulant (ordinateur) reste ouvert quand on descend la souris lentement jusqu'au panneau ;
-     3. les vidéos du produit se lancent seules à l'écran, et s'arrêtent quand on les quitte ;
+     3. le produit dit sans vidéo (26/09) : trois atouts et « Demander une démonstration » ;
      4. les cartes arrivent en cascade ; rien ne déborde ; zéro erreur.
    Lancer à la main :  node tests/parcours/le-site-qui-bouge.mjs */
 import { ouvrirNavigateur, verifier, titre, dodo, bilan } from './_navigateur.mjs';
@@ -35,7 +35,7 @@ await page.locator('#aboutStats').scrollIntoViewIfNeeded(); await dodo(300);
 const aboutPendant = await page.locator('#aboutStats .stat-number').first().textContent();
 await dodo(2200);
 const aboutFin = await page.locator('#aboutStats').innerText();
-verifier('« Qui sommes-nous » compte aussi, puis « 60+ », « 14 », « 1000 FCFA »', aboutPendant.trim() !== '60+' && /60\+/.test(aboutFin) && /\b14\b/.test(aboutFin) && /1000 FCFA/.test(aboutFin), aboutPendant + ' | ' + aboutFin.replace(/\s+/g, ' '));
+verifier('« Qui sommes-nous » compte aussi, puis « 60+ », « 14 », « Depuis 2023 » (26/09 : plus de prix affiché)', aboutPendant.trim() !== '60+' && /60\+/.test(aboutFin) && /\b14\b/.test(aboutFin) && /Depuis 2023/.test(aboutFin) && !/FCFA/.test(aboutFin), aboutPendant + ' | ' + aboutFin.replace(/\s+/g, ' '));
 
 titre('2. Le menu qui ne s\'échappe plus');
 await page.evaluate(() => window.scrollTo(0, 0)); await dodo(400);
@@ -48,16 +48,14 @@ const l = await lien.boundingBox();
 // descente lente : 25 pas, 40 ms chacun (1 s), du bouton au 3e lien
 for (let k = 1; k <= 25; k++) { await page.mouse.move(b.x + b.width / 2 + (l.x + 30 - b.x - b.width / 2) * k / 25, b.y + b.height / 2 + (l.y + l.height / 2 - b.y - b.height / 2) * k / 25); await dodo(40); }
 verifier('descendu lentement jusqu\'au 3e lien : le panneau est toujours ouvert', await page.locator('.nav-groupe').first().locator('.nav-sous').isVisible() && await lien.isVisible());
-verifier('chaque lien : icône, titre et une ligne d\'explication', /Tarifs/.test(await lien.innerText()) && /selon la distance/.test(await lien.innerText()));
+verifier('chaque lien : icône, titre et une ligne d\'explication', /Tarifs/.test(await lien.innerText()) && /selon la distance/i.test(await lien.innerText()));
 await page.mouse.move(700, 600); await dodo(700);
 verifier('la souris partie, il se referme (après un court délai)', await page.evaluate(() => getComputedStyle(document.querySelector('.nav-groupe .nav-sous')).visibility) === 'hidden');
 
-titre('3. Les vidéos qui se jouent seules');
-await page.locator('#produit').scrollIntoViewIfNeeded(); await dodo(800);
-const lectures = await page.evaluate(() => window.__lectures.length);
-verifier('à l\'écran, les vidéos du produit se lancent seules', lectures >= 1, String(lectures));
-await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); await dodo(800);
-verifier('quittées, elles s\'arrêtent', (await page.evaluate(() => window.__pauses.length)) >= 1);
+titre('3. Le produit, dit sans être montré (26/09 : plus de vidéos de l\'application)');
+await page.locator('#produit').scrollIntoViewIfNeeded(); await dodo(900);
+verifier('trois atouts apparaissent, et « Demander une démonstration »', (await page.locator('#produit .produit-atout').count()) === 3 && await page.locator('#produit .produit-atout').nth(2).isVisible() && await page.locator('#produit .produit-demo a').isVisible());
+verifier('aucune vidéo de l\'application dans la page', (await page.locator('video source[src*="aide/videos"]').count()) === 0);
 
 titre('4. La cascade, et rien qui déborde');
 const retards = await page.evaluate(() => [...document.querySelectorAll('#rejoindre .rejoindre-carte')].map((e) => e.style.transitionDelay));
@@ -89,6 +87,26 @@ for (const w of [1261, 1366, 1440, 1600]) {
   const r = await page.evaluate(() => ({ reseaux: [...document.querySelectorAll('.nav-reseaux a')].map((a) => a.getAttribute('aria-label') + ':' + Math.round(a.getBoundingClientRect().width)), droite: document.querySelector('.nav-login').getBoundingClientRect().right }));
   verifier(`à ${w} px : les quatre réseaux (44 px) à côté de WhatsApp, « Se connecter » entièrement à l'écran`, r.reseaux.join(',') === 'Nous écrire sur WhatsApp:44,Facebook:44,Instagram:44,TikTok:44' && r.droite <= w, JSON.stringify(r));
 }
+
+titre('7. Notre équipe, actualités, partenaires, pied de page (26/09)');
+const contrasteSite = (sel) => page.evaluate((sel) => {
+  const lum = (s) => { const m = s.match(/\d+(\.\d+)?/g).slice(0, 3).map(Number).map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2]; };
+  const fond = (el) => { while (el) { const cs = getComputedStyle(el); if (cs.backgroundImage && cs.backgroundImage !== 'none' && /gradient/.test(cs.backgroundImage)) { const c = cs.backgroundImage.match(/rgba?\([^)]+\)/); if (c) return c[0]; } const b = cs.backgroundColor; if (b && !/rgba\(0, 0, 0, 0\)|transparent/.test(b)) return b; el = el.parentElement; } return 'rgb(255,255,255)'; };
+  return [...document.querySelectorAll(sel)].filter((el) => el.offsetParent && el.textContent.trim()).filter((el) => { const a = lum(getComputedStyle(el).color), b = lum(fond(el)); return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05) < 4.5; }).map((e) => e.tagName + '.' + e.className + ':' + e.textContent.trim().slice(0, 24)).join(' | ');
+}, sel);
+const SEL = '#equipe strong, #equipe span, #equipe small, #actualites .actu-date, #actualites h3, #actualites p, #partenaires .partenaires-appel strong, #partenaires .partenaires-appel span, footer .footer-bas span, footer .footer-bas a, footer .footer-links a';
+for (const w of [320, 390, 768, 1440]) {
+  await page.setViewportSize({ width: w, height: 900 }); await page.goto(base + '/index.html'); await dodo(700);
+  const hh = await page.evaluate(() => document.body.scrollHeight);
+  for (let y = 0; y < hh; y += 600) { await page.evaluate((yy) => window.scrollTo(0, yy), y); await dodo(60); }
+  await dodo(700);
+  const r = await page.evaluate(() => ({ equipe: document.querySelectorAll('#equipe .equipe-carte').length, actus: document.querySelectorAll('#actualites .actu-carte').length, appel: !!document.querySelector('#partenaires .partenaires-appel a[href*="wa.me"]'), grilleVide: document.getElementById('partenairesGrid').hidden, deborde: document.documentElement.scrollWidth > innerWidth + 1, credit: (document.querySelector('.footer-credit a') || {}).href, cible: Math.round((document.querySelector('.footer-credit a') || { getBoundingClientRect: () => ({ height: 0 }) }).getBoundingClientRect().height) }));
+  verifier(`à ${w} px : 3 fiches « Notre équipe », 3 actualités, « Devenir partenaire » (grille vide cachée), rien ne déborde`, r.equipe === 3 && r.actus === 3 && r.appel && r.grilleVide && !r.deborde, JSON.stringify(r));
+  verifier(`à ${w} px : « Site et application conçus par Celtis Labs » → mailto, cible ≥ 44 px`, r.credit === 'mailto:celtisadje@gmail.com' && r.cible >= 44, JSON.stringify(r));
+  verifier(`à ${w} px : contraste ≥ 4,5 dans les nouvelles sections et le pied`, (await contrasteSite(SEL)) === '', await contrasteSite(SEL));
+  if (process.env.CAPTURES) { for (const id of ['equipe', 'actualites', 'partenaires', 'contact']) { await page.locator('#' + id).scrollIntoViewIfNeeded(); await dodo(500); await page.locator('#' + id).screenshot({ path: process.env.CAPTURES + '/site-' + id + '-' + w + '.png' }); } }
+}
+verifier('le menu « À propos » mène à Notre équipe, Actualités, Partenaires', await page.evaluate(() => ['#equipe', '#actualites', '#partenaires'].every((h) => document.querySelector('.nav-sous a[href="' + h + '"]'))));
 
 verifier('aucune erreur JavaScript', erreurs.length === 0, erreurs.join(' | '));
 await N.fermer();

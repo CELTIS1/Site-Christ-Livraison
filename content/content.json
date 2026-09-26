@@ -483,7 +483,7 @@
   "about": {
     "eyebrow": "À PROPOS",
     "title": "Qui sommes-nous ?",
-    "text": "Christ Livraison & Transport SARL est une société de livraison basée à Abidjan, Cocody (Lycée technique). Nous accompagnons particuliers, commerçants et entreprises dans leurs livraisons de colis, courriers, documents et courses, partout à Abidjan et ses périphéries.",
+    "text": "Depuis 2023, Christ Livraison & Transport livre à Abidjan les colis des vendeurs en ligne, des boutiques et des entreprises : livraison de colis, courses et expéditions vers l'intérieur du pays. Nous encaissons pour vous et vous reversons votre argent, reçu à l'appui. Basés à Cocody (Lycée technique), nous desservons 14 communes.",
     "values": [
       {
         "icon": "fa-bolt",
@@ -511,8 +511,8 @@
         "label": "communes d'Abidjan desservies"
       },
       {
-        "number": "1000 FCFA",
-        "label": "tarif de départ pour vos livraisons"
+        "number": "Depuis 2023",
+        "label": "au service des vendeurs d'Abidjan"
       }
     ]
   },
@@ -551,6 +551,62 @@
         "date": "Août 2026"
       }
     ]
+  },
+  "equipe": {
+    "title": "Notre équipe",
+    "subtitle": "Des visages, pas un standard : les personnes qui prennent vos colis en charge, du bureau à la route.",
+    "items": [
+      {
+        "nom": "Celtis Adjé",
+        "role": "Fondateur et gérant",
+        "texte": "A créé CLT en 2023 ; pilote l'entreprise et son application.",
+        "photo": ""
+      },
+      {
+        "nom": "Le bureau",
+        "role": "Suivi des colis et service clientèle",
+        "texte": "Chaque colis suivi, chaque appel repris, chaque reversement préparé.",
+        "photo": "images/vie/suivi-des-colis-au-bureau-800.webp"
+      },
+      {
+        "nom": "Nos livreurs",
+        "role": "Formés, équipés, suivis",
+        "texte": "Des livreurs de confiance, notés sur chaque colis.",
+        "photo": "images/vie/deux-livreurs-800.webp"
+      }
+    ]
+  },
+  "actualites": {
+    "title": "Actualités et événements",
+    "subtitle": "Ce qui se passe chez CLT.",
+    "items": [
+      {
+        "date": "Septembre 2026",
+        "titre": "Notre application de suivi est en service",
+        "texte": "Chaque colis suivi, chaque livraison prouvée, chaque reversement avec son reçu.",
+        "photo": "images/vie/livreurs-sur-l-application-800.webp",
+        "lien": ""
+      },
+      {
+        "date": "Septembre 2026",
+        "titre": "L'équipe s'agrandit",
+        "texte": "De nouveaux livreurs et un chargé de communication nous rejoignent, pour vous servir mieux.",
+        "photo": "images/vie/equipe-devant-le-local-800.webp",
+        "lien": ""
+      },
+      {
+        "date": "Août 2026",
+        "titre": "Nos livreurs en formation",
+        "texte": "Accueil du client, sécurité, preuve de livraison : toute l'équipe formée.",
+        "photo": "images/vie/formation-des-livreurs-800.webp",
+        "lien": ""
+      }
+    ]
+  },
+  "partenaires": {
+    "title": "Nos partenaires",
+    "subtitle": "Ils avancent avec nous.",
+    "items": []
   },
   "film": {
     "title": "Une journée avec nos livreurs",

@@ -60,6 +60,8 @@
   .etape::before{ counter-increment:e; content:counter(e); display:inline-flex; width:32px; height:32px; border-radius:50%; background:var(--navy); color:#fff; align-items:center; justify-content:center; font-weight:800; margin-bottom:10px; }
   .etape h3{ font-size:15.5px; margin-bottom:4px; }
   .etape p{ font-size:14px; color:#33475B; }
+  .demo-vendeur{ display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:10px 16px; text-align:center; }
+  .demo-vendeur span{ font-size:14px; color:var(--muted); }
   .video-wrap{ display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
   .video-wrap figure{ margin:0; text-align:center; }
   .video-wrap video{ width:100%; max-width:280px; aspect-ratio:390/844; border-radius:22px; border:6px solid var(--navy-dark); background:#0f1e33; }
@@ -140,16 +142,16 @@
 
 <section id="comment" style="background:var(--bg);">
   <div class="container">
-    <h2 class="section-title">Comment ça marche, en trois écrans</h2>
+    <h2 class="section-title">Comment ça marche, en trois temps</h2>
     <div class="etapes">
       <div class="etape"><h3>Vous annoncez</h3><p>« Demander un passage » : le jour, combien de colis, une précision. Ou vous enregistrez vos colis vous-même, à partir des photos des étiquettes.</p></div>
       <div class="etape"><h3>On récupère et on livre</h3><p>Le livreur vous prévient, passe, et livre à vos clientes. Chaque étape est sur votre téléphone, avec la photo ou le code à la remise.</p></div>
       <div class="etape"><h3>Vous êtes payée</h3><p>Le relevé dit ce que CLT vous doit ; le reversement arrive avec son reçu. Un colis revient ? Vous le savez, et vous confirmez quand il vous est rendu.</p></div>
     </div>
-    <div class="video-wrap" style="margin-top:30px;">
-      <figure><video data-auto controls preload="none" playsinline muted loop poster="app/aide/videos/cliente-demander-passage.jpg"><source src="app/aide/videos/cliente-demander-passage.mp4" type="video/mp4"></video><figcaption>Demander un passage</figcaption></figure>
-      <figure><video data-auto controls preload="none" playsinline muted loop poster="app/aide/videos/cliente-suivre-signaler.jpg"><source src="app/aide/videos/cliente-suivre-signaler.mp4" type="video/mp4"></video><figcaption>Suivre un colis, signaler un problème</figcaption></figure>
-      <figure><video data-auto controls preload="none" playsinline muted loop poster="app/aide/videos/cliente-releve.jpg"><source src="app/aide/videos/cliente-releve.mp4" type="video/mp4"></video><figcaption>Mon relevé, mes reçus</figcaption></figure>
+    <!-- 26/09/2026, Celtis : ne plus montrer l'application en vidéo (on la copie) ; on la montre en vrai, sur rendez-vous. -->
+    <div class="demo-vendeur" style="margin-top:26px;">
+      <a class="btn btn-primary" href="https://wa.me/2250546818640?text=Bonjour%20CLT%2C%20je%20vends%20en%20ligne%20et%20j'aimerais%20voir%20votre%20application." target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i> Voir l'application en 10 minutes</a>
+      <span>Nous vous la montrons sur votre téléphone, sans engagement.</span>
     </div>
   </div>
 </section>
@@ -157,7 +159,7 @@
 <section id="tarifs" class="tarifs">
   <div class="container">
     <h2 class="section-title">Le prix, annoncé avant</h2>
-    <p class="section-sub">Une livraison dans Abidjan se paie selon la commune de destination. Pas d'abonnement, pas de frais cachés ; la grille complète est sur la page Tarifs.</p>
+    <p class="section-sub">Une livraison dans Abidjan se paie selon la commune de destination. Pas d'abonnement, pas de frais cachés ; la grille complète vous est remise avec votre devis.</p>
     <div class="tarifs-boite">
       <table>
         <tr><th>Livraison dans Abidjan</th><td>à partir de 1 000 F, jusqu'à 3 000 F selon la commune (Songon comprise)</td></tr>
@@ -165,7 +167,7 @@
         <tr><th>Encaissement pour vous</th><td>compris : l'argent de l'article est à vous, reversé avec un reçu</td></tr>
         <tr><th>Première livraison</th><td>offerte, pour voir</td></tr>
       </table>
-      <p style="margin-top:12px;font-size:13.5px;color:var(--muted);"><a href="tarifs.html" style="color:var(--navy);font-weight:700;">Voir la grille par commune →</a></p>
+      <p style="margin-top:12px;font-size:13.5px;color:var(--muted);"><a href="https://wa.me/2250546818640?text=Bonjour%20CLT%2C%20je%20souhaite%20recevoir%20votre%20grille%20tarifaire." target="_blank" rel="noopener" style="color:var(--navy);font-weight:700;">Recevoir la grille complète sur WhatsApp →</a></p>
     </div>
   </div>
 </section>
@@ -197,7 +199,7 @@
       <a href="express.html">CLT Express</a>
       <a href="app/login.html">Espace cliente</a>
     </div>
-    <div class="bas">CHRIST LIVRAISON &amp; TRANSPORT SARL — Abidjan, Cocody Lycée technique — RCCM CI-ABJ-03-2026-B12-00184 · <a href="conditions-generales.html">Conditions générales</a> · <a href="politique-confidentialite.html">Confidentialité</a></div>
+    <div class="bas">CHRIST LIVRAISON &amp; TRANSPORT SARL — Abidjan, Cocody Lycée technique — RCCM CI-ABJ-03-2026-B12-00184 · <a href="conditions-generales.html">Conditions générales</a> · <a href="politique-confidentialite.html">Confidentialité</a> · <span class="clt-credit">Site et application conçus par <a href="mailto:celtisadje@gmail.com">Celtis Labs</a></span></div>
   </div>
 </footer>
 
