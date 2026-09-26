@@ -4280,12 +4280,42 @@ async function init(){
 
   // Onglet ouvert par défaut selon le profil
   switchTab(isAdmin ? 'dashboard' : (canPaie ? 'paie' : 'compta'));
+  // LES RACCOURCIS (26/09/2026, lot RA) : la page demandée par ?aller=… ou par l'espace Équipe, une fois tout prêt.
+  gestionPrete = true;
+  const allerLien = new URLSearchParams(location.search).get('aller');
+  if (allerLien) { const [t, sb, an] = allerLien.split('/'); cltAller(t, sb, an); }
+  else if (allerEnAttente) cltAller(allerEnAttente.tab, allerEnAttente.sub, allerEnAttente.ancre);
   // LES RAPPORTS REÇUS (22/09/2026) : la carte, et la notification du bilan (?rapport=<id>) qui y conduit.
   if (isAdmin && window.CLTRapportsRecusEcran) CLTRapportsRecusEcran.ouvrir();
 
   // En-tête figé : mesure des décalages et mise en place des observateurs.
   initStickyHeader();
 }
+/* LES RACCOURCIS DU GÉRANT (26/09/2026, lot RA) — aller directement à une page de Gestion.
+   Appelé par ?aller=onglet/sous-onglet/ancre (lien) ou par un message { clt:'aller', tab, sub, ancre }
+   de l'espace Équipe (Gestion vit dans son onglet « Bureau »). Seulement vers un onglet visible pour
+   ce compte, et un sous-onglet qui existe : un raccourci ne force aucune porte. */
+let gestionPrete = false, allerEnAttente = null;
+const ALLER_ONGLETS = ['dashboard', 'compta', 'paie', 'journal', 'site'];
+function cltAller(tab, sub, ancre) {
+  if (ALLER_ONGLETS.indexOf(tab) === -1) return false;
+  if (!gestionPrete) { allerEnAttente = { tab, sub, ancre }; return false; }
+  const btn = document.getElementById('tab-' + tab);
+  if (tab !== 'dashboard' && btn && btn.style.display === 'none') return false;
+  if (tab === 'site' && !(ACCES && ACCES.isAdmin)) return false;
+  switchTab(tab);
+  if (sub && document.getElementById(tab + '-' + sub)) switchSub(tab, sub);
+  setTimeout(function () {
+    const cible = ancre ? document.getElementById(ancre) : null;
+    if (cible && cible.scrollIntoView) cible.scrollIntoView({ block: 'start' }); else window.scrollTo(0, 0);
+  }, 400);
+  return true;
+}
+window.cltAller = cltAller;
+window.addEventListener('message', function (e) {
+  if (e.origin !== location.origin || !e.data || e.data.clt !== 'aller') return;
+  cltAller(e.data.tab, e.data.sub || '', e.data.ancre || '');
+});
 init();
 
 

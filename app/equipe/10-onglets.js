@@ -70,6 +70,7 @@
       if (hote && !hote.querySelector('iframe')) {
         const f = document.createElement('iframe');
         f.className = 'bureau-cadre'; f.src = 'gestion.html?integre=1'; f.title = 'Le Bureau du gérant (Gestion)'; f.setAttribute('loading', 'lazy');
+        f.addEventListener('load', () => { f.dataset.cltPret = '1'; });
         hote.appendChild(f);
       }
     }
@@ -273,6 +274,7 @@
      La feuille est construite À PARTIR des boutons de la barre : leurs icônes et leurs libellés
      sont déjà écrits une fois, on ne les recopie pas. */
   function fermerFeuillePlus(){
+    if (window.CLTRaccourcisEcran) window.CLTRaccourcisEcran.fermer();
     document.getElementById('bottomnav-feuille')?.setAttribute('hidden', '');
     document.getElementById('bottomnav-voile')?.setAttribute('hidden', '');
     document.getElementById('bottomnav-plus')?.setAttribute('aria-expanded', 'false');
@@ -313,6 +315,9 @@
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') fermerFeuillePlus(); });
     const plus = document.getElementById('bottomnav-plus');
     if (plus) plus.addEventListener('click', () => {
+      // LES RACCOURCIS (26/09/2026, lot RA) : « Plus » ouvre le tableau en colonnes (app/equipe/20-raccourcis.js).
+      // L'ancienne feuille reste en secours si ce fichier manquait.
+      if (window.CLTRaccourcisEcran) { window.CLTRaccourcisEcran.basculer(); return; }
       const ouvert = !feuille.hidden;
       feuille.hidden = ouvert; voile.hidden = ouvert;
       plus.setAttribute('aria-expanded', String(!ouvert));

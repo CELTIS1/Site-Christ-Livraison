@@ -126,8 +126,8 @@
   ],
   "sameAs": [
     "https://www.facebook.com/ChristLivraison/",
-    "https://www.instagram.com/christ_livraison",
-    "https://www.tiktok.com/@christ_livraison_trans"
+    "https://www.instagram.com/christlivraison",
+    "https://www.tiktok.com/@christlivraison"
   ],
   "openingHoursSpecification": [
     {
@@ -915,6 +915,8 @@
     }
     .mobile-cta-bar .btn{width:100%; justify-content:center; padding:13px 20px; font-size:14.5px;}
     body{padding-bottom:70px;}
+    /* Le bas du pied de page passait sous les ronds flottants (WhatsApp, assistant) : on lui laisse la place (26/09). */
+    footer{padding-bottom:165px;}
     .wa-float{bottom:78px;}
   }
   @media (max-width:480px){ .wa-float{right:16px; bottom:78px; width:52px; height:52px; font-size:25px;} }
@@ -1183,8 +1185,8 @@
           <a class="nav-wa" href="https://wa.me/2250546818640" target="_blank" rel="noopener" aria-label="Nous écrire sur WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
           <!-- Les réseaux à côté de WhatsApp (26/09/2026, Celtis : « Facebook, TikTok, il y avait ça ; ils doivent être à côté »). -->
           <a class="nav-reseau nav-reseau--fb" href="https://www.facebook.com/ChristLivraison/" target="_blank" rel="noopener" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
-          <a class="nav-reseau nav-reseau--ig" href="https://www.instagram.com/christ_livraison" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
-          <a class="nav-reseau nav-reseau--tt" href="https://www.tiktok.com/@christ_livraison_trans" target="_blank" rel="noopener" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
+          <a class="nav-reseau nav-reseau--ig" href="https://www.instagram.com/christlivraison" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+          <a class="nav-reseau nav-reseau--tt" href="https://www.tiktok.com/@christlivraison" target="_blank" rel="noopener" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
         </div>
         <div class="nav-btn-group">
           <a class="nav-cta" href="#devis">Demander un devis</a>
@@ -1195,8 +1197,8 @@
         <div class="nav-social-mobile">
           <a href="https://wa.me/2250546818640" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
           <a href="https://www.facebook.com/ChristLivraison/" target="_blank" rel="noopener" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
-          <a href="https://www.instagram.com/christ_livraison" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
-          <a href="https://www.tiktok.com/@christ_livraison_trans" target="_blank" rel="noopener" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
+          <a href="https://www.instagram.com/christlivraison" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+          <a href="https://www.tiktok.com/@christlivraison" target="_blank" rel="noopener" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
         </div>
         <button class="burger" onclick="toggleMenu()" aria-label="Menu">☰</button>
       </div>
@@ -1651,11 +1653,12 @@
       <div class="footer-col">
         <h4>Nos services</h4>
         <ul class="footer-links" id="footerServicesList">
-          <li>Livraison express</li>
-          <li>Livraison programmée</li>
-          <li>Livraison e-commerce</li>
-          <li>Courses pour entreprises</li>
-          <li>Expédition</li>
+          <!-- 26/09/2026 : ces cinq lignes étaient du texte sans lien (Celtis : « les liens en bas sont perdus »). -->
+          <li><a href="services.html?s=express">Livraison express</a></li>
+          <li><a href="services.html?s=programmee">Livraison programmée</a></li>
+          <li><a href="services.html?s=ecommerce">Livraison e-commerce</a></li>
+          <li><a href="services.html?s=entreprises">Courses pour entreprises</a></li>
+          <li><a href="services.html?s=expedition">Expédition</a></li>
         </ul>
       </div>
       <div class="footer-col">
@@ -1670,8 +1673,8 @@
         </div>
         <div class="social-row">
           <a href="https://www.facebook.com/ChristLivraison/" class="social-item" target="_blank" rel="noopener" aria-label="Facebook"><i class="fa-brands fa-facebook"></i> <span id="facebookText">Christ Livraison</span></a>
-          <a href="https://www.instagram.com/christ_livraison" class="social-item" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i> <span id="instagramText">christ_livraison</span></a>
-          <a href="https://www.tiktok.com/@christ_livraison_trans" class="social-item" target="_blank" rel="noopener" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i> <span id="tiktokText">christ_livraison_trans</span></a>
+          <a href="https://www.instagram.com/christlivraison" class="social-item" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i> <span id="instagramText">christlivraison</span></a>
+          <a href="https://www.tiktok.com/@christlivraison" class="social-item" target="_blank" rel="noopener" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i> <span id="tiktokText">christlivraison</span></a>
         </div>
       </div>
     </div>
@@ -1744,7 +1747,7 @@
       phone_display: "07 79 60 47 61",
       email: "contact@christlivraison.ci",
       facebook: "Christ Livraison",
-      instagram: "christ_livraison"
+      instagram: "christlivraison"
     }
   };
 

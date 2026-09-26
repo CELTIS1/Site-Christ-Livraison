@@ -85,6 +85,21 @@
       "version": "v289"
     },
     {
+      "id": "raccourcis",
+      "espace": "bureau",
+      "titre": "Les raccourcis : tout à portée d'un toucher",
+      "enBref": "Le bouton « Plus » (téléphone) ou « ⊞ Raccourcis » (ordinateur) ouvre quatre colonnes ; chaque case mène au bon écran, même dans Gestion.",
+      "ou": "Espace Équipe › bouton « Plus » en bas, ou « ⊞ Raccourcis » au bout des onglets",
+      "etapes": [
+        "« Aujourd'hui » : à faire du gérant, à traiter, à confier, carburant du jour, avis, dossiers — avec le nombre en direct.",
+        "« Argent », « Équipe et vendeurs », « Site et plus » : les écrans que vous ouvrez souvent.",
+        "Un toucher ouvre l'écran ; une page de Gestion s'ouvre dans l'onglet Bureau, au bon sous-onglet.",
+        "Le chiffre rouge sur « Plus » : le total de ce qui demande votre attention aujourd'hui."
+      ],
+      "aSavoir": "Les nombres sont lus à l'ouverture du tableau. « ✓ Rien à faire » : tout est en ordre. Une case sans nombre reste utilisable (le chiffre n'a pas pu être lu).",
+      "version": "v290"
+    },
+    {
       "id": "partenaires",
       "espace": "gestion",
       "titre": "Les partenaires (Générale CI)",

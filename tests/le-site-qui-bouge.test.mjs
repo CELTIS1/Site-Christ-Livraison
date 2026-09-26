@@ -42,7 +42,14 @@ for (const f of ['vendeuses.html', 'livreurs.html', 'services.html', 'tarifs.htm
 }
 verifier('les pages sans effets en reçoivent (titres, cartes des grilles, figures), jamais un effet dans un effet', /function pagesSansEffets\(\)/.test(js) && /if \(document\.querySelector\('\.reveal'\)\) return;/.test(js) && /o\.contains\(el\)/.test(js));
 
-verifier('en haut, à côté de WhatsApp : Facebook, Instagram, TikTok (liens officiels)', /<div class="nav-reseaux">/.test(index) && /nav-reseau--fb" href="https:\/\/www\.facebook\.com\/ChristLivraison\/"/.test(index) && /nav-reseau--ig" href="https:\/\/www\.instagram\.com\/christ_livraison"/.test(index) && /nav-reseau--tt" href="https:\/\/www\.tiktok\.com\/@christ_livraison_trans"/.test(index));
+verifier('en haut, à côté de WhatsApp : Facebook, Instagram, TikTok (liens officiels)', /<div class="nav-reseaux">/.test(index) && /nav-reseau--fb" href="https:\/\/www\.facebook\.com\/ChristLivraison\/"/.test(index) && /nav-reseau--ig" href="https:\/\/www\.instagram\.com\/christlivraison"/.test(index) && /nav-reseau--tt" href="https:\/\/www\.tiktok\.com\/@christlivraison"/.test(index));
+
+verifier('le pied de page : « Nos services » sont de vrais liens (services.html?s=…), et le bas reste au-dessus des ronds flottants sur téléphone', ['express', 'programmee', 'ecommerce', 'entreprises', 'expedition'].every((k) => index.includes('<li><a href="services.html?s=' + k + '">')) && /footer\{padding-bottom:165px;\}/.test(index));
+for (const f of ['index.html', 'vendeuses.html', 'services.html', 'tarifs.html', 'contact.html', 'livreurs.html', 'express.html', 'conditions-generales.html', 'mentions-legales.html', 'politique-confidentialite.html', 'installer.html']) {
+  const h = lire(f), pied = (h.match(/<footer[\s\S]*?<\/footer>/) || [''])[0];
+  const casses = [...pied.matchAll(/href="([^"#?:]+\.html)[^"]*"/g)].map((m) => m[1]).filter((x) => !fs.existsSync(path.join(RACINE, x)));
+  verifier(f + ' : chaque lien du pied de page mène à une page qui existe', pied && casses.length === 0, casses.join(', '));
+}
 
 console.log(`\n${reussies} réussie(s), ${echouees} échouée(s).`);
 process.exit(echouees ? 1 : 0);
