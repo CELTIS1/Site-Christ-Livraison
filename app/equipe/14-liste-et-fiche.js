@@ -84,22 +84,16 @@
     placer();
   }
 
-  /* Où épingler la fiche : à droite de la liste, sous ce qui reste collé en haut de l'écran. */
+  /* LA FICHE EST TENUE PAR LE NAVIGATEUR (26/09/2026). Elle n'est plus posée à des coordonnées calculées
+     à chaque défilement (position fixe) : c'est une colonne de grille, collante (style.css). Il reste deux
+     nombres, qui ne dépendent PAS du défilement : la hauteur de la barre d'onglets collée en haut (la fiche
+     s'arrête dessous) et le nombre de lignes (la fiche occupe la colonne sur toute leur hauteur). */
   function placer() {
     if (!liste || !large()) return;
-    const panneau = document.getElementById('panel-colis');
-    if (!panneau) return;
-    const p = panneau.getBoundingClientRect(), l = liste.getBoundingClientRect();
     const barre = document.querySelector('.clt-toptabs-wrap');
-    const plancher = (barre ? Math.max(0, barre.getBoundingClientRect().bottom) : 0) + 12;
-    const racine = document.documentElement.style;
-    racine.setProperty('--eqf-gauche', Math.round(l.right + 20) + 'px');
-    racine.setProperty('--eqf-largeur', Math.max(320, Math.round(p.right - l.right - 20)) + 'px');
-    racine.setProperty('--eqf-haut', Math.round(Math.max(l.top, plancher)) + 'px');
-    /* La liste peut être poussée sous le pli par ce qui la précède (« À confier », la saisie —
-       25/09/2026, lot 17). Tant qu'elle n'est pas à l'écran, la fiche ne l'est pas non plus :
-       épinglée à côté d'une liste qu'on ne voit pas, elle recouvrirait les blocs du dessus. */
-    document.body.classList.toggle('eq-fiche-hors-ecran', l.top > window.innerHeight - 160);
+    const h = barre ? Math.round(barre.getBoundingClientRect().height) : 0;
+    if (h > 0) document.documentElement.style.setProperty('--eqf-haut', (h + 12) + 'px');   // onglet caché : on garde la dernière mesure
+    liste.style.setProperty('--eqf-rangs', String(liste.children.length + 2));
   }
 
   function poser() {
@@ -177,7 +171,7 @@
     });
     (media.addEventListener ? media.addEventListener('change', demander) : media.addListener(demander));
     window.addEventListener('resize', placer);
-    window.addEventListener('scroll', function () { dernierY = window.scrollY; placer(); }, { passive: true });
+    window.addEventListener('scroll', function () { dernierY = window.scrollY; }, { passive: true });
     poser();
   }
 

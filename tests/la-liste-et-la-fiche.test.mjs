@@ -15,7 +15,8 @@ const code = js.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 
 console.log('\n1. Rien n\'est déplacé : les gestes de la carte restent les siens');
 verifier('aucune carte n\'est déplacée ni clonée (ni appendChild d\'une carte, ni cloneNode d\'une carte entière)', !/appendChild\(carte|carte\.cloneNode|fiche\.appendChild/.test(code));
-verifier('la fiche est la carte elle-même, épinglée par le CSS (position:fixed)', /body\.eq-large #colis-list \.colis-item\.eq-choisi\{[^}]*position:fixed/.test(css));
+verifier('la fiche est la carte elle-même, tenue par le CSS : colonne de droite, collante (position:sticky, 26/09) — plus de coordonnées calculées', /body\.eq-large #colis-list \.colis-item\.eq-choisi\{[^}]*grid-column:2[^}]*position:sticky/.test(css) && !/eqf-gauche|eqf-largeur/.test(css + code));
+verifier('le défilement ne recalcule plus rien', !/addEventListener\('scroll', function \(\) \{ dernierY = window\.scrollY; placer\(\);/.test(code));
 verifier('les autres cartes sont cachées, pas retirées', /body\.eq-large #colis-list \.colis-item\{ display:none; \}/.test(css));
 verifier('après chaque redessin, le colis choisi est retrouvé par son identifiant', /MutationObserver/.test(code) && /const encore = cartes\.some/.test(code));
 verifier('l\'observateur est débranché pendant qu\'on pose les lignes : pas de boucle', /observateur\.disconnect\(\)/.test(code) && /finally/.test(code));
@@ -25,9 +26,9 @@ console.log('\n2. Au-dessus de 1 200 px seulement');
 verifier('la bascule suit matchMedia(min-width:1200px)', /LARGEUR_MINI = 1200/.test(code) && /matchMedia/.test(code));
 verifier('sous le seuil, les lignes sont retirées et la classe aussi', /if \(!large\(\)\) \{ retirer\(\); return; \}/.test(code) && /classList\.toggle\('eq-large', large\(\)\)/.test(code));
 verifier('sans body.eq-large, une ligne n\'existe pas à l\'écran', /^\.eq-ligne\{ display:none; \}/m.test(css));
-verifier('toutes les règles de mise en page passent par body.eq-large', !/^#colis-list\{ width:44%/m.test(css) && /body\.eq-large #colis-list\{ width:44%/.test(css));
+verifier('toutes les règles de mise en page passent par body.eq-large', !/^#colis-list\{ display:grid/m.test(css) && /body\.eq-large #colis-list\{ display:grid; grid-template-columns:minmax\(460px, 44%\)/.test(css));
 verifier('la colonne de 1 032 px s\'élargit, sur cet écran-là seulement', /body\.eq-large \.wrap\{ max-width:1560px; \}/.test(css));
-verifier('à l\'impression, les cartes reviennent', /@media print\{ body\.eq-large #colis-list\{ width:auto; \}/.test(css));
+verifier('à l\'impression, les cartes reviennent', /@media print\{ body\.eq-large #colis-list\{ display:block; \}/.test(css));
 
 console.log('\n3. La ligne dit ce que dit la carte');
 verifier('le statut est lu sur la carte (badge ou sélecteur), pas recalculé', /\.status-col \.status-select/.test(code) && /\.status-col \.badge/.test(code));

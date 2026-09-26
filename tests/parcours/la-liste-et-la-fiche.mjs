@@ -28,7 +28,7 @@ const etat = () => page.evaluate(() => {
   const r = f ? f.getBoundingClientRect() : null, liste = document.getElementById('colis-list').getBoundingClientRect();
   return { large: document.body.classList.contains('eq-large'), lignes: document.querySelectorAll('#colis-list .eq-ligne').length, cartes: cartes.length,
     visibles: cartes.filter(vis).length, choisi: f ? f.dataset.id : '', ligneChoisie: l ? l.dataset.pour : '',
-    aDroite: r ? r.left >= liste.right : false, dansEcran: r ? (r.top >= 0 && r.right <= innerWidth && r.bottom <= innerHeight + 1) : false,
+    aDroite: r && l ? r.left >= l.getBoundingClientRect().right : false, gauche: r ? Math.round(r.left) : null, haut: r ? Math.round(r.top) : null, dansEcran: r ? (r.top >= 0 && r.right <= innerWidth && r.bottom <= innerHeight + 1) : false,
     fixe: f ? getComputedStyle(f).position : '', deborde: document.documentElement.scrollWidth > innerWidth };
 });
 
@@ -37,7 +37,24 @@ let e = await etat();
 verifier('la page s\'ouvre sans une seule erreur', erreurs.length === 0, erreurs.join('\n       '));
 verifier('autant de lignes que de colis', e.large && e.lignes === e.cartes && e.lignes >= 5, JSON.stringify(e));
 verifier('une seule carte est visible : la fiche du colis choisi (le premier, par défaut)', e.visibles === 1 && e.choisi && e.choisi === e.ligneChoisie, JSON.stringify(e));
-verifier('elle est épinglée à droite de la liste, entière dans l\'écran', e.fixe === 'fixed' && e.aDroite && e.dansEcran, JSON.stringify(e));
+verifier('elle est tenue à droite de la liste (colonne collante, plus de position calculée), entière dans l\'écran', e.fixe === 'sticky' && e.aDroite && e.dansEcran, JSON.stringify(e));
+/* LA FICHE NE BOUGE PLUS (26/09/2026, Celtis : « elle bouge dans tous les sens ; une partie se met à gauche
+   quand on vient d'un onglet à l'autre »). On la mesure en défilant et après un aller-retour d'onglets. */
+{
+  const avant = e.gauche;
+  const positions = [];
+  for (const y of [120, 300, 600]) { await page.mouse.wheel(0, y); await dodo(250); positions.push((await etat()).gauche); }
+  await page.evaluate(() => showEquipeTab('suivi')); await dodo(600);
+  await page.evaluate(() => showEquipeTab('colis')); await dodo(800);
+  await page.evaluate(() => document.getElementById('colis-list').scrollIntoView({ block: 'start' })); await dodo(400);
+  const apres = await etat();
+  verifier('en défilant, la fiche reste à la même place de gauche à droite', positions.every((x) => x === avant), JSON.stringify([avant, positions]));
+  verifier('après un aller-retour d\'onglets, la fiche revient exactement à sa place, à droite', apres.gauche === avant && apres.aDroite && apres.fixe === 'sticky', JSON.stringify([avant, apres.gauche, apres.aDroite]));
+  const hauts = [];
+  for (let i = 0; i < 3; i++) { await page.mouse.wheel(0, 200); await dodo(250); hauts.push((await etat()).haut); }
+  verifier('une fois la liste défilée, la fiche reste collée sous la barre d\'onglets (même hauteur)', new Set(hauts).size === 1 && hauts[0] > 0, JSON.stringify(hauts));
+  await page.evaluate(() => document.getElementById('colis-list').scrollIntoView({ block: 'start' })); await dodo(400);
+}
 verifier('rien ne déborde en largeur', !e.deborde);
 const texteLigne = await page.locator('#colis-list .eq-ligne').first().innerText();
 verifier('une ligne dit le numéro, la destination, le téléphone, le montant, le statut', /\d{6}-\d{5}/.test(texteLigne) && /FCFA/.test(texteLigne) && /\d{2} \d{2} \d{2}/.test(texteLigne), texteLigne);
@@ -75,7 +92,7 @@ await dodo(1200);
 const ecrit = monde.journal.slice(avant).some((j) => /update/.test(j.op || '') && /colis/.test(j.table || ''));
 verifier('le clic a bien écrit sur le colis, en base', ecrit, JSON.stringify(monde.journal.slice(avant)).slice(0, 300));
 e = await etat();
-verifier('après le redessin de la liste, le même colis reste choisi, toujours épinglé', e.choisi === idCible && e.visibles === 1 && e.fixe === 'fixed', JSON.stringify(e));
+verifier('après le redessin de la liste, le même colis reste choisi, toujours tenu à droite', e.choisi === idCible && e.visibles === 1 && e.fixe === 'sticky', JSON.stringify(e));
 verifier('et sa ligne dit « Livré »', /Livré/.test(await page.locator('#colis-list .eq-ligne--choisie').innerText()));
 
 titre('4. La fiche d\'un colis en cours de saisie garde son formulaire');

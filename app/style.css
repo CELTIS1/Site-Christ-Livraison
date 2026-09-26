@@ -3921,7 +3921,19 @@ html[data-theme="dark"] .colis-item .info .meta.colis-quoi{ color:#AEBBCB; }
    cachées : rien n'est déplacé, donc aucun geste n'est à rebrancher. */
 .eq-ligne{ display:none; }
 body.eq-large .wrap{ max-width:1560px; }
-body.eq-large #colis-list{ width:44%; min-width:460px; }
+/* LA FICHE NE BOUGE PLUS (26/09/2026). Elle était posée en position fixe, à des coordonnées recalculées en
+   JavaScript à chaque défilement : au changement d'onglet, la liste mesurait zéro et la fiche partait à
+   gauche. Comme goafricaonline (vu le 26/09) : DEUX COLONNES en grille, et la fiche « collante »
+   (position:sticky) dans la sienne — c'est le navigateur qui la tient, sans calcul. Les cartes restent
+   dans la liste (rien n'est déplacé) : la carte choisie occupe la colonne de droite sur toute la hauteur. */
+body.eq-large #colis-list{ display:grid; grid-template-columns:minmax(460px, 44%) minmax(0, 1fr); column-gap:20px; row-gap:0; align-items:start; }
+/* Les groupes (jour, cliente) s'effacent en tant que boîtes : leurs titres, lignes et cartes deviennent des
+   cases de la même grille — sans quoi la fiche serait tenue dans la petite boîte de sa cliente. */
+body.eq-large #colis-list .day-group, body.eq-large #colis-list .client-group{ display:contents; }
+body.eq-large #colis-list > *, body.eq-large #colis-list .day-group > *, body.eq-large #colis-list .client-group > *{ grid-column:1; }
+body.eq-large #colis-list .day-group-header{ margin:18px 0 6px; }
+body.eq-large #colis-list .day-group:first-child > .day-group-header{ margin-top:0; }
+body.eq-large #colis-list .client-group-header{ margin:10px 0 4px; padding-left:12px; border-left:3px solid var(--border, #e6ebf1); }
 body.eq-large #colis-list .colis-item{ display:none; }
 body.eq-large #colis-list .eq-ligne{
   display:grid; grid-template-columns:92px minmax(0,1fr) auto auto; align-items:center; gap:12px;
@@ -3942,10 +3954,10 @@ body.eq-large #colis-list .eq-ligne:focus-visible{ outline:2px solid var(--navy,
 .eq-ligne-statut[data-statut="non_livre"]{ background:#fde9e7; color:#a3352c; }
 .eq-ligne-statut[data-statut="retour"]{ background:#fdf1dc; color:#8a5a00; }
 .eq-ligne-statut[data-statut="en_livraison"], .eq-ligne-statut[data-statut="recupere"]{ background:#e6effb; color:#1B4374; }
-body.eq-large.eq-fiche-hors-ecran #colis-list .colis-item.eq-choisi{ display:none; }   /* la liste est sous le pli (25/09/2026) */
 body.eq-large #colis-list .colis-item.eq-choisi{
-  display:flex; position:fixed; z-index:20; left:var(--eqf-gauche, 56%); top:var(--eqf-haut, 120px);
-  width:var(--eqf-largeur, 40%); max-height:calc(100vh - var(--eqf-haut, 120px) - 16px); overflow:auto;
+  display:flex; grid-column:2; grid-row:1 / span var(--eqf-rangs, 600); align-self:start;
+  position:sticky; z-index:5; top:var(--eqf-haut, 96px);
+  max-height:calc(100vh - var(--eqf-haut, 96px) - 16px); overflow:auto;
   margin:0; transform:none; box-shadow:0 10px 32px rgba(16,32,48,.14);
 }
 body.eq-large #colis-list .colis-item.eq-choisi:hover{ transform:none; }
@@ -3962,7 +3974,7 @@ html[data-theme="dark"] .eq-ligne-statut[data-statut="livre"]{ background:#12332
 html[data-theme="dark"] .eq-ligne-statut[data-statut="non_livre"]{ background:#3A1A17; color:#FF9D93; }
 html[data-theme="dark"] .eq-ligne-statut[data-statut="retour"]{ background:#2E2116; color:#F0C98A; }
 html[data-theme="dark"] .eq-ligne-statut[data-statut="en_livraison"], html[data-theme="dark"] .eq-ligne-statut[data-statut="recupere"]{ background:#1B2A3F; color:#9CC2F5; }
-@media print{ body.eq-large #colis-list{ width:auto; } body.eq-large #colis-list .colis-item{ display:flex; position:static; } body.eq-large #colis-list .eq-ligne{ display:none; } }
+@media print{ body.eq-large #colis-list{ display:block; } body.eq-large #colis-list .colis-item{ display:flex; position:static; } body.eq-large #colis-list .eq-ligne{ display:none; } }
 
 /* ---- La chaîne de l'argent (feuille de route 10.1, 20/09/2026) --------------------------------
    Quatre cases dans l'ordre où l'argent voyage. Elles sont à la fois le résumé et la porte : un
