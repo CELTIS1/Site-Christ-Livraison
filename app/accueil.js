@@ -124,7 +124,43 @@
       { id: 'appeler', col: 'equipe', icone: '📞', titre: 'Appeler CLT', sous: 'Le service clientèle', bouton: 'lien-appeler-clt' },
     ],
   };
-  const ESPACES = { bureau: BUREAU, livreur: LIVREUR, cliente: CLIENTE };
+  /* ---------------------------------------------------------------------------------------
+     CLT EXPRESS (lot AC, v295). Ici, les meilleurs n'ouvrent PAS sur une page de plus : Uber et
+     Yango ouvrent sur « où allez-vous ? », Uber Driver sur « en ligne / hors ligne » et les gains.
+     Le premier onglet reste donc l'écran d'arrivée ; la synthèse se pose EN TÊTE de cet onglet :
+     « Bonjour », une phrase, et trois cases. Pas de règle d'ouverture à changer.
+     --------------------------------------------------------------------------------------- */
+  const EXPRESS_CLIENT = {
+    cases: [
+      { id: 'en-cours', icone: '🛵', titre: 'Ma course en cours', sous: 'La suivre sur la carte', onglet: 'section-courses', compteur: 'courseEnCours' },
+      { id: 'courses', icone: '📦', titre: 'Mes courses', sous: 'L\'historique, les reçus', onglet: 'section-courses', compteur: 'nbCourses' },
+      { id: 'compte', icone: '👤', titre: 'Mon compte', sous: 'Adresses, téléphone', bouton: 'btn-mon-compte' },
+    ],
+  };
+  const EXPRESS_COURSIER = {
+    cases: [
+      { id: 'en-cours', icone: '🛵', titre: 'Ma course en cours', sous: 'Récupérer, livrer', onglet: 'section-mescourses', compteur: 'courseEnCours' },
+      { id: 'solde', icone: '💼', titre: 'Mon solde', sous: 'Recharger, mes débits', onglet: 'section-recharges', compteur: 'solde' },
+      { id: 'compte', icone: '👤', titre: 'Mon compte', sous: 'Ma note, mes infos', bouton: 'btn-mon-compte' },
+    ],
+  };
+  const ESPACES = { bureau: BUREAU, livreur: LIVREUR, cliente: CLIENTE, expressClient: EXPRESS_CLIENT, expressCoursier: EXPRESS_COURSIER };
+
+  const STATUTS_EXPRESS = { en_attente: 'on cherche un coursier', acceptee: 'un coursier arrive', recuperee: 'en route vers la livraison' };
+  /* La course en cours d'un client ou d'un coursier : la plus récente qui n'est ni livrée ni annulée. */
+  function courseEnCours(courses) {
+    return (courses || []).filter((c) => c && STATUTS_EXPRESS[c.status]).sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))[0] || null;
+  }
+  function phraseExpress(role, v) {
+    const x = v || {};
+    const c = x.courseEnCours;
+    if (role === 'client') return c ? 'Votre course : ' + STATUTS_EXPRESS[c.status] + '.' : 'Où livrons-nous aujourd\'hui ?';
+    const morceaux = [];
+    if (c) morceaux.push('une course en cours');
+    if (Number(x.livreesJour) > 0) morceaux.push(pl(Number(x.livreesJour), 'course livrée aujourd\'hui', 'courses livrées aujourd\'hui'));
+    if (x.solde && x.solde.montant != null) morceaux.push('solde ' + F(x.solde.montant));
+    return morceaux.length ? morceaux.join(' · ').replace(/^./, (m) => m.toUpperCase()) + '.' : 'Prêt pour la prochaine course ?';
+  }
 
   function visibles(espace, droits) {
     const d = droits || {};
@@ -146,6 +182,9 @@
   function etat(cle, v) {
     if (v == null || (typeof v === 'number' && isNaN(v))) return null;
     // La demande de passage : { aucune } ou { statut, quand } (quand : « demain », « aujourd'hui »…).
+    if (cle === 'courseEnCours') return v === false ? { niveau: 'ok', texte: 'Aucune course en cours' } : { niveau: 'info', texte: STATUTS_EXPRESS[v.status] ? STATUTS_EXPRESS[v.status].replace(/^./, (m) => m.toUpperCase()) : 'En cours' };
+    if (cle === 'courseDuCoursier') return v === false ? { niveau: 'ok', texte: 'Aucune course en cours' } : { niveau: 'info', texte: ({ acceptee: 'À récupérer', recuperee: 'À livrer', en_attente: 'En attente' })[v.status] || 'En cours' };
+    if (cle === 'solde') { const m = Number(v.montant) || 0; return m < (Number(v.minimum) || 0) ? { niveau: 'alerte', texte: F(m) + ' — à recharger' } : { niveau: 'ok', texte: F(m) }; }
     if (cle === 'passage') {
       if (v.aucune) return { niveau: 'neutre', texte: 'Aucune demande en cours' };
       if (v.statut === 'refusee') return { niveau: 'alerte', texte: 'Pas possible ' + (v.quand || '') + ' : redemandez' };
@@ -177,6 +216,8 @@
       case 'enRoute': return n > 0 ? { niveau: 'info', texte: n + ' en route' } : { niveau: 'ok', texte: 'Rien en route' };
       case 'net': return n > 0 ? { niveau: 'info', texte: F(n) + ' à recevoir' } : (n < 0 ? { niveau: 'alerte', texte: 'Vous devez ' + F(-n) } : { niveau: 'ok', texte: 'Tout est reversé' });
       case 'retours': return n > 0 ? { niveau: 'alerte', texte: pl(n, 'retour à confirmer', 'retours à confirmer') } : { niveau: 'ok', texte: 'Rien à confirmer' };
+      // CLT Express
+      case 'nbCourses': return n > 0 ? { niveau: 'neutre', texte: pl(n, 'course', 'courses') } : { niveau: 'neutre', texte: 'Aucune course' };
       case 'boutique': return { niveau: n ? 'neutre' : 'neutre', texte: pl(n, 'colis aujourd\'hui', 'colis aujourd\'hui') };
       default: return null;
     }
@@ -221,5 +262,5 @@
     return (h >= 18 || h < 4) ? 'Bonsoir' : 'Bonjour';
   }
 
-  racine.CLTAccueil = { PAUSE_MINUTES, ESPACES, doitOuvrirSurAccueil, visibles, colonnes, etat, phraseBureau, phraseLivreur, phraseCliente, salutation, F };
+  racine.CLTAccueil = { PAUSE_MINUTES, ESPACES, doitOuvrirSurAccueil, visibles, colonnes, etat, phraseBureau, phraseLivreur, phraseCliente, phraseExpress, courseEnCours, salutation, F };
 })(typeof window !== 'undefined' ? window : globalThis);

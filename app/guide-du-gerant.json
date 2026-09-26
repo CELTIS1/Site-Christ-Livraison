@@ -156,6 +156,19 @@
       "version": "v294"
     },
     {
+      "id": "accueil-express",
+      "espace": "express",
+      "titre": "CLT Express : la synthèse en tête du premier écran",
+      "enBref": "Comme Uber et Yango, Express s'ouvre sur le geste principal ; « Bonjour », la course en cours et le solde sont en tête.",
+      "ou": "CLT Express › client : « Nouvelle » ; coursier : « Dispo »",
+      "etapes": [
+        "Client : la phrase dit où en est sa course (« un coursier arrive »), puis Ma course en cours, Mes courses, Mon compte ; le formulaire de commande reste juste dessous.",
+        "Coursier : sa course (« À récupérer », « À livrer »), son solde (« à recharger » sous le minimum), son compte ; puis « Je suis disponible »."
+      ],
+      "aSavoir": "Pas de page de plus ici : ceux qui commandent une course ou attendent une course doivent y être en un geste. Les chiffres viennent de ce que l'écran a déjà chargé.",
+      "version": "v295"
+    },
+    {
       "id": "partenaires",
       "espace": "gestion",
       "titre": "Les partenaires (Générale CI)",

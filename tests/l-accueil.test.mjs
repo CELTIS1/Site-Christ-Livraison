@@ -74,5 +74,15 @@ verifier('le propriétaire : une colonne « Mes boutiques », une case par bouti
 verifier('onglet et bouton « Accueil » en tête ; même règle d\'ouverture', /data-clttab="section-accueil">🏠 Accueil/.test(four) && /data-target="section-accueil"/.test(four) && /clt:cliente:derniere-activite/.test(four) && /doitOuvrirSurAccueil\(\{ derniere: derniere\(\), lien \}\)/.test(four));
 verifier('sobriété : l\'accueil ne relit rien dans la base', !/supabaseClient/.test(fecr));
 
+console.log('\n7. CLT Express (v295) : la synthèse en tête du premier écran, pas une page de plus');
+const exc = lire('app/express-client.html'), exk = lire('app/express-coursier.html'), exa = lire('app/express-accueil.js');
+verifier('la course en cours : la plus récente qui n\'est ni livrée ni annulée', A.courseEnCours([{ status: 'livree', created_at: '2026-09-26T10' }, { status: 'acceptee', created_at: '2026-09-26T09' }, { status: 'annulee', created_at: '2026-09-26T11' }]).status === 'acceptee' && A.courseEnCours([{ status: 'livree' }]) === null);
+verifier('le client lit « un coursier arrive », le coursier « À récupérer » (chacun de son côté)', /un coursier arrive/.test(A.phraseExpress('client', { courseEnCours: { status: 'acceptee' } })) && A.etat('courseDuCoursier', { status: 'acceptee' }).texte === 'À récupérer' && A.etat('courseDuCoursier', { status: 'recuperee' }).texte === 'À livrer');
+verifier('sans course : « Où livrons-nous aujourd\'hui ? »', A.phraseExpress('client', {}) === 'Où livrons-nous aujourd\'hui ?');
+verifier('le solde sous le minimum : « à recharger » (alerte)', A.etat('solde', { montant: 1000, minimum: 1500 }).niveau === 'alerte' && A.etat('solde', { montant: 2000, minimum: 1500 }).niveau === 'ok');
+verifier('les deux écrans chargent les règles et la synthèse', /src="accueil\.js/.test(exc) && /src="express-accueil\.js/.test(exc) && /src="accueil\.js/.test(exk) && /src="express-accueil\.js/.test(exk));
+verifier('chaque onglet et bouton visés existent', ['expressClient', 'expressCoursier'].every((e) => A.ESPACES[e].cases.every((c) => (!c.onglet || new RegExp('id="' + c.onglet + '"').test(e === 'expressClient' ? exc : exk)) && (!c.bouton || new RegExp('id="' + c.bouton + '"').test(e === 'expressClient' ? exc : exk)))));
+verifier('sobriété : rien n\'est relu dans la base', !/supabaseClient/.test(exa));
+
 console.log('\n' + reussies + ' réussie(s), ' + echouees + ' échouée(s).');
 if (echouees) process.exit(1);
