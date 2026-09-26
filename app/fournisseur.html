@@ -19,13 +19,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260926livreur">
+<link rel="stylesheet" href="style.css?v=20260926vendeurs">
 <script>/* Installer l'application : le navigateur ne fait son offre qu'une fois, très tôt. On la garde ici, avant tout le reste ; clt-common.js la reprend. (19/09/2026) */window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__cltOffreInstallTot=e;});</script>
-<script src="theme.js?v=20260926livreur"></script>
+<script src="theme.js?v=20260926vendeurs"></script>
 <!-- La cloche 🔔 des notifications reçues (23/09/2026) : règle + écran, se posent seuls dans la barre du haut. -->
-<script src="notifications-recues.js?v=20260926livreur" defer></script>
-<script src="cloche.js?v=20260926livreur" defer></script>
-<script src="splash.js?v=20260926livreur"></script>
+<script src="notifications-recues.js?v=20260926vendeurs" defer></script>
+<script src="cloche.js?v=20260926vendeurs" defer></script>
+<script src="splash.js?v=20260926vendeurs"></script>
 <style>
   /* ============================================================
      MODERNISATION 2026 — Client/Fournisseur (vert) — additif, non destructif
@@ -200,6 +200,15 @@
   html[data-theme="dark"] .import-resume--ok{ background:#12332E; border-color:#1F5A4E; color:#B8F0CC; }
   html[data-theme="dark"] .import-resume--avertir{ background:#2E2116; border-color:#7A4A1A; color:#F0C98A; }
   html[data-theme="dark"] .import-resume--erreur{ background:#3A1A17; border-color:#7A2B22; color:#FF9D93; }
+  /* L'Accueil (26/09/2026, lot AC) : « Faire passer un livreur » ressort ; six entrées en bas pour un propriétaire. */
+  .rc-case--vedette{ border:2px solid var(--rc) !important; background:#fff; }
+  #section-accueil.card{ background:transparent; box-shadow:none; border:0; padding:0; }
+  @media (min-width:761px){ #section-accueil .rc-grille:not(.ac-grille--quatre){ grid-template-columns:repeat(3, minmax(0, 1fr)); } #section-accueil .ac-grille--quatre{ grid-template-columns:repeat(2, minmax(0, 1fr)); } }
+  @media (max-width:380px){ html .clt-bottomnav .nav{ font-size:10px !important; letter-spacing:-.1px; padding:0 !important; } }
+  /* Six onglets en haut pour un propriétaire (Boutiques visible) : on les resserre pour qu'ils tiennent dans la carte. */
+  .clt-toptabs:has(> [data-mb-onglet]:not(.hidden)){ gap:3px !important; }
+  .clt-toptabs:has(> [data-mb-onglet]:not(.hidden)) .clt-toptab{ padding-left:6px !important; padding-right:6px !important; gap:5px !important; font-size:13px !important; min-width:0; }
+  .clt-toptabs{ max-width:100%; }
 </style>
 <!-- Bibliothèque figée le 19 août 2026 : version exacte + empreinte de contrôle (SRI).
      Le navigateur recalcule l'empreinte du fichier reçu et refuse de l'exécuter si elle
@@ -217,7 +226,7 @@
      aussi sans réseau. Voir .github/verifier-empreintes.py, qui lit ces déclarations-là. -->
 <!-- La peau v2 (25/09/2026, lot 18) : chargée EN DERNIER, elle recouvre style.css et le style de la page. -->
 <style>:root{ --clt-accent-encre:#167A42; }</style>
-<link rel="stylesheet" href="peau.css?v=20260926livreur">
+<link rel="stylesheet" href="peau.css?v=20260926vendeurs">
 </head>
 <body>
 
@@ -396,6 +405,8 @@
 
   <div class="clt-toptabs-wrap">
   <div class="clt-toptabs" role="tablist">
+  <!-- L'ACCUEIL (26/09/2026, lot AC) : la journée d'un coup d'œil, et « Faire passer un livreur » en premier. -->
+  <button type="button" class="clt-toptab" data-clttab="section-accueil">🏠 Accueil</button>
   <button type="button" class="clt-toptab active" data-clttab="section-ajouter">➕ Ajouter</button>
   <button type="button" class="clt-toptab" data-clttab="section-colis">📦 Mes colis</button>
   <button type="button" class="clt-toptab hidden" data-clttab="section-mes-boutiques" data-mb-onglet>🏬 Boutiques</button>
@@ -418,6 +429,7 @@
 
        Ce n'est PAS une programmation : le bureau reste seul à décider qui passe. La carte le dit,
        pour qu'aucune vendeuse n'attende un livreur que personne n'a envoyé. -->
+  <div class="card hidden" id="section-accueil" aria-live="polite"></div>
   <div class="card" id="section-passage">
     <h2 class="panel-subtitle" style="margin-top:0;">🗓️ Demander un passage</h2>
     <p class="hint" style="margin-top:0;">Vous n'avez pas encore préparé vos colis ? Dites-nous seulement quel jour vous voulez qu'on passe. <strong>Nous vous confirmerons</strong> : une demande n'est pas encore une tournée.</p>
@@ -694,33 +706,34 @@
   </div>
 </div>
 
-<script src="clt-common.js?v=20260926livreur"></script>
-<script src="assistant.js?v=20260926livreur"></script>
-<script src="numero-international.js?v=20260926livreur"></script>
-<script src="voir-un-compte.js?v=20260926livreur"></script>
-<script src="lib/bibliotheques.js?v=20260926livreur"></script>
-<script src="lib/retours.js?v=20260926livreur"></script>
-<script src="lib/reclamations.js?v=20260926livreur"></script>
-<script src="lib/communes-et-tarifs.js?v=20260926livreur"></script>
-<script src="lib/argent.js?v=20260926livreur"></script>
-<script src="lib/releve-cliente.js?v=20260926livreur"></script>
-<script src="lib/papier-a-en-tete.js?v=20260926livreur"></script>
-<script src="lib/briques-argent.js?v=20260926livreur"></script>
-<script src="lib/vocabulaire-de-la-journee.js?v=20260926livreur"></script>
-<script src="lib/traces-de-report.js?v=20260926livreur"></script>
-<script src="lib/annonce-de-remise.js?v=20260926livreur"></script>
-<script src="lib/tournee-de-recuperation.js?v=20260926livreur"></script>
-<script src="lib/primes.js?v=20260926livreur"></script>
-<script src="lib/doublons.js?v=20260926livreur"></script>
-<script src="config.js?v=20260926livreur"></script>
-<script src="demande-de-passage.js?v=20260926livreur"></script>
-<script src="activite-de-la-cliente.js?v=20260926livreur"></script>
-<script src="activite-ecran.js?v=20260926livreur"></script>
-<script src="mes-boutiques.js?v=20260926livreur"></script>
-<script src="etiquettes-et-scan.js?v=20260926livreur"></script>
-<script src="import-de-colis.js?v=20260926livreur"></script>
-<script src="biometric-lock.js?v=20260926livreur"></script>
-<script src="clt-select-recherche.js?v=20260926livreur"></script>
+<script src="clt-common.js?v=20260926vendeurs"></script>
+<script src="assistant.js?v=20260926vendeurs"></script>
+<script src="numero-international.js?v=20260926vendeurs"></script>
+<script src="voir-un-compte.js?v=20260926vendeurs"></script>
+<script src="lib/bibliotheques.js?v=20260926vendeurs"></script>
+<script src="lib/retours.js?v=20260926vendeurs"></script>
+<script src="lib/reclamations.js?v=20260926vendeurs"></script>
+<script src="lib/communes-et-tarifs.js?v=20260926vendeurs"></script>
+<script src="lib/argent.js?v=20260926vendeurs"></script>
+<script src="lib/releve-cliente.js?v=20260926vendeurs"></script>
+<script src="lib/papier-a-en-tete.js?v=20260926vendeurs"></script>
+<script src="lib/briques-argent.js?v=20260926vendeurs"></script>
+<script src="lib/vocabulaire-de-la-journee.js?v=20260926vendeurs"></script>
+<script src="lib/traces-de-report.js?v=20260926vendeurs"></script>
+<script src="lib/annonce-de-remise.js?v=20260926vendeurs"></script>
+<script src="lib/tournee-de-recuperation.js?v=20260926vendeurs"></script>
+<script src="lib/primes.js?v=20260926vendeurs"></script>
+<script src="lib/doublons.js?v=20260926vendeurs"></script>
+<script src="config.js?v=20260926vendeurs"></script>
+<script src="accueil.js?v=20260926vendeurs"></script>
+<script src="demande-de-passage.js?v=20260926vendeurs"></script>
+<script src="activite-de-la-cliente.js?v=20260926vendeurs"></script>
+<script src="activite-ecran.js?v=20260926vendeurs"></script>
+<script src="mes-boutiques.js?v=20260926vendeurs"></script>
+<script src="etiquettes-et-scan.js?v=20260926vendeurs"></script>
+<script src="import-de-colis.js?v=20260926vendeurs"></script>
+<script src="biometric-lock.js?v=20260926vendeurs"></script>
+<script src="clt-select-recherche.js?v=20260926vendeurs"></script>
 <script>
   let currentUser = null;
   let currentProfile = null;
@@ -934,7 +947,7 @@
   }
 
   function showFournisseurTab(key){
-    ['section-ajouter','section-recap','section-colis','section-retours','section-mes-boutiques'].forEach(id => {
+    ['section-accueil','section-ajouter','section-recap','section-colis','section-retours','section-mes-boutiques'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.classList.toggle('hidden', id !== key);
     });
@@ -953,7 +966,10 @@
     document.querySelectorAll('.clt-toptab').forEach(b => b.classList.toggle('active', b.dataset.clttab === key));
     document.querySelectorAll('.clt-bottomnav .nav').forEach(b => b.classList.toggle('active', b.dataset.target === key));
     try { localStorage.setItem('clt_fournisseur_tab', key); } catch(e){}
+    if (key === 'section-accueil' && window.CLTAccueilCliente) window.CLTAccueilCliente.dessiner();
   }
+  // L'accueil suit ce que la page vient de lire (colis, relevé, demande de passage, boutiques, retours). (26/09/2026, lot AC)
+  function majAccueilCliente(){ const a = document.getElementById('section-accueil'); if (a && !a.classList.contains('hidden') && window.CLTAccueilCliente) window.CLTAccueilCliente.dessiner(); }
   /* L'observateur de l'ancienne barre de liens vivait ici : 47 lignes qui posaient un
      IntersectionObserver sur trois sections, à chaque ouverture de la page, pour souligner des
      liens masqués par display:none. Il savait aussi déplier une section repliable au clic —
@@ -2771,6 +2787,7 @@
     renderColisList();
     chargerMaDemandeDePassage();
     chargerMesBoutiques();
+    majAccueilCliente();
   }
 
   /* ==========================================================================================
@@ -2854,6 +2871,7 @@
       + `<div class="mb-tuile mb-tuile--argent"><b>${escapeHTML(formatMontant(k.encaisse) || '0 FCFA')}</b><span>Articles encaissés</span></div>`;
 
     renderBoutiqueRegardee(resume, selection, k);
+    majAccueilCliente();
   }
 
   /* Sous les chiffres : en vue « Toutes », une ligne par boutique (où elle en est) ; puis, dans
@@ -2980,6 +2998,7 @@
   }
 
   function renderMaDemandeDePassage(){
+    majAccueilCliente();
     const box = document.getElementById('passage-en-cours');
     if (!box) return;
     const d = maDemandeDePassage;
@@ -3196,6 +3215,7 @@
     // Replié, le relevé dit quand même l'essentiel (21/09/2026).
     { const resume = document.getElementById('releve-resume');
       if (resume) resume.textContent = net < 0 ? 'Vous devez à CLT : ' + money(-net) : 'CLT vous doit : ' + money(net); }
+    window.__clienteNet = net; majAccueilCliente();   // l'accueil dit « ce que CLT me doit » (26/09/2026)
     cltPoserHTML(tiles, cards.map(t => `
       <div class="stat-tile" style="--tile-color:${t.color}; --tile-bg:${t.bg}">
         <div class="stat-tile-icon">${t.icon}</div>
@@ -3542,6 +3562,7 @@
     const retours = tousMesRetours();
     const aConfirmer = retours.filter(c => retourAConfirmer(c));
     document.querySelectorAll('[data-retours-badge]').forEach(b => { b.textContent = aConfirmer.length ? String(aConfirmer.length) : ''; b.classList.toggle('hidden', !aConfirmer.length); });
+    majAccueilCliente();
 
     const champ = document.getElementById('retours-jour-date');
     if (retoursJour === null) retoursJour = todayLocalISODate();
@@ -4185,6 +4206,11 @@
 
 <!-- Barre de navigation basse (mobile) : raccourcis qui font défiler vers chaque section. -->
 <nav class="clt-bottomnav" id="clt-bottomnav" aria-label="Navigation">
+  <!-- L'ACCUEIL (26/09/2026, lot AC). -->
+  <button type="button" class="nav" data-target="section-accueil">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v10h13V10"/><path d="M10 20v-5h4v5"/></svg>
+    Accueil
+  </button>
   <button type="button" class="nav active" data-target="section-ajouter">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
     Ajouter
@@ -4218,9 +4244,24 @@
       try { cur = localStorage.getItem('clt_fournisseur_tab') || 'section-ajouter'; } catch(e){}
       // « Boutiques » n'est pas mémorisé comme écran d'ouverture : l'onglet n'existe qu'une fois les
       // boutiques lues, et s'ouvrir sur une carte vide le temps de le savoir ferait un écran qui saute.
-      if (!['section-ajouter','section-recap','section-colis','section-retours'].includes(cur)) cur = 'section-ajouter';
+      if (!['section-accueil','section-ajouter','section-recap','section-colis','section-retours'].includes(cur)) cur = 'section-ajouter';
       return cur;
     }
+    /* L'ACCUEIL S'OUVRE au premier lancement du jour, ou après 30 minutes de pause (même règle que les
+       autres espaces : accueil.js) ; sinon on retrouve son écran. Un lien précis (?colis=…) passe avant. */
+    const CLE_ACTIVITE = 'clt:cliente:derniere-activite';
+    let derniereNote = 0;
+    const noter = () => { const t = Date.now(); if (t - derniereNote < 15000) return; derniereNote = t; try { localStorage.setItem(CLE_ACTIVITE, String(t)); } catch(e){} };
+    const derniere = () => { try { return Number(localStorage.getItem(CLE_ACTIVITE)) || 0; } catch(e){ return 0; } };
+    const lien = /[?&](colis|voir|onglet|passage)=/.test(location.search);
+    const surAccueil = !!window.CLTAccueil && window.CLTAccueil.doitOuvrirSurAccueil({ derniere: derniere(), lien });
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') { derniereNote = 0; noter(); return; }
+      const fenetre = [...document.querySelectorAll('[data-clt-couche], [aria-modal="true"]')].some(el => { const st = getComputedStyle(el); return st.display !== 'none' && st.visibility !== 'hidden' && !el.hidden; });
+      if (window.CLTAccueil && window.CLTAccueil.doitOuvrirSurAccueil({ derniere: derniere() }) && !fenetre) showFournisseurTab('section-accueil');
+      else noter();
+    });
+    ['pointerdown', 'keydown'].forEach(t => document.addEventListener(t, noter, { passive: true }));
     const go = (target) => {
       showFournisseurTab(target);
       window.scrollTo({ top:0, behavior:'smooth' });
@@ -4229,8 +4270,10 @@
       bar.querySelectorAll('.nav').forEach(btn => btn.addEventListener('click', () => go(btn.dataset.target)));
     }
     document.querySelectorAll('.clt-toptab').forEach(btn => btn.addEventListener('click', () => go(btn.dataset.clttab)));
-    showFournisseurTab(currentContentTab());
+    showFournisseurTab(surAccueil ? 'section-accueil' : currentContentTab());
+    noter();
   })();
 </script>
+<script src="fournisseur-accueil.js?v=20260926vendeurs"></script>
 </body>
 </html>

@@ -142,6 +142,20 @@
       "version": "v293"
     },
     {
+      "id": "accueil-cliente",
+      "espace": "cliente",
+      "titre": "L'Accueil des vendeurs : « Faire passer un livreur »",
+      "enBref": "À l'ouverture, le vendeur voit ses colis du jour, ce que CLT lui doit, ses retours, et d'abord comment nous faire venir.",
+      "ou": "Espace client › « 🏠 Accueil » (premier bouton en bas)",
+      "etapes": [
+        "« Faire passer un livreur » : il nous dit quel jour venir chercher ses colis (et il voit si c'est vu par CLT).",
+        "Mes colis d'aujourd'hui, suivre un colis ; Ce que CLT me doit, mon point du jour, mon mois ; mes retours, nous écrire, nous appeler.",
+        "Le propriétaire de plusieurs boutiques a en plus « Mes boutiques » : une case par boutique, avec ses colis du jour."
+      ],
+      "aSavoir": "L'Accueil vient au premier lancement du jour ou après 30 minutes de pause ; sinon il retrouve son écran. Rien de plus n'est lu dans la base : l'Accueil reprend ce que la page a déjà chargé.",
+      "version": "v294"
+    },
+    {
       "id": "partenaires",
       "espace": "gestion",
       "titre": "Les partenaires (Générale CI)",

@@ -96,7 +96,35 @@
       { id: 'appeler', col: 'equipe', icone: '📞', titre: 'Appeler CLT', sous: 'Le bureau', bouton: 'lien-appeler-clt' },
     ],
   };
-  const ESPACES = { bureau: BUREAU, livreur: LIVREUR };
+  /* ---------------------------------------------------------------------------------------
+     LA CLIENTE — ET LE PROPRIÉTAIRE (lot AC, v294). « Qu'elle comprenne que c'est à elle de nous
+     demander de passer » : la première case le dit en toutes lettres. Le propriétaire a en plus
+     une colonne « Mes boutiques », une case par boutique (écran : fournisseur-accueil.js).
+     Chaque case : onglet (section-…), ancre, « aujourdhui » (Mes colis sur le jour), « chercher »
+     (le champ de recherche), ou bouton du menu.
+     --------------------------------------------------------------------------------------- */
+  const CLIENTE = {
+    colonnes: [
+      { cle: 'colis', titre: 'Mes colis', icone: '📦', sous: 'Confier, suivre' },
+      { cle: 'argent', titre: 'Mon argent', icone: '💰', sous: 'Ce que CLT me reverse' },
+      { cle: 'equipe', titre: 'Retours et aide', icone: '🤝', sous: 'Ce qui revient, nous joindre' },
+    ],
+    cases: [
+      { id: 'passage', col: 'colis', icone: '🛵', titre: 'Faire passer un livreur', sous: 'Nous venons chercher vos colis : dites-nous quel jour', onglet: 'section-ajouter', ancre: 'section-passage', compteur: 'passage' },
+      { id: 'ajouter', col: 'colis', icone: '➕', titre: 'Ajouter mes colis', sous: 'En photo ou à la main', onglet: 'section-ajouter', ancre: 'section-ajouter' },
+      { id: 'du-jour', col: 'colis', icone: '📋', titre: 'Mes colis d\'aujourd\'hui', sous: 'Ceux confiés aujourd\'hui', onglet: 'section-colis', aujourdhui: true, compteur: 'confies' },
+      { id: 'suivre', col: 'colis', icone: '📍', titre: 'Suivre un colis', sous: 'Où en est chacun', onglet: 'section-colis', chercher: true, compteur: 'enRoute' },
+
+      { id: 'me-doit', col: 'argent', icone: '💵', titre: 'Ce que CLT me doit', sous: 'Mon relevé, mes reversements', onglet: 'section-recap', ancre: 'section-releve', compteur: 'net' },
+      { id: 'point', col: 'argent', icone: '🧾', titre: 'Mon point du jour', sous: 'Livrés, non livrés, encaissé', onglet: 'section-recap', ancre: 'section-colis-jour' },
+      { id: 'mois', col: 'argent', icone: '🗓️', titre: 'Mon mois', sous: 'Le récapitulatif, les exports', onglet: 'section-recap', ancre: 'section-recap' },
+
+      { id: 'retours', col: 'equipe', icone: '↩️', titre: 'Mes retours', sous: 'Les colis qui me reviennent', onglet: 'section-retours', compteur: 'retours' },
+      { id: 'whatsapp', col: 'equipe', icone: '🟢', titre: 'Écrire à CLT', sous: 'Sur WhatsApp', bouton: 'lien-whatsapp-clt' },
+      { id: 'appeler', col: 'equipe', icone: '📞', titre: 'Appeler CLT', sous: 'Le service clientèle', bouton: 'lien-appeler-clt' },
+    ],
+  };
+  const ESPACES = { bureau: BUREAU, livreur: LIVREUR, cliente: CLIENTE };
 
   function visibles(espace, droits) {
     const d = droits || {};
@@ -117,6 +145,13 @@
      'neutre' : un chiffre qui renseigne sans rien demander (reçus aujourd'hui, en cours). */
   function etat(cle, v) {
     if (v == null || (typeof v === 'number' && isNaN(v))) return null;
+    // La demande de passage : { aucune } ou { statut, quand } (quand : « demain », « aujourd'hui »…).
+    if (cle === 'passage') {
+      if (v.aucune) return { niveau: 'neutre', texte: 'Aucune demande en cours' };
+      if (v.statut === 'refusee') return { niveau: 'alerte', texte: 'Pas possible ' + (v.quand || '') + ' : redemandez' };
+      if (v.statut === 'traitee') return { niveau: 'ok', texte: 'Vue par CLT pour ' + (v.quand || '') };
+      return { niveau: 'info', texte: 'Demandée pour ' + (v.quand || '') + ', en attente' };
+    }
     const n = Number(v) || 0;
     switch (cle) {
       case 'recus': return { niveau: 'neutre', texte: pl(n, 'reçu aujourd\'hui', 'reçus aujourd\'hui') };
@@ -137,6 +172,12 @@
       case 'aRecuperer': return n > 0 ? { niveau: 'info', texte: pl(n, 'à récupérer', 'à récupérer') } : { niveau: 'neutre', texte: 'Rien à récupérer' };
       case 'aRendre': return n > 0 ? { niveau: 'alerte', texte: pl(n, 'retour à rendre', 'retours à rendre') } : { niveau: 'ok', texte: 'Rien à rendre' };
       case 'enMain': return n > 0 ? { niveau: 'info', texte: F(n) + ' en main' } : { niveau: 'ok', texte: 'Rien en main' };
+      // La cliente
+      case 'confies': return { niveau: 'neutre', texte: pl(n, 'colis confié', 'colis confiés') };
+      case 'enRoute': return n > 0 ? { niveau: 'info', texte: n + ' en route' } : { niveau: 'ok', texte: 'Rien en route' };
+      case 'net': return n > 0 ? { niveau: 'info', texte: F(n) + ' à recevoir' } : (n < 0 ? { niveau: 'alerte', texte: 'Vous devez ' + F(-n) } : { niveau: 'ok', texte: 'Tout est reversé' });
+      case 'retours': return n > 0 ? { niveau: 'alerte', texte: pl(n, 'retour à confirmer', 'retours à confirmer') } : { niveau: 'ok', texte: 'Rien à confirmer' };
+      case 'boutique': return { niveau: n ? 'neutre' : 'neutre', texte: pl(n, 'colis aujourd\'hui', 'colis aujourd\'hui') };
       default: return null;
     }
   }
@@ -164,10 +205,21 @@
     return 'Aujourd\'hui : ' + morceaux.join(' · ') + '.';
   }
 
+  function phraseCliente(c) {
+    const x = c || {};
+    const morceaux = [];
+    if (x.confies != null) morceaux.push(Number(x.confies) > 0 ? pl(Number(x.confies), 'colis confié', 'colis confiés') : 'aucun colis confié');
+    if (Number(x.livres) > 0) morceaux.push(pl(Number(x.livres), 'livré', 'livrés'));
+    if (Number(x.enRoute) > 0) morceaux.push(x.enRoute + ' en route');
+    if (Number(x.net) > 0) morceaux.push(F(x.net) + ' à recevoir');
+    if (!morceaux.length) return 'Voici votre journée.';
+    return 'Aujourd\'hui : ' + morceaux.join(' · ') + '.';
+  }
+
   function salutation(heure) {
     const h = Number(heure);
     return (h >= 18 || h < 4) ? 'Bonsoir' : 'Bonjour';
   }
 
-  racine.CLTAccueil = { PAUSE_MINUTES, ESPACES, doitOuvrirSurAccueil, visibles, colonnes, etat, phraseBureau, phraseLivreur, salutation, F };
+  racine.CLTAccueil = { PAUSE_MINUTES, ESPACES, doitOuvrirSurAccueil, visibles, colonnes, etat, phraseBureau, phraseLivreur, phraseCliente, salutation, F };
 })(typeof window !== 'undefined' ? window : globalThis);

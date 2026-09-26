@@ -61,5 +61,18 @@ verifier('onglet et bouton « Accueil » en tête', /data-clttab="accueil">🏠 
 verifier('même règle d\'ouverture que le Bureau, retour au premier plan compris', /doitOuvrirSurAccueil\(\{ derniere: livDerniere\(\), lien: livLien \}\)/.test(liv) && /clt:livreur:derniere-activite/.test(liv));
 verifier('sans réseau : l\'accueil ne demande rien à la base', !/supabaseClient/.test(lecr) && /allColis/.test(lecr));
 
+console.log('\n6. La cliente et le propriétaire (v294)');
+const four = lire('app/fournisseur.html'), fecr = lire('app/fournisseur-accueil.js');
+const ccols = A.colonnes('cliente', {});
+verifier('trois thèmes : Mes colis, Mon argent, Retours et aide', ccols.map((c) => c.titre).join('|') === 'Mes colis|Mon argent|Retours et aide');
+verifier('la première case dit que c\'est à elle de demander : « Faire passer un livreur — Nous venons chercher vos colis »', ccols[0].cases[0].titre === 'Faire passer un livreur' && /Nous venons chercher vos colis/.test(ccols[0].cases[0].sous));
+verifier('chaque onglet, ancre et bouton visés existent', A.ESPACES.cliente.cases.every((c) => (!c.onglet || new RegExp('id="' + c.onglet + '"').test(four)) && (!c.ancre || new RegExp('id="' + c.ancre + '"').test(four)) && (!c.bouton || new RegExp('id="' + c.bouton + '"').test(four))));
+verifier('la demande de passage se lit : en attente, vue par CLT, refusée, aucune', A.etat('passage', { statut: 'en_attente', quand: 'demain' }).texte === 'Demandée pour demain, en attente' && A.etat('passage', { statut: 'traitee', quand: 'demain' }).niveau === 'ok' && A.etat('passage', { statut: 'refusee', quand: 'demain' }).niveau === 'alerte' && A.etat('passage', { aucune: true }).texte === 'Aucune demande en cours');
+verifier('« 12 500 F à recevoir » ; une dette se dit « Vous devez »', A.etat('net', 12500).texte === '12 500 F à recevoir' && A.etat('net', -500).texte === 'Vous devez 500 F');
+verifier('la phrase de la cliente', A.phraseCliente({ confies: 3, livres: 1, enRoute: 2, net: 12500 }) === 'Aujourd\'hui : 3 colis confiés · 1 livré · 2 en route · 12 500 F à recevoir.');
+verifier('le propriétaire : une colonne « Mes boutiques », une case par boutique', /cle: 'boutiques', titre: 'Mes boutiques'/.test(fecr) && /mesBoutiques\.map/.test(fecr));
+verifier('onglet et bouton « Accueil » en tête ; même règle d\'ouverture', /data-clttab="section-accueil">🏠 Accueil/.test(four) && /data-target="section-accueil"/.test(four) && /clt:cliente:derniere-activite/.test(four) && /doitOuvrirSurAccueil\(\{ derniere: derniere\(\), lien \}\)/.test(four));
+verifier('sobriété : l\'accueil ne relit rien dans la base', !/supabaseClient/.test(fecr));
+
 console.log('\n' + reussies + ' réussie(s), ' + echouees + ' échouée(s).');
 if (echouees) process.exit(1);

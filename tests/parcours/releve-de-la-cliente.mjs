@@ -27,7 +27,7 @@ const chiffres = (s) => (s || '').replace(/[  \s]/g, '');
 titre('1. L\'espace de la cliente s\'ouvre');
 await N.ouvrirConnecte('fournisseur.html', CLIENTE2);
 verifier('la page est ouverte sans erreur, sur fournisseur.html', erreurs.length === 0 && /fournisseur\.html/.test(page.url()), erreurs.join('\n       '));
-verifier('sur téléphone, la barre du bas : Ajouter, Mes colis, Récap, Retours (« Boutiques » reste caché : ce compte n\'en supervise aucune)', (await page.locator('#clt-bottomnav .nav:not(.hidden)').count()) === 4 && await page.locator('#clt-bottomnav').isVisible());
+verifier('sur téléphone, la barre du bas : Accueil (26/09), Ajouter, Mes colis, Récap, Retours (« Boutiques » reste caché : ce compte n\'en supervise aucune)', (await page.locator('#clt-bottomnav .nav:not(.hidden)').count()) === 5 && await page.locator('#clt-bottomnav').isVisible());
 /* LA BARRE DU BAS NE BOUGE PAS D'UN ONGLET À L'AUTRE (21/09/2026, Celtis : « quand tu cliques sur
    Mes colis ça monte, sur les autres ça descend »). Ici, dans Chromium, elle n'a jamais bougé : ce
    contrôle garde au moins la règle — même place sur une page courte et sur une page longue, collée

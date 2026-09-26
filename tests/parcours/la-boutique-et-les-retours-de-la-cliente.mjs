@@ -50,7 +50,7 @@ await N.ouvrirConnecte('fournisseur.html', CLIENTE1);
 await dodo(1000);
 const bas = page.locator('#clt-bottomnav .nav:not(.hidden)');
 const libelles = (await bas.allInnerTexts()).map(t => t.replace(/\s+/g, ' ').trim());
-verifier('la barre du bas : Ajouter, Mes colis, Récap, Retours — pas de Compte', libelles.length === 4 && /Retours/.test(libelles[3]) && !libelles.some(l => /Compte/.test(l)), libelles.join(' | '));
+verifier('la barre du bas : Accueil (26/09), Ajouter, Mes colis, Récap, Retours — pas de Compte', libelles.length === 5 && /^Accueil/.test(libelles[0]) && /Retours/.test(libelles[4]) && !libelles.some(l => /Compte/.test(l)), libelles.join(' | '));
 verifier('« Compte » reste dans le menu ☰, une seule fois', (await page.locator('#settings-dropdown #btn-mon-compte').count()) === 1);
 const badge = page.locator('#clt-bottomnav [data-retours-badge]');
 verifier('le chiffre sur l\'onglet : 1 (le colis rendu, à confirmer)', (await texte(badge)) === '1', await texte(badge));

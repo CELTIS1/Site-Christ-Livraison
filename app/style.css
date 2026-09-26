@@ -4972,3 +4972,6 @@ html[data-theme="dark"] .rc-etat--alerte{ background:#3A1D1B; color:#F6B8B1; } h
 html[data-theme="dark"] .rc-col-tete span, html[data-theme="dark"] .rc-case-txt small{ color:#AEBBCB; }
 .ac-chiffre-n--petit{ font-size:20px; }
 @media (prefers-reduced-motion: reduce){ .rc-case{ transition:none; } }
+.rc-col--boutiques{ --rc:#7C3AED; --rc-fond:#F4EFFE; }
+html[data-theme="dark"] .rc-col--boutiques{ --rc:#C4B5FD; }
+html[data-theme="dark"] .rc-case--vedette{ background:#0F1722 !important; }
