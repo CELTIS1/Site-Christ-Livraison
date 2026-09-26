@@ -114,6 +114,20 @@
       "version": "v291"
     },
     {
+      "id": "accueil-bureau",
+      "espace": "bureau",
+      "titre": "L'Accueil : la journée en un coup d'œil",
+      "enBref": "Au premier lancement du jour, l'application s'ouvre sur l'Accueil : la phrase du jour, les chiffres, et tout rangé par thème.",
+      "ou": "Onglet « 🏠 Accueil » (en haut sur ordinateur, en bas sur téléphone)",
+      "etapes": [
+        "En tête : « Bonjour », ce qui s'est passé aujourd'hui, et les quatre chiffres (reçus, livrés, échecs, en cours).",
+        "Quatre colonnes : Colis, Les points du jour (livreurs, vendeurs), Argent, Équipe et comptes. Chaque case porte son nombre.",
+        "Un toucher ouvre l'écran ; le « retour » du téléphone ramène à l'Accueil."
+      ],
+      "aSavoir": "L'Accueil s'ouvre au premier lancement du jour ou après 30 minutes de pause. Si vous revenez tout de suite, vous retrouvez l'écran où vous étiez. Une notification ouvre toujours directement ce qu'elle annonce.",
+      "version": "v292"
+    },
+    {
       "id": "partenaires",
       "espace": "gestion",
       "titre": "Les partenaires (Générale CI)",

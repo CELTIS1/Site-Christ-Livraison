@@ -640,7 +640,7 @@ document.getElementById('admin-section').classList.remove('hidden');
 document.getElementById('activity-log-section')?.classList.remove('hidden');
 // Refonte par onglets : réaffiche les sections et l'onglet Express réservés à l'administrateur.
 ['section-gerer-equipe','section-tous-comptes',
- 'section-express-courses','section-express-recharges','section-express-reglages',
+ 'section-express-courses','section-express-recharges','section-express-reglages','section-express-coursiers',
  'eqtab-btn-express','bottomnav-express','eqtab-btn-bureau','bottomnav-bureau'].forEach(id => document.getElementById(id)?.classList.remove('hidden'));
 document.querySelectorAll('#bottomnav-feuille [data-nav="express"], #bottomnav-feuille [data-nav="bureau"]').forEach(b => { b.hidden = false; });
 if (typeof chargerReglagesExpress === 'function') chargerReglagesExpress();

@@ -96,8 +96,8 @@ const fichiersEquipe = fs.readdirSync(path.join(APP, 'equipe')).filter(f => f.en
 // Quinze depuis le 20/09/2026 (point 9.6) : 14-liste-et-fiche.js, la liste et la fiche côte à côte.
 // Dix-neuf depuis le 25/09/2026 (lot 14) : 18-l-argent.js, l'onglet Argent en quatre vues.
 // Vingt depuis le 25/09/2026 (lot 17) : 19-a-confier.js, le bloc « À confier » de l'onglet Colis.
-// Vingt et un depuis le 26/09/2026 (v290) : 20-raccourcis.js, le tableau des raccourcis.
-verifier('vingt et un fichiers numérotés dans app/equipe/, du 00 au 20 (20 : raccourcis, 26/09)', fichiersEquipe.length === 21 && fichiersEquipe.every((f, i) => f.startsWith(String(i).padStart(2, '0') + '-')), fichiersEquipe.join(', '));
+// Vingt et un depuis le 26/09/2026 (v290) : 20-raccourcis.js, le tableau des raccourcis ; vingt-deux (v292) : 21-accueil.js.
+verifier('vingt-deux fichiers numérotés dans app/equipe/, du 00 au 21 (21 : accueil, 26/09)', fichiersEquipe.length === 22 && fichiersEquipe.every((f, i) => f.startsWith(String(i).padStart(2, '0') + '-')), fichiersEquipe.join(', '));
 verifier('equipe.html les charge tous, dans l\'ordre, après config.js, même étiquette', (() => {
   const balises = [...equipeHtml.matchAll(/<script src="equipe\/([^"?]+)\?v=([^"]+)"><\/script>/g)];
   const etiquetteConfig = (equipeHtml.match(/<script src="config\.js\?v=([^"]+)">/) || [])[1];

@@ -1137,6 +1137,9 @@ set('aujourdhui-argent', ouRien(
   (nbFraisAdditionnels ? `<button type="button" class="ess-tuile est-rouge" data-aller="argent" title="Ouvrir"><span class="n">${nbFraisAdditionnels}</span><span>${nbFraisAdditionnels > 1 ? 'frais additionnels non réglés' : 'frais additionnel non réglé'}</span></button>` : ''), 'Tout est remis'));
 const libelleJour = document.getElementById('ess-jour');
 if (libelleJour) cltPoserHTML(libelleJour, base ? 'Tout ce qui attend, compté sur toute la base' : 'Tout ce qui attend, toutes dates confondues' + (colisHasMore ? ' · ~ historique partiel' : ''));
+// L'ACCUEIL (26/09/2026, lot AC) lit les mêmes chiffres : rien n'est relu deux fois dans la base.
+window.__accueilChiffres = { exact: !!exact, recus: b.recus, livres: b.livres, echecs: b.echecs, enCours: b.enCours, sansLivreur: L.sansLivreur.length, aRemettre: resteARemettre, demandesPassage: nbDemandesPassage, comptesAValider: nbPending, pointsARegler: journeesBouclees.length };
+if (window.CLTAccueilEcran) window.CLTAccueilEcran.dessiner();
 }
 
 /* LES SIGNALEMENTS DES CLIENTES, AVEC LEURS GESTES (20/09/2026, point 20.B). L'inventaire :

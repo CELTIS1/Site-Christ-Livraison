@@ -13,7 +13,7 @@
   const R = window.CLTRaccourcis;
   if (!R || typeof document === 'undefined') return;
   const ech = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  let panneau = null, voile = null, ETATS = {}, EN_COURS = new Set();
+  let panneau = null, voile = null, ETATS = {}, BRUTS = {}, EN_COURS = new Set();
 
   function droits() {
     const b = document.getElementById('eqtab-btn-bureau');
@@ -27,6 +27,7 @@
     panneau = document.createElement('section');
     panneau.id = 'raccourcis'; panneau.className = 'rc-panneau'; panneau.hidden = true;
     panneau.setAttribute('role', 'dialog'); panneau.setAttribute('aria-modal', 'true'); panneau.setAttribute('aria-labelledby', 'rc-titre');
+    panneau.setAttribute('data-clt-couche', 'raccourcis');   // le « retour » du téléphone referme le tableau
     document.body.appendChild(voile); document.body.appendChild(panneau);
     voile.addEventListener('click', fermer);
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !panneau.hidden) fermer(); });
@@ -39,7 +40,7 @@
 
   function dessiner() {
     const cols = R.colonnes(droits());
-    panneau.innerHTML = `<div class="rc-tete"><div><h2 id="rc-titre">Raccourcis</h2><p>Un toucher vous mène à l'écran.</p></div><button type="button" class="rc-fermer" data-rc-fermer aria-label="Fermer">✕</button></div>
+    panneau.innerHTML = `<div class="rc-tete"><div><h2 id="rc-titre">Raccourcis</h2><p>Un toucher vous mène à l'écran.</p></div><button type="button" class="rc-fermer" data-rc-fermer data-clt-fermer aria-label="Fermer">✕</button></div>
       <div class="rc-grille">${cols.map((col) => `<div class="rc-col rc-col--${ech(col.cle)}">
         <div class="rc-col-tete"><span class="rc-col-icone" aria-hidden="true">${col.icone}</span><div><strong>${ech(col.titre)}</strong><span>${ech(col.sous)}</span></div></div>
         <div class="rc-cases">${col.cases.map((c) => caseHTML(c)).join('')}</div>
@@ -76,6 +77,8 @@
     fermer();
     if (c.equipe) {
       if (typeof showEquipeTab === 'function') showEquipeTab(c.equipe);
+      // Une vue précise de l'onglet Argent (lot AC, 26/09) : Remise du livreur, Reversement, Ce qui manque, Rapports.
+      if (c.argentVue && typeof argentChoisirVue === 'function') argentChoisirVue(c.argentVue);
       if (c.ancre) setTimeout(() => { const el = document.getElementById(c.ancre); if (el) el.scrollIntoView({ block: 'start' }); }, 250);
       return;
     }
@@ -91,14 +94,14 @@
 
   /* Les nombres de la colonne « Aujourd'hui », lus à l'ouverture, chacun de son côté. */
   const auj = () => new Date().toISOString().slice(0, 10);
-  function poser(cle, v) { EN_COURS.delete(cle); const e = R.etat(cle, v); if (e) ETATS[cle] = e; else delete ETATS[cle]; if (panneau && !panneau.hidden) dessiner(); majPlus(); }
+  function poser(cle, v) { EN_COURS.delete(cle); BRUTS[cle] = v; const e = R.etat(cle, v); if (e) ETATS[cle] = e; else delete ETATS[cle]; if (panneau && !panneau.hidden) dessiner(); majPlus(); if (window.CLTAccueilEcran) window.CLTAccueilEcran.dessiner(); }
   async function essai(fn) { try { return await fn(); } catch (_e) { return null; } }
-  function finir() { if (panneau && !panneau.hidden) dessiner(); }
+  function finir() { if (panneau && !panneau.hidden) dessiner(); if (window.CLTAccueilEcran) window.CLTAccueilEcran.dessiner(); }
   function compter() {
     if (typeof supabaseClient === 'undefined') return;
     const d = droits();
     EN_COURS = new Set(R.visibles(d).map((c) => c.compteur).filter(Boolean));
-    dessiner();
+    if (panneau) dessiner();
     // Filet : ce qui n'a pas répondu en 8 s perd ses « … » (pas de pastille, la case reste utilisable).
     setTimeout(() => { EN_COURS.clear(); finir(); }, 8000);
     // À traiter : la pastille de l'onglet dit déjà ce qui brûle (litiges + retards).
@@ -173,5 +176,5 @@
     barre.appendChild(b);
   })();
 
-  window.CLTRaccourcisEcran = { ouvrir, fermer, basculer, aller, compter };
+  window.CLTRaccourcisEcran = { ouvrir, fermer, basculer, aller, compter, bruts: () => BRUTS, enCours: () => EN_COURS };
 })();

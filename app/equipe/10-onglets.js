@@ -16,7 +16,7 @@
      que partout ailleurs on lit AUJOURD'HUI, et mélangés les deux se confondent : on programme
      en croyant modifier un colis du jour. Le remettre dedans reviendrait à racheter un défaut
      déjà payé. Le reste attend le compteur d'usage : en octobre on retirera sur preuve. */
-  const EQ_TABS = ['colis','programmation','suivi','retours','finances','personnes','comptes','express','bureau'];
+  const EQ_TABS = ['accueil','colis','programmation','suivi','retours','finances','personnes','comptes','express','bureau'];   // accueil : lot AC, 26/09/2026
 
   /* Les anciens noms continuent de fonctionner : la barre du bas, un lien ailleurs dans le code,
      et surtout le dernier onglet gardé en mémoire sur le téléphone de chacun. Sans cette table,
@@ -57,7 +57,10 @@
     document.getElementById('section-aujourdhui')?.classList.toggle('hidden', key !== 'colis');
     // Et la salutation avec elle (17/09/2026) : on ne dit bonjour qu'une fois, sur l'écran
     // d'accueil. Les autres onglets vont droit au travail.
-    document.getElementById('eq-salutation')?.classList.toggle('hidden', key !== 'colis');
+    // Depuis le 26/09/2026 (lot AC), « Bonjour » est dit par l'Accueil, avec la phrase du jour : plus ici.
+    document.getElementById('eq-salutation')?.classList.add('hidden');
+    if (key === 'accueil' && window.CLTAccueilEcran) window.CLTAccueilEcran.ouvrir();
+    eqNoterActivite();
     // Les retours (20/09/2026) ont leur onglet, relu à chaque ouverture — un geste fait depuis
     // un autre poste ou par un livreur doit apparaître sans recharger.
     if (key === 'retours' && typeof chargerRetours === 'function') chargerRetours();
@@ -134,6 +137,21 @@
     // Le compteur d'usage (18/09/2026) : pour retirer en octobre ce que personne n'ouvre, sur
     // preuve et non à l'opinion. Il ne note pas qui — voir cltNoterOngletOuvert.
     if (typeof cltNoterOngletOuvert === 'function') cltNoterOngletOuvert('equipe', key);
+  }
+
+  /* L'ACCUEIL S'OUVRE AU PREMIER LANCEMENT DU JOUR, OU APRÈS UNE PAUSE (26/09/2026, lot AC). Sinon on
+     retrouve l'écran où l'on était. La règle est dans accueil.js ; ici, la date du dernier usage. */
+  const EQ_CLE_ACTIVITE = 'clt:equipe:derniere-activite';
+  let eqDerniereNote = 0;
+  function eqNoterActivite(){
+    const t = Date.now();
+    if (t - eqDerniereNote < 15000) return;
+    eqDerniereNote = t;
+    try { localStorage.setItem(EQ_CLE_ACTIVITE, String(t)); } catch(e){}
+  }
+  function eqDerniereActivite(){ try { return Number(localStorage.getItem(EQ_CLE_ACTIVITE)) || 0; } catch(e){ return 0; } }
+  function eqUneFenetreEstOuverte(){
+    return [...document.querySelectorAll('[data-clt-couche], [aria-modal="true"]')].some(el => { const st = getComputedStyle(el); return el.isConnected && st.display !== 'none' && st.visibility !== 'hidden' && !el.hidden; });
   }
 
   /* ---------- LE SÉLECTEUR DE « PERSONNES » (18/09/2026) ----------
@@ -234,6 +252,7 @@
     put('eqpanel-express', byId('section-express-courses'));
     put('eqpanel-express', byId('section-express-recharges'));
     put('eqpanel-express', byId('section-express-reglages'));
+    put('eqpanel-express', byId('section-express-coursiers'));   // 26/09/2026 : restait sous tous les onglets (vu sur l'Accueil)
 
     // Ces panneaux démarraient masqués (ancienne navigation interne par onglets
     // Colis/Journal/Rapports/Compta). Désormais rendus visibles en permanence
@@ -244,7 +263,7 @@
     // 20/09/2026 : sauf si init() est DÉJÀ passé par là (connexion résolue avant que ce fichier ne
     // s'exécute — profil en cache, réseau rapide) : on ne re-masque pas ce qu'il vient d'ouvrir.
     if (typeof isAdmin === 'undefined' || !isAdmin) ['section-gerer-equipe','section-tous-comptes',
-     'section-express-courses','section-express-recharges','section-express-reglages',
+     'section-express-courses','section-express-recharges','section-express-reglages','section-express-coursiers',
      'eqtab-btn-express','bottomnav-express'].forEach(id => byId(id)?.classList.add('hidden'));
 
     // Neutralise le comportement repliable : toutes les sections restent ouvertes.
@@ -358,7 +377,16 @@
     const lienColis = new URLSearchParams(location.search).get('colis');
     // ?onglet=… (lot 15) : une tuile des dix chiffres ouverte dans un onglet à part arrive au bon endroit.
     const lienOnglet = new URLSearchParams(location.search).get('onglet');
-    showEquipeTab(lienColis ? 'colis' : (lienOnglet && EQ_TABS.includes(lienOnglet) ? lienOnglet : saved));
+    const A = window.CLTAccueil;
+    const surAccueil = !!A && A.doitOuvrirSurAccueil({ derniere: eqDerniereActivite(), lien: !!(lienColis || lienOnglet) });
+    showEquipeTab(lienColis ? 'colis' : (lienOnglet && EQ_TABS.includes(lienOnglet) ? lienOnglet : (surAccueil ? 'accueil' : saved)));
+    // L'application revient au premier plan après une longue pause : l'accueil, sauf si une fenêtre est ouverte.
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') { eqDerniereNote = 0; eqNoterActivite(); return; }
+      if (A && A.doitOuvrirSurAccueil({ derniere: eqDerniereActivite() }) && !eqUneFenetreEstOuverte()) showEquipeTab('accueil');
+      else eqNoterActivite();
+    });
+    ['pointerdown', 'keydown'].forEach(t => document.addEventListener(t, eqNoterActivite, { passive: true }));
     window.addEventListener('message', (e) => {
       if (e.origin !== location.origin || !e.data || e.data.clt !== 'ouvrir-onglet') return;
       if (EQ_TABS.includes(e.data.onglet)) showEquipeTab(e.data.onglet);

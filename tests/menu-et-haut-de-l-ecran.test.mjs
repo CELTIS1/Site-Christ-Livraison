@@ -116,8 +116,9 @@ verifier('la phrase « le suivi de tous les colis » ne coiffe plus les huit ong
   'elle était fausse partout sauf sur Colis : sur Finances on regarde l\'argent');
 verifier('la salutation tient sur une ligne et porte un identifiant',
   /id="eq-salutation"/.test(equipe) && /page-title--salut/.test(equipe));
-verifier('elle ne s\'affiche que sur l\'onglet d\'accueil, comme « L\'essentiel »',
-  /getElementById\('eq-salutation'\)\?\.classList\.toggle\('hidden', key !== 'colis'\)/.test(lire('app/equipe/10-onglets.js')));
+// Depuis le 26/09/2026 (lot AC), c'est l'Accueil qui dit « Bonjour », avec la phrase du jour : l'ancienne salutation se tait.
+verifier('« Bonjour » n\'est dit qu\'une fois : par l\'Accueil',
+  /getElementById\('eq-salutation'\)\?\.classList\.add\('hidden'\)/.test(lire('app/equipe/10-onglets.js')) && /ac-bonjour/.test(lire('app/equipe/21-accueil.js')));
 
 console.log('\n7. Les 44 px dans tous les espaces, pas seulement chez le livreur (point 9.1)');
 verifier('la règle existe et ne vise que le téléphone',

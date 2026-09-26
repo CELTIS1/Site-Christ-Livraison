@@ -226,6 +226,11 @@ export async function ouvrirNavigateur(options) {
     await page.evaluate(({ user, persistant }) => {
       const session = { access_token: 'jeton.' + btoa(unescape(encodeURIComponent(JSON.stringify(user)))), refresh_token: 'rafraichir', expires_at: Math.floor(Date.now() / 1000) + 3600, user };
       (persistant ? localStorage : sessionStorage).setItem('clt-faux-session', JSON.stringify(session));
+      /* L'ACCUEIL (26/09/2026, lot AC) s'ouvre au premier lancement du jour. Les parcours jouent quelqu'un
+         qui travaille déjà (on retrouve son écran) ; « test:vieillir » joue le premier lancement du jour. */
+      const vieillir = localStorage.getItem('test:vieillir') === '1';
+      localStorage.removeItem('test:vieillir');
+      localStorage.setItem('clt:equipe:derniere-activite', String(vieillir ? Date.now() - 26 * 3600000 : Date.now()));
     }, { user, persistant });
     /* COURSE AVEC LA REDIRECTION DE login.html. (18/09/2026)
        login.html, quand il trouve une session valide, envoie la personne vers SON espace — c'est
