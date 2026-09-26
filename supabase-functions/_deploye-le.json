@@ -39,9 +39,9 @@
     },
     "assistant-repondre": {
       "etat": "deployee",
-      "empreinte": "242cb2e549ac905e75f36441c4d42d14f71b4bca766c39d880f26671074b385b",
+      "empreinte": "1993b73987dbd775913888cd507f69aada45e17366f1840e9e6cf0347cc42f88",
       "le": "2026-09-26",
-      "note": "Déployée par Celtis le 26/09 (Verify JWT activé) ; secret ANTHROPIC_API_KEY posé le 26/09 ; testée en vrai : l'assistant répond. Redéployée par Claude le 26/09 (v286) : dit « fournisseur », jamais « vendeuse »."
+      "note": "Déployée par Celtis le 26/09 (Verify JWT activé) ; secret ANTHROPIC_API_KEY posé le 26/09 ; testée en vrai : l'assistant répond. Redéployée par Claude le 26/09 (v287) : parle au « vendeur ou à la vendeuse »."
     },
     "bilan-hebdomadaire": {
       "etat": "non-deployee",

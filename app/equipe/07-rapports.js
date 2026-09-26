@@ -1440,7 +1440,7 @@ ${piedTotalHTML([
 // Maintenant : « Argent non encaissé », à cocher pour signaler l'EXCEPTION. Par défaut, un colis
 // livré compte comme encaissé, ce qui est le cas neuf fois sur dix.
 if (!fournisseurId) {
-cltPoserHTML(detail, `<div class="empty-state">Choisissez un fournisseur dans le filtre "Client" ci-dessus pour afficher et modifier son récapitulatif détaillé.</div>`);
+cltPoserHTML(detail, `<div class="empty-state">Choisissez un vendeur dans le filtre "Client" ci-dessus pour afficher et modifier son récapitulatif détaillé.</div>`);
 } else {
 const tDetail = totauxArgent(rows);
 // LE point le plus sensible de toute l'application : ce tableau contient les montants d'article,

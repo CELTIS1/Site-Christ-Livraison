@@ -118,7 +118,7 @@
       + ` — <span class="hint" style="display:inline">${ech(a.affirme)}</span></div>`
       + `<div class="reg-barre-champs">`
       + `<label>Date réelle de l'événement<input type="date" id="reg-date" max="${ech(aujourdhui())}" value="${ech(d || aujourdhui())}"></label>`
-      + `<label class="reg-motif-champ">Motif (obligatoire)<input type="text" id="reg-motif" maxlength="300" autocomplete="off" placeholder="Ex. : rendus au fournisseur en août, avant la mise en service" value="${ech(m)}"></label>`
+      + `<label class="reg-motif-champ">Motif (obligatoire)<input type="text" id="reg-motif" maxlength="300" autocomplete="off" placeholder="Ex. : rendus au vendeur en août, avant la mise en service" value="${ech(m)}"></label>`
       + `</div>`
       + `<div class="reg-barre-bas">`
       + `<button type="button" class="btn" id="reg-poser"${empeche ? ' disabled' : ''}>Régulariser ${choisis.size} colis</button>`

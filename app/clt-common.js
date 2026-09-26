@@ -130,7 +130,7 @@ function todayLocalISODate() {
 // partout ailleurs l'application écrit le vrai signe moins des mathématiques (U+2212) : « −2 500
 // Payé à la gare », « −3 000 Frais de course ». Les deux se ressemblent assez pour qu'on ne les
 // distingue pas en lisant, et assez peu pour qu'ils ne s'alignent pas dans une colonne de
-// chiffres. Sur un relevé envoyé à un fournisseur, deux moins différents côte à côte donnent
+// chiffres. Sur un relevé envoyé à un vendeur, deux moins différents côte à côte donnent
 // l'impression d'un document bricolé — et c'est exactement l'endroit où il ne faut pas.
 // Le passage en PDF est déjà couvert : REMPLACEMENTS_PDF_CLT ramène U+2212 au trait d'union
 // ASCII juste avant l'impression, parce que les polices standard ne le connaissent pas.
@@ -1596,7 +1596,7 @@ function cltUrlACote(nomFichier) {
    Pur : ni DOM, ni réseau. Rend { toutVoir, entrees:[{date, titre, points}], neutre }. */
 var CLT_NOUVEAUTES_NEUTRE = "Mise à jour effectuée : des améliorations pour le bon fonctionnement de l'application.";
 var CLT_NOUVEAUTES_LECTEURS = {
-  cliente: /(^|[.;] )(Clientes?|Cliente ›|Espace cliente|Fournisseurs?)\s*[:›]/,
+  cliente: /(^|[.;] )(Clientes?|Cliente ›|Espace cliente|Vendeurs?)\s*[:›]/,
   livreur: /(^|[.;] )(Livreurs?|Livreur ›|Espace livreur)\s*[:›]/,
   express: /(^|[.;] )(Coursiers?|Express|Client Express|Clients? Express)\s*[:›]/
 };

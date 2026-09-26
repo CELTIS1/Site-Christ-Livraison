@@ -305,7 +305,7 @@ if (!c) return;
 const etaitEncaisse = !c.article_non_encaisse;
 const montant = formatMontant(montantArticleColis(c)) || '0 FCFA';
 const ok = await showConfirm({
-title: etaitEncaisse ? 'Marquer cet article soldé (payé chez le fournisseur) ?' : 'Marquer cet article encaissé par CLT ?',
+title: etaitEncaisse ? 'Marquer cet article soldé (payé chez le vendeur) ?' : 'Marquer cet article encaissé par CLT ?',
 detail: (c.numero ? c.numero + ' · ' : '') + montant,
 sub: etaitEncaisse
 ? "Ce montant sortira de ce que le livreur doit remettre, et de ce que CLT doit à la cliente. À faire quand le destinataire n'a pas payé."
@@ -316,7 +316,7 @@ danger: etaitEncaisse,
 if (!ok) return;
 if (btn) btn.disabled = true;
 await eqCorrigerColis(id, { article_non_encaisse: etaitEncaisse }, {
-message: etaitEncaisse ? 'Article marqué soldé : rien n\'est dû au fournisseur pour cet article.' : 'Article marqué encaissé par CLT.',
+message: etaitEncaisse ? 'Article marqué soldé : rien n\'est dû au vendeur pour cet article.' : 'Article marqué encaissé par CLT.',
 details: { avant_article_non_encaisse: !!c.article_non_encaisse }
 });
 if (btn) btn.disabled = false;
@@ -792,9 +792,9 @@ const livreurs = [['Livreur','Colis','Recette','Argent non remis']]
 .concat((d.par_livreur||[]).map(l => [l.nom, num(l.nb), num(l.recette), num(l.non_remis)]));
 XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(livreurs), 'Par livreur');
 
-const vendeuses = [['Fournisseur','Colis','Articles','À reverser à la cliente']]
+const vendeuses = [['Vendeur','Colis','Articles','À reverser à la cliente']]
 .concat((d.par_fournisseur||[]).map(f => [f.nom, num(f.nb), num(f.montant_article), num(f.reste)]));
-XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(vendeuses), 'Par fournisseur');
+XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(vendeurs), 'Par vendeur');
 
 const dep = [['Date','Libellé','Montant','Catégorie']]
 .concat((d.depenses||[]).map(x => [x.date || '', x.libelle || '', num(x.montant), x.categorie || '']));

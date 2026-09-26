@@ -37,7 +37,7 @@ const avec = vm.runInContext(`avecChiffres('{commercants|60+} · Plus de {commer
 verifier('avec la base, les chiffres du jour remplacent le repli', avec === '70+ · Plus de 70 · 1 500+ · 14', avec);
 verifier('content.json n\'affiche plus un nombre figé de commerçants', JSON.stringify(contenu.about.stats).includes('{commercants|') && JSON.stringify(contenu.trust).includes('{commercants_nombre|') && !/"49"|\+50/.test(JSON.stringify(contenu.about.stats) + JSON.stringify(contenu.trust)));
 verifier('les chiffres passent par avecChiffres dans les gabarits (promesses et chiffres clés)', /escapeHTML\(avecChiffres\(t\.text\)\)/.test(index) && /escapeHTML\(avecChiffres\(s\.number\)\)/.test(index));
-verifier('le HTML de repli dit déjà « 60+ » et « 1 000+ », plus « 49 »', /data-chiffre="commercants">60\+</.test(index) && /data-chiffre="colis_livres">1 000\+</.test(index) && !/>49</.test(index));
+verifier('le HTML de repli dit « 60+ » vendeurs et entreprises et « 14 » communes ; plus aucun nombre de colis (v287 : la base ne compte que depuis le 18/08)', /data-chiffre="commercants">60\+</.test(index) && /data-chiffre="communes">14</.test(index) && !/data-chiffre="colis_livres"/.test(index) && !/>49</.test(index));
 
 console.log('\n2. La vie chez CLT');
 verifier('la section existe entre À propos et Témoignages, avec ses crochets', index.indexOf('id="vie"') > index.indexOf('id="a-propos"') && index.indexOf('id="vie"') < index.indexOf('id="temoignages"') && ['vieTitle', 'vieSubtitle', 'vieGrid'].every(id => index.includes('id="' + id + '"')));

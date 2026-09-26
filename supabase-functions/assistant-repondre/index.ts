@@ -97,7 +97,7 @@ const F_PAR_JETON_LU = 0.00062, F_PAR_JETON_ECRIT = 0.0031;
 const MODELE_PAR_DEFAUT = "claude-haiku-4-5";
 const ESPACES: Record<string, string> = {
   livreur: "un livreur CLT (il fait sa tournée, remet l'argent le soir)",
-  fournisseur: "un fournisseur, client de CLT (CLT récupère ses colis, livre, encaisse et lui reverse) — dis toujours « fournisseur », jamais « vendeuse »",
+  fournisseur: "un vendeur ou une vendeuse, client de CLT (CLT récupère ses colis, livre, encaisse et lui reverse)",
   equipe: "un membre de l'équipe du bureau CLT",
   "express-client": "un client de CLT Express (course à la demande, coursier moto)",
   "express-coursier": "un coursier CLT Express (indépendant, solde prépayé, code de livraison)",

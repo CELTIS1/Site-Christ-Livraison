@@ -58,7 +58,7 @@
     },
     {
       cle: 'argent_reverse',
-      titre: 'Fournisseur déjà payé',
+      titre: 'Vendeur déjà payé',
       question: "L'écran de la cliente annonce « CLT vous doit ». Si elle a déjà été payée, en espèces ou par dépôt, c'est ici.",
       affirme: 'Le bureau atteste que la cliente a été payée à cette date.',
       groupePar: 'cliente',

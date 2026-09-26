@@ -41,7 +41,7 @@
     } else if (vue === 'liste') {
       const lignes = activites.filter((x) => x.secteur || x.produits || (x.canaux || []).length || x.lien)
         .map((x) => ({ x, nom: nomDe(x.profile_id) })).sort((p, q) => p.nom.localeCompare(q.nom, 'fr'));
-      /* « Nos fournisseurs » sur le site (25/09/2026, chantier Q, S-2 option A) : une fiche présentable (son oui) est
+      /* « Nos vendeurs » sur le site (25/09/2026, chantier Q, S-2 option A) : une fiche présentable (son oui) est
          publiée par le bureau (« Publier ») — les deux ensemble, jamais l'un sans l'autre. */
       corps = `<table class="cdd-table cda-table qvq-table"><thead><tr><th>Cliente</th><th>Secteur</th><th>Ce qu’elle vend</th><th>Où</th><th>Présentable</th><th>Sur le site</th></tr></thead><tbody>${lignes.map(({ x, nom }) => `<tr data-qvq-profil="${ech(x.profile_id)}">
         <td data-label="Cliente"><strong>${ech(nom)}</strong>${x.lien ? ` <a href="${ech(x.lien)}" target="_blank" rel="noopener" class="qvq-lien" title="Ouvrir sa page">↗</a>` : ''}</td>
@@ -50,7 +50,7 @@
         <td data-label="Où">${ech((x.canaux || []).map(A().nomCanal).filter(Boolean).join(', ') || '—')}</td>
         <td data-label="Présentable">${x.presentable ? '<span class="qvq-oui">Oui</span>' : '<span class="cdd-inconnu">Non</span>'}</td>
         <td data-label="Sur le site">${!x.presentable ? '<span class="cdd-inconnu">— (sans son accord)</span>' : x.vitrine_validee_at ? `<span class="qvq-oui">Publiée</span> <button type="button" class="btn btn-sm btn-outline" data-qvq-vitrine="0">Retirer</button>` : `<button type="button" class="btn btn-sm" data-qvq-vitrine="1">Publier sur le site</button>`}</td></tr>`).join('')}</tbody></table>
-      <div class="cda-note">Publiée = visible sur christlivraison.ci › « Nos fournisseurs » (nom de boutique, secteur, ce qu’il vend, commune, WhatsApp). Avant de publier : au moins dix colis livrés, aucune réclamation en cours — c’est le bureau qui juge.</div>`;
+      <div class="cda-note">Publiée = visible sur christlivraison.ci › « Nos vendeurs » (nom de boutique, secteur, ce qu’il vend, commune, WhatsApp). Avant de publier : au moins dix colis livrés, aucune réclamation en cours — c’est le bureau qui juge.</div>`;
     } else {
       const lignes = vue === 'secteur' ? st.parSecteur : st.parCanal;
       const titre = vue === 'secteur' ? 'Secteur' : 'Canal de vente';
@@ -82,10 +82,10 @@
     boite.querySelectorAll('[data-qvq-vitrine]').forEach((b) => b.addEventListener('click', async () => {
       const id = b.closest('[data-qvq-profil]').dataset.qvqProfil, ok = b.dataset.qvqVitrine === '1';
       const nom = nomDe(id);
-      if (typeof cltConfirm === 'function' && !(await cltConfirm({ title: ok ? 'Publier ' + nom + ' sur le site ?' : 'Retirer ' + nom + ' du site ?', sub: ok ? 'Sa fiche (boutique, secteur, ce qu\'il vend, commune, WhatsApp) apparaît dans « Nos fournisseurs ». Elle a coché son accord ; vous validez.' : 'Sa fiche disparaît du site tout de suite. Son accord reste.', okLabel: ok ? 'Publier' : 'Retirer' }))) return;
+      if (typeof cltConfirm === 'function' && !(await cltConfirm({ title: ok ? 'Publier ' + nom + ' sur le site ?' : 'Retirer ' + nom + ' du site ?', sub: ok ? 'Sa fiche (boutique, secteur, ce qu\'il vend, commune, WhatsApp) apparaît dans « Nos vendeurs ». Elle a coché son accord ; vous validez.' : 'Sa fiche disparaît du site tout de suite. Son accord reste.', okLabel: ok ? 'Publier' : 'Retirer' }))) return;
       b.disabled = true;
       const r = await supabaseClient.rpc('vitrine_valider', { p_profile: id, p_ok: ok });
-      if (r.error) { b.disabled = false; if (typeof cltToast === 'function') cltToast(/could not find|does not exist|schema cache/i.test(r.error.message || '') ? 'Le site ne lit pas encore les fournisseurs : jouez le SQL du 25/09 (nos fournisseurs).' : (typeof friendlyErrorMessage === 'function' ? friendlyErrorMessage(r.error.message) : r.error.message), { type: 'error' }); return; }
+      if (r.error) { b.disabled = false; if (typeof cltToast === 'function') cltToast(/could not find|does not exist|schema cache/i.test(r.error.message || '') ? 'Le site ne lit pas encore les vendeurs : jouez le SQL du 25/09 (nos vendeurs).' : (typeof friendlyErrorMessage === 'function' ? friendlyErrorMessage(r.error.message) : r.error.message), { type: 'error' }); return; }
       if (typeof cltToast === 'function') cltToast(ok ? nom + ' est sur le site.' : nom + ' est retirée du site.', { type: 'success' });
       charger();
     }));

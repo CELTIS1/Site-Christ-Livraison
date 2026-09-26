@@ -30,7 +30,7 @@
     {
       "icon": "fa-handshake",
       "title": "Nos partenariats",
-      "text": "Plus de {commercants_nombre|60} fournisseurs et entreprises nous confient déjà leurs livraisons à Abidjan."
+      "text": "Plus de {commercants_nombre|60} vendeurs et entreprises nous confient déjà leurs livraisons à Abidjan."
     }
   ],
   "services": [
@@ -504,11 +504,11 @@
     "stats": [
       {
         "number": "{commercants|60+}",
-        "label": "fournisseurs nous font confiance"
+        "label": "vendeurs et entreprises nous font confiance"
       },
       {
-        "number": "{colis_livres|1 000+}",
-        "label": "colis livrés à Abidjan"
+        "number": "{communes|14}",
+        "label": "communes d'Abidjan desservies"
       },
       {
         "number": "1000 FCFA",
@@ -566,7 +566,7 @@
     "items": [
       {
         "name": "Djény Jeans",
-        "role": "Fournisseur en ligne",
+        "role": "Vendeuse en ligne",
         "rating": 5,
         "text": "Si la fiabilité avait un visage, ce serait vous. Vous êtes notre livreur favori !"
       },
@@ -578,7 +578,7 @@
       },
       {
         "name": "Nelly",
-        "role": "Fournisseur, Abidjan",
+        "role": "Vendeuse, Abidjan",
         "rating": 5,
         "text": "Très fiable, rapide et efficace ! Tu es le meilleur."
       },

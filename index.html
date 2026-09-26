@@ -168,7 +168,7 @@
   ],
   "knowsAbout": [
     "Livraison de colis à Abidjan",
-    "Livraison pour fournisseurs en ligne",
+    "Livraison pour vendeurs en ligne",
     "Coursier à la demande",
     "Expédition vers l'intérieur de la Côte d'Ivoire"
   ],
@@ -196,7 +196,7 @@
         "@type": "Offer",
         "itemOffered": {
           "@type": "Service",
-          "name": "Livraison pour le e-commerce et les fournisseurs en ligne",
+          "name": "Livraison pour le e-commerce et les vendeurs en ligne",
           "url": "https://christlivraison.ci/services.html?s=ecommerce"
         }
       },
@@ -637,6 +637,22 @@
     .avis-note-chiffre{font-size:28px;}
     .avis-site{margin-top:24px;}
   }
+
+  /* NOUS REJOINDRE + appel sous « Comment ça marche » (26/09/2026, v287). */
+  .appel-ligne{display:flex; justify-content:center; margin-top:28px;}
+  .appel-ligne .btn{min-height:48px;}
+  .rejoindre{background:linear-gradient(180deg,#FFF6EF 0%,#FFFFFF 100%);}
+  .rejoindre-grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; max-width:1000px; margin:0 auto;}
+  .rejoindre-carte{background:var(--white); border:1.5px solid #F3E2D5; border-radius:18px; padding:24px; display:flex; flex-direction:column; gap:10px; box-shadow:0 10px 26px rgba(27,67,116,0.06);}
+  .rejoindre-carte--pro{border-color:#D6E2EF;}
+  .rejoindre-pour{font-size:12.5px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:var(--orange);}
+  .rejoindre-carte--pro .rejoindre-pour{color:var(--navy);}
+  .rejoindre-carte h3{font-size:21px; color:var(--navy); margin:0;}
+  .rejoindre-carte ul{margin:0; padding-left:18px; color:#3d4a58; font-size:14.5px; line-height:1.6;}
+  .rejoindre-actions{display:flex; flex-wrap:wrap; align-items:center; gap:10px 18px; margin-top:auto; padding-top:8px;}
+  .rejoindre-actions .btn{min-height:48px;}
+  .rejoindre-lien{color:var(--navy); font-weight:700; font-size:14.5px; min-height:44px; display:inline-flex; align-items:center;}
+  @media (max-width:760px){ .rejoindre-grid{grid-template-columns:1fr;} .rejoindre-carte{padding:20px 18px;} .appel-ligne .btn{width:100%; justify-content:center;} }
 
   /* ---------- COVERAGE ---------- */
   .pill-light{
@@ -1094,7 +1110,7 @@
             <li><a href="express.html" onclick="closeMenu()">CLT Express — à la demande</a></li>
           </ul>
         </li>
-        <li><a href="vendeuses.html" onclick="closeMenu()">Fournisseurs</a></li>
+        <li><a href="vendeuses.html" onclick="closeMenu()">Vendeurs</a></li>
         <li><a href="livreurs.html" onclick="closeMenu()">Devenir livreur</a></li>
         <li><a href="suivi.html" onclick="closeMenu()">Suivre un colis</a></li>
         <li class="nav-groupe">
@@ -1165,36 +1181,36 @@
   <div class="marquee-track" id="marqueeTrack"></div>
 </div>
 
-<!-- S-1 (25/09/2026) : LA PREUVE, EN CHIFFRES. Revue le 26/09 (v285), Celtis : « le nombre de colis doit être
-     approximatif et pareil d'une section à l'autre ; pareil pour les vendeuses, qu'on appelle fournisseurs ; pas de
-     montant ». Colis et fournisseurs viennent d'UNE source, site_chiffres() (arrondis vers le bas : 1 500+, 60+), les
-     mêmes qu'« À propos » ; le taux du mois, seul, vient de site_chiffres_mois(). Aucun montant d'argent. -->
+<!-- S-1 (25/09/2026) : LA PREUVE, EN CHIFFRES. Revue le 26/09 (v287), Celtis : pas de nombre de colis (la base ne
+     compte que depuis le 18/08 : ce serait faux, et un chiffre du mois paraîtrait petit à un grand partenaire) ; le nombre
+     EXACT de vendeurs et d'entreprises qui nous ont confié des colis ce mois ; aucun montant. Tout vient de
+     site_chiffres_mois() (totaux, rien de nominatif) ; sans réseau, les tirets restent. -->
 <section class="preuve" id="preuve" aria-label="Nos chiffres">
   <div class="container">
     <div class="preuve-grid">
-      <div class="preuve-item"><strong data-chiffre="colis_livres">1 000+</strong><span>colis livrés à Abidjan</span></div>
+      <div class="preuve-item"><strong id="chiffre-clients-mois">—</strong><span>vendeurs et entreprises servis ce mois</span></div>
       <div class="preuve-item"><strong id="chiffre-taux">—</strong><span>livrés du premier coup</span></div>
-      <div class="preuve-item"><strong data-chiffre="commercants">60+</strong><span>fournisseurs nous font confiance</span></div>
+      <div class="preuve-item"><strong>100 %</strong><span>des colis suivis en ligne</span></div>
     </div>
-    <p class="preuve-note" id="preuve-note">Chiffres arrondis, tirés de notre application ; taux du mois en cours.</p>
+    <p class="preuve-note" id="preuve-note">Chiffres réels de notre application, pour le mois en cours.</p>
   </div>
 </section>
 
 <!-- S-5 (26/09/2026) : LA VENDEUSE DE LA SEMAINE. Une fiche de « Nos vendeuses » (site_vendeuses : consentie ET
      validée par le bureau), choisie par le numéro de la semaine — la même pour tout le monde, toute la semaine.
      Cachée tant qu'il n'y a aucune fiche. -->
-<section class="semaine" id="vendeuse-semaine" hidden aria-label="Fournisseur de la semaine">
+<section class="semaine" id="vendeuse-semaine" hidden aria-label="Boutique de la semaine">
   <div class="container semaine-inner">
     <div class="semaine-texte">
-      <span class="semaine-etiquette">⭐ Fournisseur de la semaine</span>
+      <span class="semaine-etiquette">⭐ Boutique de la semaine</span>
       <h3 id="vs-nom"></h3>
       <p id="vs-desc"></p>
       <div class="semaine-actions">
         <a id="vs-wa" class="btn btn-primary" target="_blank" rel="noopener" href="#" data-site-compteur="vendeuse-semaine"><i class="fa-brands fa-whatsapp"></i> Commander</a>
-        <a class="btn btn-secondary" href="vendeuses.html#nos-vendeuses">Tous nos fournisseurs</a>
+        <a class="btn btn-secondary" href="vendeuses.html#nos-vendeuses">Tous nos vendeurs</a>
       </div>
     </div>
-    <div class="semaine-note">Nos fournisseurs vendent, CLT livre et leur reverse leur argent. Vous vendez aussi ? <a href="vendeuses.html">Votre boutique peut être ici.</a></div>
+    <div class="semaine-note">Ils vendent, CLT livre et leur reverse leur argent. Vous vendez aussi ? <a href="vendeuses.html">Votre boutique peut être ici.</a></div>
   </div>
 </section>
 
@@ -1269,6 +1285,9 @@
       <div class="step-arrow"><i class="fa-solid fa-arrow-right"></i></div>
       <div class="step-card reveal"><div class="step-icon"><span class="step-num">3</span><i class="fa-solid fa-truck"></i></div><h3>Livraison</h3><p>Votre colis est livré directement à son destinataire, avec une confirmation dès la remise.</p></div>
     </div>
+    <div class="appel-ligne reveal">
+      <a class="btn btn-primary" href="https://wa.me/2250546818640?text=Bonjour%20CLT%2C%20je%20veux%20essayer%20la%20premi%C3%A8re%20livraison%20offerte." target="_blank" rel="noopener" data-site-compteur="appel-comment"><i class="fa-brands fa-whatsapp"></i> Essayer : la première livraison est offerte</a>
+    </div>
   </div>
 </section>
 
@@ -1329,8 +1348,8 @@
       <div class="about-value reveal"><i class="fa-solid fa-location-dot"></i><h4>Proximité</h4><p>Une équipe joignable et à l'écoute, toujours proche de ses clients et fournisseurs.</p></div>
     </div>
     <div class="about-stats reveal" id="aboutStats">
-      <div class="about-stat"><div class="stat-number" data-chiffre="commercants">60+</div><div class="stat-label">fournisseurs nous font confiance</div></div>
-      <div class="about-stat"><div class="stat-number" data-chiffre="colis_livres">1 000+</div><div class="stat-label">colis livrés à Abidjan</div></div>
+      <div class="about-stat"><div class="stat-number" data-chiffre="commercants">60+</div><div class="stat-label">vendeurs et entreprises nous font confiance</div></div>
+      <div class="about-stat"><div class="stat-number" data-chiffre="communes">14</div><div class="stat-label">communes d'Abidjan desservies</div></div>
       <div class="about-stat"><div class="stat-number">1000 FCFA</div><div class="stat-label">tarif de départ pour vos livraisons</div></div>
     </div>
     <div class="partners-band reveal" id="partnersBand">
@@ -1392,9 +1411,9 @@
     <h2 class="section-title reveal" id="testimonialsTitle">Ce que disent nos clients</h2>
     <p class="section-sub reveal" id="testimonialsSubtitle">Quelques retours de nos clients et partenaires.</p>
     <div class="testimonials-grid" id="testimonialsGrid">
-      <div class="testimonial-card vedette reveal"><div class="testimonial-stars">★★★★★</div><p class="testimonial-text">"Si la fiabilité avait un visage, ce serait vous. Vous êtes notre livreur favori !"</p><div class="testimonial-name">Djény Jeans</div><div class="testimonial-role">Fournisseur en ligne</div></div>
+      <div class="testimonial-card vedette reveal"><div class="testimonial-stars">★★★★★</div><p class="testimonial-text">"Si la fiabilité avait un visage, ce serait vous. Vous êtes notre livreur favori !"</p><div class="testimonial-name">Djény Jeans</div><div class="testimonial-role">Vendeuse en ligne</div></div>
       <div class="testimonial-card vedette reveal"><div class="testimonial-stars">★★★★★</div><p class="testimonial-text">"Livraison rapide, point détaillé en fin de journée et fluidité des transactions."</p><div class="testimonial-name">L'intello</div><div class="testimonial-role">Cliente, Abidjan</div></div>
-      <div class="testimonial-card vedette reveal"><div class="testimonial-stars">★★★★★</div><p class="testimonial-text">"Très fiable, rapide et efficace ! Tu es le meilleur."</p><div class="testimonial-name">Nelly</div><div class="testimonial-role">Fournisseur, Abidjan</div></div>
+      <div class="testimonial-card vedette reveal"><div class="testimonial-stars">★★★★★</div><p class="testimonial-text">"Très fiable, rapide et efficace ! Tu es le meilleur."</p><div class="testimonial-name">Nelly</div><div class="testimonial-role">Vendeuse, Abidjan</div></div>
       <div class="testimonial-card vedette reveal"><div class="testimonial-stars">★★★★★</div><p class="testimonial-text">"Rapide, sécurisé, fiable."</p><div class="testimonial-name">M. Elegence</div><div class="testimonial-role">Cliente, Abidjan</div></div>
     </div>
     <div class="avis-site" id="avisSite" hidden>
@@ -1407,6 +1426,36 @@
       <div class="avis-plus-bas">
         <button type="button" class="avis-voir-plus" id="avisVoirPlus" hidden>Voir plus d'avis</button>
         <a class="avis-donner" href="suivi.html">Livré par CLT ? Donnez votre avis depuis la page de suivi</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- NOUS REJOINDRE (26/09/2026, v287). Celtis : « est-ce qu'on les incite à venir collaborer avec nous ? ». Posé juste
+     après les avis, là où la confiance est la plus haute : deux portes, le vendeur (essai offert) et l'entreprise ou la
+     plateforme (volumes, commandes reçues depuis son application). -->
+<section id="rejoindre" class="rejoindre">
+  <div class="container">
+    <h2 class="section-title reveal">Confiez-nous vos colis</h2>
+    <p class="section-sub reveal" id="rejoindre-nombre">Rejoignez les vendeurs et les entreprises qui nous confient leurs livraisons à Abidjan.</p>
+    <div class="rejoindre-grid">
+      <div class="rejoindre-carte reveal">
+        <span class="rejoindre-pour"><i class="fa-solid fa-store"></i> Vous vendez en ligne ou en boutique</span>
+        <h3>Votre première livraison est offerte</h3>
+        <ul><li>On récupère chez vous, on livre vos clients partout à Abidjan.</li><li>On encaisse pour vous et on vous reverse, avec un reçu numéroté.</li><li>Vous suivez chaque colis sur votre téléphone.</li></ul>
+        <div class="rejoindre-actions">
+          <a class="btn btn-primary" href="https://wa.me/2250546818640?text=Bonjour%20CLT%2C%20je%20vends%20%C3%A0%20Abidjan%20et%20je%20veux%20essayer%20la%20premi%C3%A8re%20livraison%20offerte." target="_blank" rel="noopener" data-site-compteur="rejoindre-vendeur"><i class="fa-brands fa-whatsapp"></i> Commencer</a>
+          <a class="rejoindre-lien" href="vendeuses.html">Ce que vous gagnez →</a>
+        </div>
+      </div>
+      <div class="rejoindre-carte rejoindre-carte--pro reveal">
+        <span class="rejoindre-pour"><i class="fa-solid fa-building"></i> Entreprise, plateforme, gros volumes</span>
+        <h3>Un partenaire logistique à votre mesure</h3>
+        <ul><li>Tarif selon votre volume, sur devis.</li><li>Vos commandes reçues directement depuis votre application.</li><li>Relevé et reversement suivis chaque jour, colis par colis.</li></ul>
+        <div class="rejoindre-actions">
+          <a class="btn btn-primary" href="https://wa.me/2250546818640?text=Bonjour%20CLT%2C%20je%20repr%C3%A9sente%20une%20entreprise%20et%20je%20voudrais%20parler%20de%20nos%20volumes%20de%20livraison." target="_blank" rel="noopener" data-site-compteur="rejoindre-entreprise"><i class="fa-brands fa-whatsapp"></i> Parlons de vos volumes</a>
+          <a class="rejoindre-lien" href="#devis">Demander un devis →</a>
+        </div>
       </div>
     </div>
   </div>
@@ -1530,7 +1579,7 @@
           <li><a href="#devis">Demander un devis</a></li>
           <li><a href="express.html">CLT Express, la livraison à la demande</a></li>
           <li><a href="tarifs.html">Nos tarifs</a></li>
-          <li><a href="vendeuses.html">Fournisseurs : ce que vous gagnez, nos fournisseurs</a></li>
+          <li><a href="vendeuses.html">Vendeurs : ce que vous gagnez, nos vendeurs</a></li>
           <li><a href="livreurs.html">Devenir livreur chez CLT</a></li>
           <li><a href="installer.html">Installer l'application sur votre téléphone</a></li>
           <li><a href="contact.html">Contact</a></li>
@@ -1874,13 +1923,16 @@
      nominatif). Distinct de chargerChiffres() (16/09, les ordres de grandeur des textes) — corrigé le 26/09. */
   function chargerChiffresDuMois(){
     var URL_BASE = "https://xkfltqjbmolmdwdafzcx.supabase.co", CLE = "sb_publishable_wn9f6Way_wMzCVypmJo5zA_yWYPqJzP";
-    /* v285 : on n'en garde que le taux. Le nombre de colis et de fournisseurs du bandeau vient de site_chiffres()
-       (data-chiffre, arrondi, le même qu'« À propos ») ; le montant reversé n'est plus affiché. */
+    /* v287 : le nombre EXACT de vendeurs et d'entreprises du mois (vendeuses_mois) et le taux. Ni nombre de colis
+       (la base ne compte que depuis le 18/08), ni montant. */
     fetch(URL_BASE + '/rest/v1/rpc/site_chiffres_mois', { method: 'POST', headers: { 'apikey': CLE, 'Authorization': 'Bearer ' + CLE, 'Content-Type': 'application/json' }, body: '{}' })
       .then(function(r){ return r.ok ? r.json() : Promise.reject(r.status); })
       .then(function(c){
-        var e = document.getElementById('chiffre-taux');
-        if (c && e && c.taux_livres_mois != null) e.textContent = Math.round(c.taux_livres_mois) + ' %';
+        if (!c) return;
+        var pose = function(id, v){ var e = document.getElementById(id); if (e && v != null) e.textContent = v; };
+        pose('chiffre-clients-mois', c.vendeuses_mois != null ? Number(c.vendeuses_mois).toLocaleString('fr-FR') : null);
+        pose('chiffre-taux', c.taux_livres_mois != null ? Math.round(c.taux_livres_mois) + ' %' : null);
+        var n = document.getElementById('rejoindre-nombre'); if (n && c.vendeuses_mois) n.textContent = 'Rejoignez les ' + Number(c.vendeuses_mois).toLocaleString('fr-FR') + ' vendeurs et entreprises qui nous ont confié leurs colis ce mois.';
       }).catch(function(){ /* sans réseau ou sans la fonction : les tirets restent */ });
   }
   chargerChiffresDuMois();
@@ -1902,7 +1954,7 @@
         document.getElementById('vs-desc').textContent = desc;
         var wa = document.getElementById('vs-wa');
         var tel = String(v.whatsapp || '').replace(/\D/g, ''); if (tel && tel.length === 10) tel = '225' + tel;
-        if (tel) wa.href = 'https://wa.me/' + tel + '?text=' + encodeURIComponent('Bonjour ' + v.nom + ', je vous ai trouvé(e) sur le site de CLT (fournisseur de la semaine). Je voudrais commander.'); else wa.hidden = true;
+        if (tel) wa.href = 'https://wa.me/' + tel + '?text=' + encodeURIComponent('Bonjour ' + v.nom + ', je vous ai trouvé(e) sur le site de CLT (boutique de la semaine). Je voudrais commander.'); else wa.hidden = true;
         s.removeAttribute('hidden');
       }).catch(function(){ /* pas de fiche, pas de section */ });
   })();

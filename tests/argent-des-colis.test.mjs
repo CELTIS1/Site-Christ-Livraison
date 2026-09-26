@@ -1060,7 +1060,7 @@ titre('Aucun chiffre ne porte un nom ambigu');
       'c\'est CLT qui doit ; la cliente n\'a rien à aller percevoir');
   }
   verifier('l\'export comptable par vendeuse annonce « À reverser à la cliente »',
-    /'Fournisseur','Colis','Articles','À reverser à la cliente'/.test(equipe),
+    /'Vendeur','Colis','Articles','À reverser à la cliente'/.test(equipe),
     'l\'en-tête d\'un tableau exporté survit bien plus longtemps que l\'écran qui l\'a produit');
   verifier('montantTotalColis existe toujours, et seulement dans config.js',
     /function montantTotalColis\s*\(/.test(sourceConfig) &&
